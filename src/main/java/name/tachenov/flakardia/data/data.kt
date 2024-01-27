@@ -61,7 +61,7 @@ fun parseUsingEmptyLines(lines: List<String>): List<Flashcard> {
             words.clear()
         }
         else {
-            words += Word(line)
+            words += parseWord(line)
         }
     }
     return result
@@ -87,4 +87,8 @@ fun guessDelimiter(lines: List<String>): Char {
 
 private fun parse(lines: List<String>, delimiter: Char): List<Flashcard> = lines.filter { it.isNotBlank() }.map { parse(it, delimiter) }
 
-private fun parse(line: String, delimiter: Char): Flashcard = line.split(delimiter).map { Word(it) }.let { Flashcard(it[0], it[1]) }
+private fun parse(line: String, delimiter: Char): Flashcard = line.split(delimiter)
+    .map { parseWord(it) }
+    .let { Flashcard(it[0], it[1]) }
+
+private fun parseWord(s: String) = Word(s.trim { c -> c.isWhitespace() || c == '"' })
