@@ -1,33 +1,43 @@
 package name.tachenov.flakardia.ui
 
+import name.tachenov.flakardia.app.Answer
+import name.tachenov.flakardia.app.AnswerResult
 import name.tachenov.flakardia.app.Question
+import java.awt.Color
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
 
-class QuestionAnswer : JPanel() {
+class QuestionAnswer(
+    private val answered: (Answer) -> Unit,
+) : JPanel() {
 
     private val question = FixedWidthLabel()
     private val answerInput = FixedWidthTextField()
-    private val correctAnswer = FixedWidthLabel()
-
-    private var isAnswerVisible: Boolean
-        get() = correctAnswer.isVisible
-        set(value) {
-            correctAnswer.isVisible = value
-        }
-
-    private var isAnswerInputVisible: Boolean
-        get() = answerInput.isVisible
-        set(value) {
-            answerInput.isVisible = value
-        }
+    private val correctAnswer = FixedWidthLabel().apply { foreground = CORRECT_COLOR }
 
     fun displayQuestion(nextQuestion: Question) {
-        isAnswerInputVisible = true
-        isAnswerVisible = false
+        answerInput.isEditable = true
+        answerInput.text = ""
+        answerInput.foreground = null
+        correctAnswer.isVisible = false
         question.text = nextQuestion.value
+    }
+
+    fun displayAnswerResult(answerResult: AnswerResult) {
+        answerInput.isEditable = false
+        if (answerResult.isCorrect) {
+            answerInput.foreground = CORRECT_COLOR
+            correctAnswer.isVisible = false
+        }
+        else {
+            answerInput.foreground = INCORRECT_COLOR
+            correctAnswer.isVisible = true
+            correctAnswer.text = answerResult.correctAnswer.value
+        }
     }
 
     init {
@@ -49,6 +59,16 @@ class QuestionAnswer : JPanel() {
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
         this.layout = layout
+        answerInput.addKeyListener(object : KeyAdapter() {
+            override fun keyPressed(e: KeyEvent) {
+                if (answerInput.isEditable && e.keyCode == KeyEvent.VK_ENTER) {
+                    answered(Answer(answerInput.text))
+                }
+            }
+        })
     }
 
 }
+
+private val CORRECT_COLOR = Color(33, 169, 10)
+private val INCORRECT_COLOR = Color(222, 15, 15)

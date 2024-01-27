@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.ui
 
+import name.tachenov.flakardia.app.Answer
 import name.tachenov.flakardia.app.Lesson
 import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment.LEADING
@@ -8,7 +9,7 @@ import javax.swing.JPanel
 
 class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
 
-    private val questionAnswer = QuestionAnswer()
+    private val questionAnswer = QuestionAnswer(answered = { answered(it) })
 
     init {
         val contentPane = JPanel()
@@ -38,6 +39,10 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
             questionAnswer.isVisible = true
             questionAnswer.displayQuestion(nextQuestion)
         }
+    }
+
+    private fun answered(answer: Answer) {
+        questionAnswer.displayAnswerResult(lesson.answer(answer))
     }
 
 }
