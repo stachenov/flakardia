@@ -1,12 +1,10 @@
 package name.tachenov.flakardia
 
 import com.github.weisj.darklaf.LafManager
-import com.github.weisj.darklaf.theme.DarculaTheme
 import com.github.weisj.darklaf.theme.OneDarkTheme
 import name.tachenov.flakardia.app.Lesson
 import name.tachenov.flakardia.data.readFlashcards
 import name.tachenov.flakardia.ui.LessonFrame
-import java.awt.Color
 import java.awt.Font
 import java.nio.file.Path
 import javax.swing.SwingUtilities
