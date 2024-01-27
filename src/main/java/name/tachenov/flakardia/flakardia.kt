@@ -2,11 +2,8 @@ package name.tachenov.flakardia
 
 import com.github.weisj.darklaf.LafManager
 import com.github.weisj.darklaf.theme.OneDarkTheme
-import name.tachenov.flakardia.app.CramLesson
-import name.tachenov.flakardia.data.readFlashcards
-import name.tachenov.flakardia.ui.LessonFrame
+import name.tachenov.flakardia.ui.CardSetManagerFrame
 import java.awt.Font
-import java.nio.file.Path
 import javax.swing.SwingUtilities
 import javax.swing.UIManager
 import javax.swing.WindowConstants
@@ -15,10 +12,9 @@ fun main() {
     SwingUtilities.invokeLater {
         LafManager.install(OneDarkTheme())
         configureUiDefaults()
-        LessonFrame(CramLesson(readFlashcards(Path.of("cards/test.cards")))).apply {
+        CardSetManagerFrame().apply {
             defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
             pack()
-            nextQuestion()
             setLocationRelativeTo(null)
             isVisible = true
         }
