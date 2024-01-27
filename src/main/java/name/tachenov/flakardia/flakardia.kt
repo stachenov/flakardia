@@ -15,6 +15,7 @@ fun main() {
         LessonFrame(Lesson(readFlashcards(Path.of("cards/test.cards")))).apply {
             defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
             pack()
+            nextQuestion()
             setLocationRelativeTo(null)
             isVisible = true
         }

@@ -27,10 +27,9 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         layout.setVerticalGroup(vg)
         contentPane.layout = layout
         this.contentPane = contentPane
-        nextQuestion()
     }
 
-    private fun nextQuestion() {
+    fun nextQuestion() {
         val nextQuestion = lesson.nextQuestion()
         if (nextQuestion == null) {
             questionAnswer.isVisible = false
