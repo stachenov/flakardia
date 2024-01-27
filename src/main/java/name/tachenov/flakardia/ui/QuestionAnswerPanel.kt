@@ -11,7 +11,7 @@ import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
 
-class QuestionAnswer(
+class QuestionAnswerPanel(
     private val answered: (Answer?) -> Unit,
     private val nextQuestion: () -> Unit,
 ) : JPanel() {

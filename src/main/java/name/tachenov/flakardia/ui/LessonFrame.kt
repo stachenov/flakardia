@@ -9,7 +9,7 @@ import javax.swing.JPanel
 
 class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
 
-    private val questionAnswer = QuestionAnswer(
+    private val questionAnswerPanel = QuestionAnswerPanel(
         answered = this::answered,
         nextQuestion = this::nextQuestion,
     )
@@ -20,11 +20,11 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         val hg = layout.createSequentialGroup()
         val vg = layout.createParallelGroup(LEADING)
         hg.addContainerGap()
-        hg.addComponent(questionAnswer)
+        hg.addComponent(questionAnswerPanel)
         hg.addContainerGap()
         vg.addGroup(layout.createSequentialGroup().apply {
             addContainerGap()
-            addComponent(questionAnswer)
+            addComponent(questionAnswerPanel)
             addContainerGap()
         })
         layout.setHorizontalGroup(hg)
@@ -36,16 +36,16 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
     fun nextQuestion() {
         val nextQuestion = lesson.nextQuestion()
         if (nextQuestion == null) {
-            questionAnswer.isVisible = false
+            questionAnswerPanel.isVisible = false
         }
         else {
-            questionAnswer.isVisible = true
-            questionAnswer.displayQuestion(nextQuestion)
+            questionAnswerPanel.isVisible = true
+            questionAnswerPanel.displayQuestion(nextQuestion)
         }
     }
 
     private fun answered(answer: Answer?) {
-        questionAnswer.displayAnswerResult(lesson.answer(answer))
+        questionAnswerPanel.displayAnswerResult(lesson.answer(answer))
     }
 
 }
