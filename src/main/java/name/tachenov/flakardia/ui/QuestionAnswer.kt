@@ -13,6 +13,7 @@ import javax.swing.GroupLayout.PREFERRED_SIZE
 
 class QuestionAnswer(
     private val answered: (Answer) -> Unit,
+    private val nextQuestion: () -> Unit,
 ) : JPanel() {
 
     private val question = FixedWidthLabel()
@@ -60,9 +61,16 @@ class QuestionAnswer(
         layout.setVerticalGroup(vg)
         this.layout = layout
         answerInput.addKeyListener(object : KeyAdapter() {
-            override fun keyPressed(e: KeyEvent) {
-                if (answerInput.isEditable && e.keyCode == KeyEvent.VK_ENTER) {
-                    answered(Answer(answerInput.text))
+            override fun keyTyped(e: KeyEvent) {
+                when {
+                    answerInput.isEditable && e.keyChar == '\n' -> {
+                        e.consume()
+                        answered(Answer(answerInput.text))
+                    }
+                    !answerInput.isEditable && e.keyChar == ' ' -> {
+                        e.consume()
+                        nextQuestion()
+                    }
                 }
             }
         })

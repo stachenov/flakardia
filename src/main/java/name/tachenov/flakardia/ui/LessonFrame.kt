@@ -9,7 +9,10 @@ import javax.swing.JPanel
 
 class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
 
-    private val questionAnswer = QuestionAnswer(answered = { answered(it) })
+    private val questionAnswer = QuestionAnswer(
+        answered = this::answered,
+        nextQuestion = this::nextQuestion,
+    )
 
     init {
         val contentPane = JPanel()
