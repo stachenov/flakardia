@@ -2,7 +2,7 @@ package name.tachenov.flakardia
 
 import com.github.weisj.darklaf.LafManager
 import com.github.weisj.darklaf.theme.OneDarkTheme
-import name.tachenov.flakardia.app.Lesson
+import name.tachenov.flakardia.app.SimpleLesson
 import name.tachenov.flakardia.data.readFlashcards
 import name.tachenov.flakardia.ui.LessonFrame
 import java.awt.Font
@@ -15,7 +15,7 @@ fun main() {
     SwingUtilities.invokeLater {
         LafManager.install(OneDarkTheme())
         configureUiDefaults()
-        LessonFrame(Lesson(readFlashcards(Path.of("cards/test.cards")))).apply {
+        LessonFrame(SimpleLesson(readFlashcards(Path.of("cards/test.cards")))).apply {
             defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
             pack()
             nextQuestion()

@@ -3,13 +3,14 @@ package name.tachenov.flakardia.ui
 import name.tachenov.flakardia.app.Answer
 import name.tachenov.flakardia.app.AnswerResult
 import name.tachenov.flakardia.app.Question
-import java.awt.Color
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
-import javax.swing.*
+import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
+import javax.swing.JPanel
+import javax.swing.LayoutStyle
 
 class QuestionAnswerPanel(
     private val answered: (Answer?) -> Unit,
@@ -91,6 +92,3 @@ class QuestionAnswerPanel(
     }
 
 }
-
-private val CORRECT_COLOR = Color(33, 169, 10)
-private val INCORRECT_COLOR = Color(222, 15, 15)

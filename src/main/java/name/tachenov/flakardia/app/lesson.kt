@@ -1,21 +1,37 @@
 package name.tachenov.flakardia.app
 
+import name.tachenov.flakardia.data.Flashcard
 import name.tachenov.flakardia.data.FlashcardSet
 
-class Lesson(
+sealed class Lesson(
     flashcardSet: FlashcardSet,
 ) {
 
     val name: String = flashcardSet.name
+    abstract val result: LessonResult
 
-    private val flashcards = flashcardSet.cards.shuffled()
-    private var index = -1
+    protected abstract val currentFlashcard: Flashcard?
 
-    fun nextQuestion(): Question? = flashcards.getOrNull(++index)?.let { Question(it.front.value) }
+    protected abstract fun goToNextFlashcard()
 
-    fun answer(answer: Answer?): AnswerResult = AnswerResult(answer, Answer(flashcards[index].back.value))
+    protected abstract fun recordAnswerResult(answerResult: AnswerResult)
+
+    fun nextQuestion(): Question? {
+        goToNextFlashcard()
+        return currentFlashcard?.let { Question(it.front.value) }
+    }
+
+    fun answer(answer: Answer?): AnswerResult {
+        val currentFlashcard = currentFlashcard
+        checkNotNull(currentFlashcard) { "Cannot answer when there is no question (active flashcard)" }
+        val answerResult = AnswerResult(answer, Answer(currentFlashcard.back.value))
+        recordAnswerResult(answerResult)
+        return answerResult
+    }
 
 }
+
+sealed class LessonResult
 
 data class Question(val value: String)
 

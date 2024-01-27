@@ -4,10 +4,15 @@ import name.tachenov.flakardia.app.Answer
 import name.tachenov.flakardia.app.Lesson
 import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment.LEADING
+import javax.swing.GroupLayout.DEFAULT_SIZE
+import javax.swing.GroupLayout.PREFERRED_SIZE
 import javax.swing.JFrame
 import javax.swing.JPanel
+import javax.swing.LayoutStyle
 
 class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
+
+    private val lessonResultPanel = LessonResultPanel.create(lesson.result)
 
     private val questionAnswerPanel = QuestionAnswerPanel(
         answered = this::answered,
@@ -20,11 +25,16 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         val hg = layout.createSequentialGroup()
         val vg = layout.createParallelGroup(LEADING)
         hg.addContainerGap()
-        hg.addComponent(questionAnswerPanel)
+        hg.addGroup(layout.createParallelGroup(LEADING).apply {
+            addComponent(lessonResultPanel)
+            addComponent(questionAnswerPanel)
+        })
         hg.addContainerGap()
         vg.addGroup(layout.createSequentialGroup().apply {
             addContainerGap()
-            addComponent(questionAnswerPanel)
+            addComponent(lessonResultPanel, DEFAULT_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
+            addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+            addComponent(questionAnswerPanel, DEFAULT_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
             addContainerGap()
         })
         layout.setHorizontalGroup(hg)
@@ -42,10 +52,13 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
             questionAnswerPanel.isVisible = true
             questionAnswerPanel.displayQuestion(nextQuestion)
         }
+        lessonResultPanel.displayResult(lesson.result)
     }
 
     private fun answered(answer: Answer?) {
-        questionAnswerPanel.displayAnswerResult(lesson.answer(answer))
+        val answerResult = lesson.answer(answer)
+        questionAnswerPanel.displayAnswerResult(answerResult)
+        lessonResultPanel.displayResult(lesson.result)
     }
 
 }
