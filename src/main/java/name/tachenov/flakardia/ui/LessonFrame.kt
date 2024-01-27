@@ -23,20 +23,20 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         val contentPane = JPanel()
         val layout = GroupLayout(contentPane)
         val hg = layout.createSequentialGroup()
-        val vg = layout.createParallelGroup(LEADING)
+        val vg = layout.createSequentialGroup()
         hg.addContainerGap()
         hg.addGroup(layout.createParallelGroup(LEADING).apply {
             addComponent(lessonResultPanel)
             addComponent(questionAnswerPanel)
         })
         hg.addContainerGap()
-        vg.addGroup(layout.createSequentialGroup().apply {
+        vg.apply {
             addContainerGap()
             addComponent(lessonResultPanel, DEFAULT_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
             addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
             addComponent(questionAnswerPanel, DEFAULT_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
             addContainerGap()
-        })
+        }
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
         contentPane.layout = layout
