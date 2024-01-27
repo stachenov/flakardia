@@ -18,10 +18,14 @@ class QuestionAnswer(
 
     private val question = FixedWidthLabel()
     private val answerInput = FixedWidthTextField()
+    private val blinkRate = answerInput.caret.blinkRate
     private val correctAnswer = FixedWidthLabel().apply { foreground = CORRECT_COLOR }
 
     fun displayQuestion(nextQuestion: Question) {
         answerInput.isEditable = true
+        answerInput.caret.blinkRate = blinkRate
+        answerInput.caret.isVisible = true
+        answerInput.repaint()
         answerInput.text = ""
         answerInput.foreground = null
         correctAnswer.isVisible = false
@@ -31,6 +35,9 @@ class QuestionAnswer(
     fun displayAnswerResult(answerResult: AnswerResult) {
         answerInput.text = answerResult.yourAnswer?.value
         answerInput.isEditable = false
+        answerInput.caret.blinkRate = 0
+        answerInput.caret.isVisible = true
+        answerInput.repaint()
         if (answerResult.isCorrect) {
             answerInput.foreground = CORRECT_COLOR
             correctAnswer.isVisible = false
