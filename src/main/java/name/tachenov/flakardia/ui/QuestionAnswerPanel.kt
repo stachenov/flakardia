@@ -84,7 +84,7 @@ class QuestionAnswerPanel(
             }
 
             override fun keyPressed(e: KeyEvent) {
-                if (e.keyCode == KeyEvent.VK_ESCAPE) {
+                if (answerInput.isEditable && e.keyCode == KeyEvent.VK_ESCAPE) {
                     answered(null)
                 }
             }
