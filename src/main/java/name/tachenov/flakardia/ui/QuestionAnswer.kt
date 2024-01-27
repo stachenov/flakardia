@@ -12,7 +12,7 @@ import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
 
 class QuestionAnswer(
-    private val answered: (Answer) -> Unit,
+    private val answered: (Answer?) -> Unit,
     private val nextQuestion: () -> Unit,
 ) : JPanel() {
 
@@ -29,6 +29,7 @@ class QuestionAnswer(
     }
 
     fun displayAnswerResult(answerResult: AnswerResult) {
+        answerInput.text = answerResult.yourAnswer?.value
         answerInput.isEditable = false
         if (answerResult.isCorrect) {
             answerInput.foreground = CORRECT_COLOR
@@ -71,6 +72,12 @@ class QuestionAnswer(
                         e.consume()
                         nextQuestion()
                     }
+                }
+            }
+
+            override fun keyPressed(e: KeyEvent) {
+                if (e.keyCode == KeyEvent.VK_ESCAPE) {
+                    answered(null)
                 }
             }
         })

@@ -44,7 +44,7 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         }
     }
 
-    private fun answered(answer: Answer) {
+    private fun answered(answer: Answer?) {
         questionAnswer.displayAnswerResult(lesson.answer(answer))
     }
 
