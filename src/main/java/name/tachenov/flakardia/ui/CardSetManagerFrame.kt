@@ -80,11 +80,23 @@ class CardSetManagerFrame : JFrame("Flakardia") {
 
     private fun updateEntries() {
         model.clear()
-        manager.entries.forEach { entry ->
-            model.addElement(CardListEntryView(entry))
-        }
-        if (model.size() > 0) {
-            list.selectedIndex = 0
+        when (val entries = manager.entries) {
+            is FlashcardSetList -> {
+                entries.entries.forEach { entry ->
+                    model.addElement(CardListEntryView(entry))
+                }
+                if (model.size() > 0) {
+                    list.selectedIndex = 0
+                }
+            }
+            is FlashcardSetListError -> {
+                JOptionPane.showMessageDialog(
+                    this,
+                    entries.message,
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE,
+                )
+            }
         }
     }
 

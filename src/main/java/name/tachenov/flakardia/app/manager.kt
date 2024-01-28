@@ -7,22 +7,32 @@ import java.nio.file.Path
 
 class CardManager(private var path: Path = Path.of("cards")) {
 
-    var entries: List<FlashcardSetListEntry> = readEntries()
+    var entries: FlashcardSetListResult = readEntries()
         private set
 
-    private fun readEntries(): List<FlashcardSetListEntry> {
-        val result = mutableListOf<FlashcardSetListEntry>()
-        Files.newDirectoryStream(path).use { dir ->
-            dir.forEach { entry ->
-                if (Files.isRegularFile(entry) && Files.isReadable(entry)) {
-                    result += FlashcardSetFileEntry(entry)
+    private fun readEntries(): FlashcardSetListResult {
+        try {
+            val result = mutableListOf<FlashcardSetListEntry>()
+            Files.newDirectoryStream(path).use { dir ->
+                dir.forEach { entry ->
+                    if (Files.isRegularFile(entry) && Files.isReadable(entry)) {
+                        result += FlashcardSetFileEntry(entry)
+                    }
                 }
             }
+            return FlashcardSetList(result)
+        } catch (e: Exception) {
+            return FlashcardSetListError(e.toString())
         }
-        return result
     }
 
 }
+
+sealed class FlashcardSetListResult
+
+data class FlashcardSetList(val entries: List<FlashcardSetListEntry>) : FlashcardSetListResult()
+
+data class FlashcardSetListError(val message: String) : FlashcardSetListResult()
 
 sealed class FlashcardSetListEntry
 

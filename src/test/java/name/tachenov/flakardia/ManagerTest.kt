@@ -1,9 +1,7 @@
 package name.tachenov.flakardia
 
 import com.google.common.jimfs.Jimfs
-import name.tachenov.flakardia.app.CardManager
-import name.tachenov.flakardia.app.FlashcardSetFileEntry
-import name.tachenov.flakardia.app.FlashcardSetListEntry
+import name.tachenov.flakardia.app.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -39,8 +37,18 @@ class ManagerTest {
         )
     }
 
-    private fun test(structure: Dir, expectation: Expectation) {
-        create(structure)
+    @Test
+    fun `no cards dir`() {
+        test(
+            structure = null,
+            expect("cards"),
+        )
+    }
+
+    private fun test(structure: Dir?, expectation: Expectation) {
+        if (structure != null) {
+            create(structure)
+        }
         val sut = CardManager(fs.getPath("cards"))
         expectation.match(sut.entries)
     }
@@ -64,6 +72,8 @@ class ManagerTest {
 
     private fun expect(vararg entry: FlashcardSetListEntry): Expectation = ListExpectation(entry.toList())
 
+    private fun expect(errorMessage: String): Expectation = ErrorExpectation(errorMessage)
+
     private sealed class Entry
 
     private class Dir(val name: String, val entries: List<Entry>) : Entry()
@@ -71,12 +81,22 @@ class ManagerTest {
     private class File(val name: String) : Entry()
 
     private sealed class Expectation {
-        abstract fun match(entries: List<FlashcardSetListEntry>)
+        abstract fun match(result: FlashcardSetListResult)
     }
 
     private class ListExpectation(private val expected: List<FlashcardSetListEntry>) : Expectation() {
-        override fun match(entries: List<FlashcardSetListEntry>) {
-            assertThat(entries).isEqualTo(expected)
+        override fun match(result: FlashcardSetListResult) {
+            assertThat(result).isInstanceOf(FlashcardSetList::class.java)
+            result as FlashcardSetList
+            assertThat(result.entries).isEqualTo(expected)
+        }
+    }
+
+    private class ErrorExpectation(private val expectedErrorMessage: String) : Expectation() {
+        override fun match(result: FlashcardSetListResult) {
+            assertThat(result).isInstanceOf(FlashcardSetListError::class.java)
+            result as FlashcardSetListError
+            assertThat(result.message).containsIgnoringCase(expectedErrorMessage)
         }
     }
 
