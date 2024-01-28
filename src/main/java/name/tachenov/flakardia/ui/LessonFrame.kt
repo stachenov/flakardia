@@ -2,14 +2,10 @@ package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.app.Answer
 import name.tachenov.flakardia.app.Lesson
-import javax.swing.GroupLayout
+import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
-import javax.swing.JFrame
-import javax.swing.JLabel
-import javax.swing.JPanel
-import javax.swing.LayoutStyle
 
 class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
 
@@ -20,6 +16,7 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         nextQuestion = this::nextQuestion,
     )
     private val done = JLabel("All done!").apply { isVisible = false }
+    private val status = JLabel("Initializing...")
 
     init {
         val contentPane = JPanel()
@@ -31,6 +28,7 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
             addComponent(lessonResultPanel)
             addComponent(questionAnswerPanel)
             addComponent(done)
+            addComponent(status)
         })
         hg.addContainerGap()
         vg.apply {
@@ -40,6 +38,8 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
             addComponent(questionAnswerPanel, DEFAULT_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
             addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
             addComponent(done, DEFAULT_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
+            addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, DEFAULT_SIZE, INFINITY)
+            addComponent(status, DEFAULT_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
             addContainerGap()
         }
         layout.setHorizontalGroup(hg)
@@ -53,10 +53,12 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         if (nextQuestion == null) {
             questionAnswerPanel.isVisible = false
             done.isVisible = true
+            status.text = "Nothing more to do, close the window to finish with the lesson"
         }
         else {
             questionAnswerPanel.isVisible = true
             questionAnswerPanel.displayQuestion(nextQuestion)
+            status.text = "Press Enter to answer the question, or Esc to give up"
         }
         lessonResultPanel.displayResult(lesson.result)
     }
@@ -64,6 +66,7 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
     private fun answered(answer: Answer?) {
         val answerResult = lesson.answer(answer)
         questionAnswerPanel.displayAnswerResult(answerResult)
+        status.text = "Press Space to continue to the next question"
         lessonResultPanel.displayResult(lesson.result)
     }
 
