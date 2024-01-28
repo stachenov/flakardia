@@ -7,6 +7,7 @@ import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
 import javax.swing.JFrame
+import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.LayoutStyle
 
@@ -18,6 +19,7 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         answered = this::answered,
         nextQuestion = this::nextQuestion,
     )
+    private val done = JLabel("All done!").apply { isVisible = false }
 
     init {
         val contentPane = JPanel()
@@ -28,6 +30,7 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         hg.addGroup(layout.createParallelGroup(LEADING).apply {
             addComponent(lessonResultPanel)
             addComponent(questionAnswerPanel)
+            addComponent(done)
         })
         hg.addContainerGap()
         vg.apply {
@@ -35,6 +38,8 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
             addComponent(lessonResultPanel, DEFAULT_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
             addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
             addComponent(questionAnswerPanel, DEFAULT_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
+            addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+            addComponent(done, DEFAULT_SIZE, PREFERRED_SIZE, PREFERRED_SIZE)
             addContainerGap()
         }
         layout.setHorizontalGroup(hg)
@@ -47,6 +52,7 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         val nextQuestion = lesson.nextQuestion()
         if (nextQuestion == null) {
             questionAnswerPanel.isVisible = false
+            done.isVisible = true
         }
         else {
             questionAnswerPanel.isVisible = true
