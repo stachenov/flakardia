@@ -155,6 +155,11 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         if (model.size() > 0) {
             list.selectedIndex = 0
         }
+        val listWidth = list.width
+        val listPreferredWidth = list.preferredScrollableViewportSize.width
+        if (listWidth < listPreferredWidth) {
+            setSize(width + listPreferredWidth - listWidth + FRAME_EXTRA_WIDTH, height)
+        }
     }
 
     private fun viewFlashcards() {
