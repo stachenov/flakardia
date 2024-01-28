@@ -7,6 +7,8 @@ import java.nio.file.Path
 
 class CardManager {
 
+    lateinit var root: Path
+
     var path: Path? = null
         private set
 
@@ -14,6 +16,9 @@ class CardManager {
         private set
 
     fun enter(path: Path): DirEnterResult {
+        if (this.path == null) {
+            root = path
+        }
         try {
             entries = readEntries(path)
             this.path = path
@@ -26,14 +31,20 @@ class CardManager {
 
     private fun readEntries(path: Path): List<FlashcardSetListEntry> {
         val result = mutableListOf<FlashcardSetListEntry>()
+        if (path != root) {
+            result += FlashcardSetUpEntry(path.parent)
+        }
         Files.newDirectoryStream(path).use { dir ->
             dir.forEach { entry ->
                 if (Files.isRegularFile(entry) && Files.isReadable(entry)) {
                     result += FlashcardSetFileEntry(entry)
                 }
+                else if (Files.isDirectory(entry)) {
+                    result += FlashcardSetDirEntry(entry)
+                }
             }
         }
-        return result
+        return result.sortedWith(compareBy({ it is FlashcardSetFileEntry}, { it.name }))
     }
 
 }
@@ -44,8 +55,23 @@ data object DirEnterSuccess : DirEnterResult()
 
 data class DirEnterError(val message: String) : DirEnterResult()
 
-sealed class FlashcardSetListEntry
+sealed class FlashcardSetListEntry {
+    abstract val name: String
+}
 
 data class FlashcardSetFileEntry(val file: Path) : FlashcardSetListEntry() {
+    override val name: String
+        get() = file.fileName.toString()
+
     fun readCards(): FlashcardSetResult = readFlashcards(file)
+}
+
+data class FlashcardSetDirEntry(val dir: Path) : FlashcardSetListEntry() {
+    override val name: String
+        get() = dir.fileName.toString()
+}
+
+data class FlashcardSetUpEntry(val dir: Path) : FlashcardSetListEntry() {
+    override val name: String
+        get() = ".."
 }

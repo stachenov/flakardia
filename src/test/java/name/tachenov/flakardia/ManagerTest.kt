@@ -35,7 +35,7 @@ class ManagerTest {
     fun `a couple of files`() {
         test(
             dir("cards", file("test.cards"), file("test2.cards")),
-            expect(root, path("cards/test.cards"), path("cards/test2.cards")),
+            expect(root, filePath("cards/test.cards"), filePath("cards/test2.cards")),
         )
     }
 
@@ -48,13 +48,26 @@ class ManagerTest {
     }
 
     @Test
+    fun `entering and leaving subdirectory`() {
+        create(dir("cards", dir("sub", file("sub-file.cards")), file("file1.cards"), file("file2.cards")))
+        val sut = CardManager()
+        var enterResult = sut.enter(root)
+        expect(root, dirPath("cards/sub"), filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
+        val subPath = root.resolve("sub")
+        enterResult = sut.enter(subPath)
+        expect(subPath, upPath("cards"), filePath("cards/sub/sub-file.cards")).match(enterResult, sut.path, sut.entries)
+        enterResult = sut.enter(root)
+        expect(root, dirPath("cards/sub"), filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
+    }
+
+    @Test
     fun `entering non-existent dir`() {
         create(dir("cards", file("file1.cards"), file("file2.cards")))
         val sut = CardManager()
         var enterResult = sut.enter(root)
-        expect(root, path("cards/file1.cards"), path("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
+        expect(root, filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
         enterResult = sut.enter(root.resolve("sub"))
-        expect("sub", root, path("cards/file1.cards"), path("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
+        expect("sub", root, filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
     }
 
     private fun test(structure: Dir?, expectation: Expectation) {
@@ -81,7 +94,11 @@ class ManagerTest {
 
     private fun file(name: String): File = File(name)
 
-    private fun path(path: String): FlashcardSetFileEntry = FlashcardSetFileEntry(fs.getPath(path))
+    private fun filePath(path: String): FlashcardSetFileEntry = FlashcardSetFileEntry(fs.getPath(path))
+
+    private fun dirPath(path: String): FlashcardSetDirEntry = FlashcardSetDirEntry(fs.getPath(path))
+
+    private fun upPath(path: String): FlashcardSetUpEntry = FlashcardSetUpEntry(fs.getPath(path))
 
     private fun expect(path: Path?, vararg entry: FlashcardSetListEntry): Expectation = ListExpectation(path, entry.toList())
 

@@ -126,7 +126,5 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
 class CardListEntryView(
     val entry: FlashcardSetListEntry,
 ) {
-    override fun toString(): String = when (entry) {
-        is FlashcardSetFileEntry -> entry.file.fileName.toString()
-    }
+    override fun toString(): String = entry.name
 }
