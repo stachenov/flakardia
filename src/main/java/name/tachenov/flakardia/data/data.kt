@@ -122,4 +122,4 @@ private fun parse(line: String, delimiter: Char): Flashcard = line.split(delimit
     .map { parseWord(it) }
     .let { Flashcard(it[0], it[1]) }
 
-private fun parseWord(s: String) = Word(s.trim { c -> c.isWhitespace() || c == '"' })
+private fun parseWord(s: String) = Word(s.trim { c -> c.isWhitespace() || c == '"' || c == '\uFEFF' /* BOM */ })

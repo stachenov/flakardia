@@ -31,6 +31,11 @@ class ParseTest {
     }
 
     @Test
+    fun `using empty line as delimiter, with BOM`() {
+        parse("\uFEFFa\nb\n\nc\nd\n", expect("a" to "b", "c" to "d"))
+    }
+
+    @Test
     fun `using empty line as delimiter, no newline at the end`() {
         parse("a\nb\n\nc\nd", expect("a" to "b", "c" to "d"))
     }
@@ -43,6 +48,11 @@ class ParseTest {
     @Test
     fun `using regular delimiter`() {
         parse("a:b\nc:d\ne:f\n", expect("a" to "b", "c" to "d", "e" to "f"))
+    }
+
+    @Test
+    fun `using regular delimiter, with BOM`() {
+        parse("\uFEFFa:b\nc:d\ne:f\n", expect("a" to "b", "c" to "d", "e" to "f"))
     }
 
     @Test
