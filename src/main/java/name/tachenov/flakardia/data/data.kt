@@ -33,7 +33,7 @@ private fun parse(lines: List<String>): List<Flashcard> {
     }
 }
 
-fun isEmptyLineDelimited(lines: List<String>): Boolean {
+private fun isEmptyLineDelimited(lines: List<String>): Boolean {
     var linesSoFar = 0
     var delimiters = 0
     for (line in (lines + "")) {
@@ -50,7 +50,7 @@ fun isEmptyLineDelimited(lines: List<String>): Boolean {
     return (lines.size + 1) / 3 == delimiters
 }
 
-fun parseUsingEmptyLines(lines: List<String>): List<Flashcard> {
+private fun parseUsingEmptyLines(lines: List<String>): List<Flashcard> {
     val result = mutableListOf<Flashcard>()
     val words = mutableListOf<Word>()
     for (line in (lines + "")) {
@@ -67,7 +67,7 @@ fun parseUsingEmptyLines(lines: List<String>): List<Flashcard> {
     return result
 }
 
-fun guessDelimiter(lines: List<String>): Char {
+private fun guessDelimiter(lines: List<String>): Char {
     val frequency = IntArray(65536)
     var count = 0
     for (line in lines) {
