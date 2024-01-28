@@ -37,7 +37,12 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         val layout = GroupLayout(contentPane)
         val hg = layout.createSequentialGroup()
         val vg = layout.createSequentialGroup()
-        val listScrollPane = JScrollPane(list)
+        val listScrollPane = JScrollPane(list).apply {
+            border = BorderFactory.createCompoundBorder(
+                BorderFactory.createEtchedBorder(),
+                BorderFactory.createEmptyBorder(6, 6, 6, 6)
+            )
+        }
         hg.apply {
             addContainerGap()
             addGroup(layout.createParallelGroup(LEADING).apply {
