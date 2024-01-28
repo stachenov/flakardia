@@ -35,11 +35,10 @@ private fun parse(lines: List<String>): List<Flashcard> {
 
 private fun isEmptyLineDelimited(lines: List<String>): Boolean {
     var linesSoFar = 0
-    var delimiters = 0
     for (line in (lines + "")) {
         if (line.isBlank()) {
-            if (linesSoFar == 2) {
-                ++delimiters
+            if (linesSoFar != 0 && linesSoFar != 2) {
+                return false
             }
             linesSoFar = 0
         }
@@ -47,7 +46,7 @@ private fun isEmptyLineDelimited(lines: List<String>): Boolean {
             ++linesSoFar
         }
     }
-    return (lines.size + 1) / 3 == delimiters
+    return true
 }
 
 private fun parseUsingEmptyLines(lines: List<String>): List<Flashcard> {
