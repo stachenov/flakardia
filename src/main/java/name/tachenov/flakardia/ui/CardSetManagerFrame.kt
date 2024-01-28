@@ -3,6 +3,7 @@ package name.tachenov.flakardia.ui
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.data.FlashcardSet
 import name.tachenov.flakardia.data.FlashcardSetError
+import java.awt.Component
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
@@ -11,9 +12,11 @@ import java.nio.file.Path
 import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
+import kotlin.math.max
 
 class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia") {
 
+    private val dir = JLabel()
     private val list = JList<CardListEntryView>()
     private val model = DefaultListModel<CardListEntryView>()
     private val viewButton = JButton("View flashcards").apply {
@@ -37,7 +40,10 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         val listScrollPane = JScrollPane(list)
         hg.apply {
             addContainerGap()
-            addComponent(listScrollPane)
+            addGroup(layout.createParallelGroup(LEADING).apply {
+                addComponent(dir)
+                addComponent(listScrollPane)
+            })
             addPreferredGap(RELATED)
             addGroup(layout.createParallelGroup(LEADING).apply {
                 addComponent(viewButton)
@@ -49,7 +55,11 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         vg.apply {
             addContainerGap()
             addGroup(layout.createParallelGroup(LEADING).apply {
-                addComponent(listScrollPane)
+                addGroup(layout.createSequentialGroup().apply {
+                    addComponent(dir)
+                    addPreferredGap(RELATED)
+                    addComponent(listScrollPane)
+                })
                 addGroup(layout.createSequentialGroup().apply {
                     addComponent(viewButton)
                     addPreferredGap(RELATED)
@@ -102,6 +112,13 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
             }
         })
 
+        val focusableComponents = listOf(list, viewButton, simpleButton, cramButton)
+        focusTraversalPolicy = object : SortingFocusTraversalPolicy(compareBy { c ->
+            focusableComponents.indexOf(c)
+        }) {
+            override fun accept(aComponent: Component?): Boolean = aComponent in focusableComponents
+        }
+
         updateEntries()
     }
 
@@ -148,6 +165,7 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
     }
 
     private fun updateEntries() {
+        dir.text = manager.path?.toString()
         model.clear()
         manager.entries.forEach { entry ->
             model.addElement(CardListEntryView(entry))
@@ -155,10 +173,14 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         if (model.size() > 0) {
             list.selectedIndex = 0
         }
-        val listWidth = list.width
+        val listAndListAreaWidth = max(list.width, dir.width)
         val listPreferredWidth = list.preferredScrollableViewportSize.width
-        if (listWidth < listPreferredWidth) {
-            setSize(width + listPreferredWidth - listWidth + FRAME_EXTRA_WIDTH, height)
+        val dirPreferredWidth = dir.preferredSize.width
+        val extraForList = listPreferredWidth - listAndListAreaWidth
+        val extraForDir = dirPreferredWidth - listAndListAreaWidth
+        val extra = max(extraForList, extraForDir)
+        if (extra > 0) {
+            setSize(width + extra + FRAME_EXTRA_WIDTH, height)
         }
     }
 
