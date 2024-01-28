@@ -2,6 +2,8 @@ package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.app.Answer
 import name.tachenov.flakardia.app.Lesson
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
 import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
@@ -46,6 +48,12 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         layout.setVerticalGroup(vg)
         contentPane.layout = layout
         this.contentPane = contentPane
+
+        addComponentListener(object : ComponentAdapter() {
+            override fun componentShown(e: ComponentEvent?) {
+                nextQuestion()
+            }
+        })
     }
 
     fun nextQuestion() {

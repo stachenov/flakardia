@@ -4,6 +4,7 @@ import name.tachenov.flakardia.app.CramLesson
 import name.tachenov.flakardia.app.Lesson
 import name.tachenov.flakardia.app.SimpleLesson
 import name.tachenov.flakardia.data.FlashcardSet
+import name.tachenov.flakardia.data.FlashcardSetError
 import name.tachenov.flakardia.data.readFlashcards
 import java.awt.event.KeyEvent
 import java.nio.file.Files
@@ -88,25 +89,33 @@ class CardSetManagerFrame : JFrame("Flakardia") {
     }
 
     private fun viewFlashcards() {
-        list.requestFocusInWindow()
-        val path = list.selectedValue?.path ?: return
-        FlashcardSetViewFrame(readFlashcards(path)).apply {
-            defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
-            pack()
-            setLocationRelativeTo(null)
-            isVisible = true
-        }
+        openFrame { cards -> FlashcardSetViewFrame(cards) }
     }
 
     private fun startLesson(lesson: (FlashcardSet) -> Lesson) {
+        openFrame { cards -> LessonFrame(lesson(cards)) }
+    }
+
+    private fun openFrame(frame: (FlashcardSet) -> JFrame) {
         list.requestFocusInWindow()
         val path = list.selectedValue?.path ?: return
-        LessonFrame(lesson(readFlashcards(path))).apply {
-            defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
-            pack()
-            nextQuestion()
-            setLocationRelativeTo(null)
-            isVisible = true
+        when (val result = readFlashcards(path)) {
+            is FlashcardSet -> {
+                frame(result).apply {
+                    defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
+                    pack()
+                    setLocationRelativeTo(null)
+                    isVisible = true
+                }
+            }
+            is FlashcardSetError -> {
+                JOptionPane.showMessageDialog(
+                    this,
+                    result.message,
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE,
+                )
+            }
         }
     }
 

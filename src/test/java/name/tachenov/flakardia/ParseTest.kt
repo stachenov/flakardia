@@ -1,10 +1,7 @@
 package name.tachenov.flakardia
 
 import com.google.common.jimfs.Jimfs
-import name.tachenov.flakardia.data.Flashcard
-import name.tachenov.flakardia.data.FlashcardSet
-import name.tachenov.flakardia.data.Word
-import name.tachenov.flakardia.data.readFlashcards
+import name.tachenov.flakardia.data.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -43,15 +40,60 @@ class ParseTest {
         parse("a\nb\n\n\n\nc\nd\n\n\n", expect("a" to "b", "c" to "d"))
     }
 
-    private fun parse(input: String, expected: FlashcardSet) {
-        val file = fs.getPath(DEFAULT_NAME)
-        Files.write(file, input.toByteArray())
-        assertThat(readFlashcards(file)).isEqualTo(expected)
+    @Test
+    fun `using regular delimiter`() {
+        parse("a:b\nc:d\ne:f\n", expect("a" to "b", "c" to "d", "e" to "f"))
     }
 
-    private fun expect(vararg cards: Pair<String, String>): FlashcardSet = FlashcardSet(
-        DEFAULT_NAME,
-        cards.map { Flashcard(Word(it.first), Word(it.second)) },
-    )
+    @Test
+    fun `using regular delimiter, no newline at the end`() {
+        parse("a:b\nc:d\ne:f", expect("a" to "b", "c" to "d", "e" to "f"))
+    }
+
+    @Test
+    fun `using regular delimiter, plenty of empty lines`() {
+        parse("a:b\n\n\nc:d\n", expect("a" to "b", "c" to "d"))
+    }
+
+    @Test
+    fun `using regular delimiter, different delimiters`() {
+        parse("a:b\n\n\nc,d\n", expect("delimiter"))
+    }
+
+    @Test
+    fun `IO error`() {
+        val result = readFlashcards(fs.getPath(DEFAULT_NAME))
+        expect("file").match(result)
+    }
+
+    private fun parse(input: String, expectation: Expectation) {
+        val file = fs.getPath(DEFAULT_NAME)
+        Files.write(file, input.toByteArray())
+        expectation.match(readFlashcards(file))
+    }
+
+    private abstract class Expectation {
+        abstract fun match(flashcardSetResult: FlashcardSetResult)
+    }
+
+    private fun expect(vararg cards: Pair<String, String>): Expectation = object : Expectation() {
+
+        private val expected = FlashcardSet(
+            DEFAULT_NAME,
+            cards.map { Flashcard(Word(it.first), Word(it.second)) },
+        )
+
+        override fun match(flashcardSetResult: FlashcardSetResult) {
+            assertThat(flashcardSetResult).isEqualTo(expected)
+        }
+    }
+
+    private fun expect(errorMessage: String): Expectation = object : Expectation() {
+        override fun match(flashcardSetResult: FlashcardSetResult) {
+            assertThat(flashcardSetResult).isInstanceOf(FlashcardSetError::class.java)
+            flashcardSetResult as FlashcardSetError
+            assertThat(flashcardSetResult.message).containsIgnoringCase(errorMessage)
+        }
+    }
 
 }

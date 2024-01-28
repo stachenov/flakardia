@@ -2,12 +2,15 @@ package name.tachenov.flakardia.data
 
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlin.math.abs
+
+sealed class FlashcardSetResult
 
 data class FlashcardSet(
     val name: String,
     val cards: List<Flashcard>,
-)
+) : FlashcardSetResult()
+
+data class FlashcardSetError(val message: String) : FlashcardSetResult()
 
 data class Flashcard(
     val front: Word,
@@ -18,18 +21,28 @@ data class Word(
     val value: String,
 )
 
-fun readFlashcards(file: Path): FlashcardSet = FlashcardSet(
-    file.fileName.toString(),
-    parse(Files.readAllLines(file)),
-)
+fun readFlashcards(file: Path): FlashcardSetResult {
+    val lines = try {
+        Files.readAllLines(file)
+    } catch (e: Exception) {
+        return FlashcardSetError(e.toString())
+    }
+    return parse(file.fileName.toString(), lines)
+}
 
-private fun parse(lines: List<String>): List<Flashcard> {
+private fun parse(name: String, lines: List<String>): FlashcardSetResult {
     if (isEmptyLineDelimited(lines)) {
-        return parseUsingEmptyLines(lines)
+        return FlashcardSet(name, parseUsingEmptyLines(lines))
     }
     else {
         val delimiter = guessDelimiter(lines)
-        return parse(lines, delimiter)
+        if (delimiter == null) {
+            return FlashcardSetError("Could not determine the delimiter character.\n" +
+                "It must appear once and only once in every non-blank line, but there was no such character")
+        }
+        else {
+            return parse(name, lines, delimiter)
+        }
     }
 }
 
@@ -66,25 +79,44 @@ private fun parseUsingEmptyLines(lines: List<String>): List<Flashcard> {
     return result
 }
 
-private fun guessDelimiter(lines: List<String>): Char {
-    val frequency = IntArray(65536)
-    var count = 0
+private fun guessDelimiter(lines: List<String>): Char? {
+    val encounteredOnce = BooleanArray(65536)
+    val encounteredMultipleTimes = BooleanArray(65536)
+    val totalCount = IntArray(65536)
+    val count = IntArray(65536)
+    var nonBlankLines = 0
     for (line in lines) {
         if (line.isBlank()) {
             continue
         }
-        ++count
+        ++nonBlankLines
         for (c in line) {
-            val code = c.code
-            if (code in frequency.indices) {
-                ++frequency[code]
+            ++count[c.code]
+            ++totalCount[c.code]
+        }
+        for (c in line) {
+            if (count[c.code] > 1) {
+                encounteredMultipleTimes[c.code] = true
+            }
+            else {
+                encounteredOnce[c.code] = true
             }
         }
+        // reset back, to avoid iterating over all 65536 elements
+        for (c in line) {
+            count[c.code] = 0
+        }
     }
-    return frequency.withIndex().minBy { abs(it.value - count) }.index.toChar()
+    return (0..65535).firstOrNull { code ->
+        encounteredOnce[code] && !encounteredMultipleTimes[code] && totalCount[code] == nonBlankLines
+    }?.toChar()
 }
 
-private fun parse(lines: List<String>, delimiter: Char): List<Flashcard> = lines.filter { it.isNotBlank() }.map { parse(it, delimiter) }
+private fun parse(name: String, lines: List<String>, delimiter: Char): FlashcardSet =
+    FlashcardSet(
+        name,
+        lines.filter { it.isNotBlank() }.map { parse(it, delimiter) },
+    )
 
 private fun parse(line: String, delimiter: Char): Flashcard = line.split(delimiter)
     .map { parseWord(it) }
