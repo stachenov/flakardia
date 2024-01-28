@@ -13,10 +13,12 @@ import java.nio.file.Path
 class ManagerTest {
 
     private lateinit var fs: FileSystem
+    private lateinit var root: Path
 
     @BeforeEach
     fun setUp() {
         fs = Jimfs.newFileSystem()
+        root = fs.getPath("cards")
     }
 
     @AfterEach
@@ -49,8 +51,9 @@ class ManagerTest {
         if (structure != null) {
             create(structure)
         }
-        val sut = CardManager(fs.getPath("cards"))
-        expectation.match(sut.entries)
+        val sut = CardManager()
+        val enterResult = sut.enter(root)
+        expectation.match(enterResult, sut.entries)
     }
 
     private fun create(dir: Dir, parentPath: Path = fs.getPath(".")) {
@@ -81,22 +84,22 @@ class ManagerTest {
     private class File(val name: String) : Entry()
 
     private sealed class Expectation {
-        abstract fun match(result: FlashcardSetListResult)
+        abstract fun match(result: DirEnterResult, entries: List<FlashcardSetListEntry>)
     }
 
     private class ListExpectation(private val expected: List<FlashcardSetListEntry>) : Expectation() {
-        override fun match(result: FlashcardSetListResult) {
-            assertThat(result).isInstanceOf(FlashcardSetList::class.java)
-            result as FlashcardSetList
-            assertThat(result.entries).isEqualTo(expected)
+        override fun match(result: DirEnterResult, entries: List<FlashcardSetListEntry>) {
+            assertThat(result).isInstanceOf(DirEnterSuccess::class.java)
+            assertThat(entries).isEqualTo(expected)
         }
     }
 
     private class ErrorExpectation(private val expectedErrorMessage: String) : Expectation() {
-        override fun match(result: FlashcardSetListResult) {
-            assertThat(result).isInstanceOf(FlashcardSetListError::class.java)
-            result as FlashcardSetListError
+        override fun match(result: DirEnterResult, entries: List<FlashcardSetListEntry>) {
+            assertThat(result).isInstanceOf(DirEnterError::class.java)
+            result as DirEnterError
             assertThat(result.message).containsIgnoringCase(expectedErrorMessage)
+            assertThat(entries).isEmpty()
         }
     }
 

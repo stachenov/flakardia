@@ -5,34 +5,43 @@ import name.tachenov.flakardia.data.readFlashcards
 import java.nio.file.Files
 import java.nio.file.Path
 
-class CardManager(private var path: Path = Path.of("cards")) {
+class CardManager {
 
-    var entries: FlashcardSetListResult = readEntries()
+    private var path: Path? = null
+
+    var entries: List<FlashcardSetListEntry> = emptyList()
         private set
 
-    private fun readEntries(): FlashcardSetListResult {
+    fun enter(path: Path): DirEnterResult {
         try {
-            val result = mutableListOf<FlashcardSetListEntry>()
-            Files.newDirectoryStream(path).use { dir ->
-                dir.forEach { entry ->
-                    if (Files.isRegularFile(entry) && Files.isReadable(entry)) {
-                        result += FlashcardSetFileEntry(entry)
-                    }
+            entries = readEntries(path)
+            this.path = path
+            return DirEnterSuccess
+        }
+        catch (e: Exception) {
+            return DirEnterError(e.toString())
+        }
+    }
+
+    private fun readEntries(path: Path): List<FlashcardSetListEntry> {
+        val result = mutableListOf<FlashcardSetListEntry>()
+        Files.newDirectoryStream(path).use { dir ->
+            dir.forEach { entry ->
+                if (Files.isRegularFile(entry) && Files.isReadable(entry)) {
+                    result += FlashcardSetFileEntry(entry)
                 }
             }
-            return FlashcardSetList(result)
-        } catch (e: Exception) {
-            return FlashcardSetListError(e.toString())
         }
+        return result
     }
 
 }
 
-sealed class FlashcardSetListResult
+sealed class DirEnterResult
 
-data class FlashcardSetList(val entries: List<FlashcardSetListEntry>) : FlashcardSetListResult()
+data object DirEnterSuccess : DirEnterResult()
 
-data class FlashcardSetListError(val message: String) : FlashcardSetListResult()
+data class DirEnterError(val message: String) : DirEnterResult()
 
 sealed class FlashcardSetListEntry
 

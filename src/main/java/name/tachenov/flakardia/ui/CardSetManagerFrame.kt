@@ -8,9 +8,8 @@ import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 
-class CardSetManagerFrame : JFrame("Flakardia") {
+class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia") {
 
-    private val manager = CardManager()
     private val list = JList<CardListEntryView>()
     private val model = DefaultListModel<CardListEntryView>()
     private val viewButton = JButton("View flashcards").apply {
@@ -80,23 +79,11 @@ class CardSetManagerFrame : JFrame("Flakardia") {
 
     private fun updateEntries() {
         model.clear()
-        when (val entries = manager.entries) {
-            is FlashcardSetList -> {
-                entries.entries.forEach { entry ->
-                    model.addElement(CardListEntryView(entry))
-                }
-                if (model.size() > 0) {
-                    list.selectedIndex = 0
-                }
-            }
-            is FlashcardSetListError -> {
-                JOptionPane.showMessageDialog(
-                    this,
-                    entries.message,
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE,
-                )
-            }
+        manager.entries.forEach { entry ->
+            model.addElement(CardListEntryView(entry))
+        }
+        if (model.size() > 0) {
+            list.selectedIndex = 0
         }
     }
 
