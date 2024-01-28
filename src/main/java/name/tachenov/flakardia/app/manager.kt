@@ -5,19 +5,17 @@ import name.tachenov.flakardia.data.readFlashcards
 import java.nio.file.Files
 import java.nio.file.Path
 
-class CardManager {
+class CardManager(private var path: Path = Path.of("cards")) {
 
-    private var path: Path = Path.of("cards")
-
-    var entries: List<CardListEntry> = readEntries()
+    var entries: List<FlashcardSetListEntry> = readEntries()
         private set
 
-    private fun readEntries(): List<CardListEntry> {
-        val result = mutableListOf<CardListEntry>()
+    private fun readEntries(): List<FlashcardSetListEntry> {
+        val result = mutableListOf<FlashcardSetListEntry>()
         Files.newDirectoryStream(path).use { dir ->
             dir.forEach { entry ->
                 if (Files.isRegularFile(entry) && Files.isReadable(entry)) {
-                    result += CardSetFileEntry(entry)
+                    result += FlashcardSetFileEntry(entry)
                 }
             }
         }
@@ -26,8 +24,8 @@ class CardManager {
 
 }
 
-sealed class CardListEntry
+sealed class FlashcardSetListEntry
 
-data class CardSetFileEntry(val file: Path) : CardListEntry() {
+data class FlashcardSetFileEntry(val file: Path) : FlashcardSetListEntry() {
     fun readCards(): FlashcardSetResult = readFlashcards(file)
 }

@@ -99,7 +99,7 @@ class CardSetManagerFrame : JFrame("Flakardia") {
     private fun openFrame(frame: (FlashcardSet) -> JFrame) {
         list.requestFocusInWindow()
         val entry =list.selectedValue?.entry ?: return
-        if (entry !is CardSetFileEntry) {
+        if (entry !is FlashcardSetFileEntry) {
             return
         }
         when (val result = entry.readCards()) {
@@ -125,9 +125,9 @@ class CardSetManagerFrame : JFrame("Flakardia") {
 }
 
 class CardListEntryView(
-    val entry: CardListEntry,
+    val entry: FlashcardSetListEntry,
 ) {
     override fun toString(): String = when (entry) {
-        is CardSetFileEntry -> entry.file.fileName.toString()
+        is FlashcardSetFileEntry -> entry.file.fileName.toString()
     }
 }
