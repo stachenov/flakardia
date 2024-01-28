@@ -1,21 +1,18 @@
 package name.tachenov.flakardia.ui
 
-import name.tachenov.flakardia.app.CramLesson
-import name.tachenov.flakardia.app.Lesson
-import name.tachenov.flakardia.app.SimpleLesson
+import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.data.FlashcardSet
 import name.tachenov.flakardia.data.FlashcardSetError
-import name.tachenov.flakardia.data.readFlashcards
 import java.awt.event.KeyEvent
-import java.nio.file.Files
-import java.nio.file.Path
 import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 
 class CardSetManagerFrame : JFrame("Flakardia") {
 
-    private val list = JList<FlashcardSetFile>()
+    private val manager = CardManager()
+    private val list = JList<CardListEntryView>()
+    private val model = DefaultListModel<CardListEntryView>()
     private val viewButton = JButton("View flashcards").apply {
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_V
@@ -66,16 +63,7 @@ class CardSetManagerFrame : JFrame("Flakardia") {
         contentPane.layout = layout
         this.contentPane = contentPane
 
-        list.model = DefaultListModel<FlashcardSetFile>().also { model ->
-            Files.newDirectoryStream(Path.of("cards")).use { dir ->
-                dir.forEach { path ->
-                    model.addElement(FlashcardSetFile(path))
-                }
-            }
-        }
-        if (list.model.size > 0) {
-            list.selectedIndex = 0
-        }
+        list.model = model
 
         viewButton.addActionListener {
             viewFlashcards()
@@ -85,6 +73,18 @@ class CardSetManagerFrame : JFrame("Flakardia") {
         }
         cramButton.addActionListener {
             startLesson { flashcardSet -> CramLesson(flashcardSet) }
+        }
+
+        updateEntries()
+    }
+
+    private fun updateEntries() {
+        model.clear()
+        manager.entries.forEach { entry ->
+            model.addElement(CardListEntryView(entry))
+        }
+        if (model.size() > 0) {
+            list.selectedIndex = 0
         }
     }
 
@@ -98,8 +98,11 @@ class CardSetManagerFrame : JFrame("Flakardia") {
 
     private fun openFrame(frame: (FlashcardSet) -> JFrame) {
         list.requestFocusInWindow()
-        val path = list.selectedValue?.path ?: return
-        when (val result = readFlashcards(path)) {
+        val entry =list.selectedValue?.entry ?: return
+        if (entry !is CardSetFileEntry) {
+            return
+        }
+        when (val result = entry.readCards()) {
             is FlashcardSet -> {
                 frame(result).apply {
                     defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
@@ -121,8 +124,10 @@ class CardSetManagerFrame : JFrame("Flakardia") {
 
 }
 
-class FlashcardSetFile(
-    val path: Path
+class CardListEntryView(
+    val entry: CardListEntry,
 ) {
-    override fun toString(): String = path.fileName.toString()
+    override fun toString(): String = when (entry) {
+        is CardSetFileEntry -> entry.file.fileName.toString()
+    }
 }
