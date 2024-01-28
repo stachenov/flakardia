@@ -15,6 +15,10 @@ import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 class CardSetManagerFrame : JFrame("Flakardia") {
 
     private val list = JList<FlashcardSetFile>()
+    private val viewButton = JButton("View flashcards").apply {
+        horizontalAlignment = SwingConstants.LEADING
+        mnemonic = KeyEvent.VK_V
+    }
     private val simpleButton = JButton("Start simple lesson").apply {
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_S
@@ -35,6 +39,7 @@ class CardSetManagerFrame : JFrame("Flakardia") {
             addComponent(listScrollPane)
             addPreferredGap(RELATED)
             addGroup(layout.createParallelGroup(LEADING).apply {
+                addComponent(viewButton)
                 addComponent(simpleButton)
                 addComponent(cramButton)
             })
@@ -45,6 +50,8 @@ class CardSetManagerFrame : JFrame("Flakardia") {
             addGroup(layout.createParallelGroup(LEADING).apply {
                 addComponent(listScrollPane)
                 addGroup(layout.createSequentialGroup().apply {
+                    addComponent(viewButton)
+                    addPreferredGap(RELATED)
                     addComponent(simpleButton)
                     addPreferredGap(RELATED)
                     addComponent(cramButton)
@@ -52,7 +59,7 @@ class CardSetManagerFrame : JFrame("Flakardia") {
             })
             addContainerGap()
         }
-        layout.linkSize(SwingConstants.HORIZONTAL, simpleButton, cramButton)
+        layout.linkSize(SwingConstants.HORIZONTAL, viewButton, simpleButton, cramButton)
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
         contentPane.layout = layout
@@ -69,11 +76,25 @@ class CardSetManagerFrame : JFrame("Flakardia") {
             list.selectedIndex = 0
         }
 
+        viewButton.addActionListener {
+            viewFlashcards()
+        }
         simpleButton.addActionListener {
             startLesson { flashcardSet -> SimpleLesson(flashcardSet) }
         }
         cramButton.addActionListener {
             startLesson { flashcardSet -> CramLesson(flashcardSet) }
+        }
+    }
+
+    private fun viewFlashcards() {
+        list.requestFocusInWindow()
+        val path = list.selectedValue?.path ?: return
+        FlashcardSetViewFrame(readFlashcards(path)).apply {
+            defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
+            pack()
+            setLocationRelativeTo(null)
+            isVisible = true
         }
     }
 
