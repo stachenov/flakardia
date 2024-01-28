@@ -7,7 +7,8 @@ import java.nio.file.Path
 
 class CardManager {
 
-    private var path: Path? = null
+    var path: Path? = null
+        private set
 
     var entries: List<FlashcardSetListEntry> = emptyList()
         private set

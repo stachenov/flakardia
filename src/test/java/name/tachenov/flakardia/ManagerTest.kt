@@ -28,14 +28,14 @@ class ManagerTest {
 
     @Test
     fun `empty cards dir`() {
-        test(dir("cards"), expect())
+        test(dir("cards"), expect(root))
     }
 
     @Test
     fun `a couple of files`() {
         test(
             dir("cards", file("test.cards"), file("test2.cards")),
-            expect(path("cards/test.cards"), path("cards/test2.cards")),
+            expect(root, path("cards/test.cards"), path("cards/test2.cards")),
         )
     }
 
@@ -43,8 +43,18 @@ class ManagerTest {
     fun `no cards dir`() {
         test(
             structure = null,
-            expect("cards"),
+            expect("cards", path = null),
         )
+    }
+
+    @Test
+    fun `entering non-existent dir`() {
+        create(dir("cards", file("file1.cards"), file("file2.cards")))
+        val sut = CardManager()
+        var enterResult = sut.enter(root)
+        expect(root, path("cards/file1.cards"), path("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
+        enterResult = sut.enter(root.resolve("sub"))
+        expect("sub", root, path("cards/file1.cards"), path("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
     }
 
     private fun test(structure: Dir?, expectation: Expectation) {
@@ -53,7 +63,7 @@ class ManagerTest {
         }
         val sut = CardManager()
         val enterResult = sut.enter(root)
-        expectation.match(enterResult, sut.entries)
+        expectation.match(enterResult, sut.path, sut.entries)
     }
 
     private fun create(dir: Dir, parentPath: Path = fs.getPath(".")) {
@@ -73,9 +83,9 @@ class ManagerTest {
 
     private fun path(path: String): FlashcardSetFileEntry = FlashcardSetFileEntry(fs.getPath(path))
 
-    private fun expect(vararg entry: FlashcardSetListEntry): Expectation = ListExpectation(entry.toList())
+    private fun expect(path: Path?, vararg entry: FlashcardSetListEntry): Expectation = ListExpectation(path, entry.toList())
 
-    private fun expect(errorMessage: String): Expectation = ErrorExpectation(errorMessage)
+    private fun expect(errorMessage: String, path: Path?, vararg entry: FlashcardSetListEntry): Expectation = ErrorExpectation(errorMessage, path, entry.toList())
 
     private sealed class Entry
 
@@ -84,22 +94,31 @@ class ManagerTest {
     private class File(val name: String) : Entry()
 
     private sealed class Expectation {
-        abstract fun match(result: DirEnterResult, entries: List<FlashcardSetListEntry>)
+        abstract fun match(result: DirEnterResult, path: Path?, entries: List<FlashcardSetListEntry>)
     }
 
-    private class ListExpectation(private val expected: List<FlashcardSetListEntry>) : Expectation() {
-        override fun match(result: DirEnterResult, entries: List<FlashcardSetListEntry>) {
+    private class ListExpectation(
+        private val expectedPath: Path?,
+        private val expected: List<FlashcardSetListEntry>,
+    ) : Expectation() {
+        override fun match(result: DirEnterResult, path: Path?, entries: List<FlashcardSetListEntry>) {
             assertThat(result).isInstanceOf(DirEnterSuccess::class.java)
+            assertThat(path).isEqualTo(expectedPath)
             assertThat(entries).isEqualTo(expected)
         }
     }
 
-    private class ErrorExpectation(private val expectedErrorMessage: String) : Expectation() {
-        override fun match(result: DirEnterResult, entries: List<FlashcardSetListEntry>) {
+    private class ErrorExpectation(
+        private val expectedErrorMessage: String,
+        private val expectedPath: Path?,
+        private val expectedEntries: List<FlashcardSetListEntry>,
+    ) : Expectation() {
+        override fun match(result: DirEnterResult, path: Path?, entries: List<FlashcardSetListEntry>) {
             assertThat(result).isInstanceOf(DirEnterError::class.java)
             result as DirEnterError
             assertThat(result.message).containsIgnoringCase(expectedErrorMessage)
-            assertThat(entries).isEmpty()
+            assertThat(path).isEqualTo(expectedPath)
+            assertThat(entries).isEqualTo(expectedEntries)
         }
     }
 
