@@ -26,6 +26,10 @@ fun main() {
 
 private fun configureUiDefaults() {
     val uiDefaults = UIManager.getDefaults()
+    uiDefaults["Button.font"] = Font("Verdana", Font.PLAIN, 16)
+    uiDefaults["List.font"] = Font("Verdana", Font.PLAIN, 16)
+    uiDefaults["TableHeader.font"] = Font("Verdana", Font.PLAIN, 16)
+    uiDefaults["Table.font"] = Font("Verdana", Font.PLAIN, 16)
     uiDefaults["Label.font"] = Font("Verdana", Font.PLAIN, 16)
     uiDefaults["TextField.font"] = Font("Verdana", Font.PLAIN, 16)
 }
