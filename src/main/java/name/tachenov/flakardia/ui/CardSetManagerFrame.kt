@@ -111,6 +111,9 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
                 }
             }
         })
+        list.addListSelectionListener {
+            enableDisableButtons()
+        }
 
         val focusableComponents = listOf(list, viewButton, simpleButton, cramButton)
         focusTraversalPolicy = object : SortingFocusTraversalPolicy(compareBy { c ->
@@ -120,6 +123,14 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         }
 
         updateEntries()
+    }
+
+    private fun enableDisableButtons() {
+        val selectedEntry = list.selectedValue?.entry ?: return
+        val enabled = selectedEntry is FlashcardSetFileEntry
+        viewButton.isEnabled = enabled
+        simpleButton.isEnabled = enabled
+        cramButton.isEnabled = enabled
     }
 
     private fun goUp() {
