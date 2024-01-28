@@ -3,7 +3,11 @@ package name.tachenov.flakardia.ui
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.data.FlashcardSet
 import name.tachenov.flakardia.data.FlashcardSetError
+import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
+import java.nio.file.Path
 import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
@@ -74,7 +78,73 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
             startLesson { flashcardSet -> CramLesson(flashcardSet) }
         }
 
+        list.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) {
+                if (e.clickCount == 2) {
+                    e.consume()
+                    openElement()
+                }
+            }
+        })
+        list.addKeyListener(object : KeyAdapter() {
+            override fun keyTyped(e: KeyEvent) {
+                if (e.keyChar == '\n') {
+                    e.consume()
+                    openElement()
+                }
+            }
+
+            override fun keyPressed(e: KeyEvent) {
+                if (e.keyCode == KeyEvent.VK_BACK_SPACE) {
+                    e.consume()
+                    goUp()
+                }
+            }
+        })
+
         updateEntries()
+    }
+
+    private fun goUp() {
+        if (list.model.size == 0) {
+            return
+        }
+        val firstEntry = list.model.getElementAt(0)?.entry ?: return
+        if (firstEntry !is FlashcardSetUpEntry) {
+            return
+        }
+        enterDir(firstEntry.dir)
+    }
+
+    private fun openElement() {
+        val selectedEntry = list.selectedValue?.entry ?: return
+        val dirPath = when (selectedEntry) {
+            is FlashcardSetFileEntry -> null
+            is FlashcardSetDirEntry -> selectedEntry.dir
+            is FlashcardSetUpEntry -> selectedEntry.dir
+        }
+        if (dirPath == null) {
+            viewFlashcards()
+        }
+        else {
+            enterDir(dirPath)
+        }
+    }
+
+    private fun enterDir(dirPath: Path) {
+        when (val result = manager.enter(dirPath)) {
+            is DirEnterSuccess -> {
+                updateEntries()
+            }
+            is DirEnterError -> {
+                JOptionPane.showMessageDialog(
+                        this,
+                        result.message,
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE,
+                )
+            }
+        }
     }
 
     private fun updateEntries() {
