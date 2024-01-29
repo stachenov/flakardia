@@ -7,7 +7,7 @@ import java.nio.file.Path
 
 class CardManager {
 
-    lateinit var root: Path
+    private var library: Path? = null
 
     var path: Path? = null
         private set
@@ -16,12 +16,12 @@ class CardManager {
         private set
 
     fun enter(path: Path): DirEnterResult {
-        if (this.path == null) {
-            root = path
-        }
         try {
             entries = readEntries(path)
             this.path = path
+            if (this.library == null) {
+                library = path
+            }
             return DirEnterSuccess
         }
         catch (e: Exception) {
@@ -31,7 +31,7 @@ class CardManager {
 
     private fun readEntries(path: Path): List<FlashcardSetListEntry> {
         val result = mutableListOf<FlashcardSetListEntry>()
-        if (path != root) {
+        if (library != null && path != library) {
             result += FlashcardSetUpEntry(path.parent)
         }
         Files.newDirectoryStream(path).use { dir ->
