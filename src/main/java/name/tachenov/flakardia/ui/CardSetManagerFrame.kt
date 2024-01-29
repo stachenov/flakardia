@@ -131,7 +131,7 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
     }
 
     private fun enableDisableButtons() {
-        val selectedEntry = list.selectedValue?.entry ?: return
+        val selectedEntry = list.selectedValue?.entry
         val enabled = selectedEntry is FlashcardSetFileEntry
         viewButton.isEnabled = enabled
         simpleButton.isEnabled = enabled
