@@ -116,6 +116,7 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
                 }
             }
         })
+        list.selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
         list.addListSelectionListener {
             enableDisableButtons()
         }
