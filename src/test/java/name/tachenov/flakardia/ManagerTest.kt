@@ -51,7 +51,7 @@ class ManagerTest {
     fun `entering and leaving subdirectory`() {
         create(dir("cards", dir("sub", file("sub-file.cards")), file("file1.cards"), file("file2.cards")))
         val sut = CardManager()
-        var enterResult = sut.enter(root)
+        var enterResult = sut.enterLibrary(root)
         expect(root, dirPath("cards/sub"), filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
         val subPath = root.resolve("sub")
         enterResult = sut.enter(subPath)
@@ -64,7 +64,7 @@ class ManagerTest {
     fun `entering non-existent dir`() {
         create(dir("cards", file("file1.cards"), file("file2.cards")))
         val sut = CardManager()
-        var enterResult = sut.enter(root)
+        var enterResult = sut.enterLibrary(root)
         expect(root, filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
         enterResult = sut.enter(root.resolve("sub"))
         expect("sub", root, filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
@@ -75,7 +75,7 @@ class ManagerTest {
             create(structure)
         }
         val sut = CardManager()
-        val enterResult = sut.enter(root)
+        val enterResult = sut.enterLibrary(root)
         expectation.match(enterResult, sut.path, sut.entries)
     }
 
