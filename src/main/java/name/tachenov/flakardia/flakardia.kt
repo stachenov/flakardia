@@ -6,6 +6,7 @@ import com.github.weisj.darklaf.theme.OneDarkTheme
 import com.github.weisj.darklaf.theme.info.DefaultThemeProvider
 import name.tachenov.flakardia.app.CardManager
 import name.tachenov.flakardia.ui.CardSetManagerFrame
+import java.awt.Window
 import javax.swing.SwingUtilities
 import javax.swing.WindowConstants
 
@@ -14,10 +15,21 @@ fun main() {
         LafManager.setThemeProvider(DefaultThemeProvider(IntelliJTheme(), OneDarkTheme()))
         LafManager.install(LafManager.themeForPreferredStyle(LafManager.getPreferredThemeStyle()))
         configureUiDefaults()
-        val manager = CardManager()
-        configureAndEnterLibrary(manager)
-        showManagerFrame(manager)
+        if (getLibraryPath() == null) {
+            showHelp {
+                start()
+            }
+        }
+        else {
+            start()
+        }
     }
+}
+
+private fun start() {
+    val manager = CardManager()
+    configureAndEnterLibrary(manager)
+    showManagerFrame(manager)
 }
 
 private fun showManagerFrame(manager: CardManager) {
@@ -28,3 +40,5 @@ private fun showManagerFrame(manager: CardManager) {
         isVisible = true
     }
 }
+
+fun getManagerFrame() = Window.getWindows().firstOrNull { it is CardSetManagerFrame }

@@ -4,6 +4,7 @@ import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.configureAndEnterLibrary
 import name.tachenov.flakardia.data.FlashcardSet
 import name.tachenov.flakardia.data.FlashcardSetError
+import name.tachenov.flakardia.showHelp
 import name.tachenov.flakardia.showSettingsDialog
 import java.awt.Component
 import java.awt.event.KeyAdapter
@@ -38,6 +39,10 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_T
     }
+    private val helpButton = JButton("Help").apply {
+        horizontalAlignment = SwingConstants.LEADING
+        mnemonic = KeyEvent.VK_H
+    }
 
     init {
         val contentPane = JPanel()
@@ -62,6 +67,7 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
                 addComponent(simpleButton)
                 addComponent(cramButton)
                 addComponent(settingsButton)
+                addComponent(helpButton)
             })
             addContainerGap()
         }
@@ -81,11 +87,13 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
                     addComponent(cramButton)
                     addPreferredGap(RELATED, DEFAULT_SIZE, INFINITY)
                     addComponent(settingsButton)
+                    addPreferredGap(RELATED)
+                    addComponent(helpButton)
                 })
             })
             addContainerGap()
         }
-        layout.linkSize(SwingConstants.HORIZONTAL, viewButton, simpleButton, cramButton, settingsButton)
+        layout.linkSize(SwingConstants.HORIZONTAL, viewButton, simpleButton, cramButton, settingsButton, helpButton)
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
         contentPane.layout = layout
@@ -104,6 +112,9 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         }
         settingsButton.addActionListener {
             configure()
+        }
+        helpButton.addActionListener {
+            showHelp()
         }
 
         list.addMouseListener(object : MouseAdapter() {
