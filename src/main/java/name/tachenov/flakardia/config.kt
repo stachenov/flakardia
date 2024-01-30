@@ -5,8 +5,11 @@ import name.tachenov.flakardia.app.CardManager
 import name.tachenov.flakardia.app.DirEnterError
 import name.tachenov.flakardia.app.DirEnterResult
 import name.tachenov.flakardia.app.DirEnterSuccess
+import name.tachenov.flakardia.ui.CardSetManagerFrame
+import name.tachenov.flakardia.ui.InitFrame
 import name.tachenov.flakardia.ui.SettingsDialog
 import java.awt.Font
+import java.awt.Window
 import java.nio.file.Path
 import java.util.prefs.Preferences
 import javax.swing.JOptionPane
@@ -63,13 +66,22 @@ fun configureAndEnterLibrary(manager: CardManager) {
 }
 
 fun showSettingsDialog(): Boolean {
+    val managerFrame = Window.getWindows().firstOrNull { it is CardSetManagerFrame }
+    val initFrame = if (managerFrame == null) InitFrame() else null
+    val owner = managerFrame ?: initFrame
+    if (initFrame != null) {
+        initFrame.pack()
+        initFrame.setLocationRelativeTo(null)
+        initFrame.isVisible = true
+    }
     val dialog = SettingsDialog()
     dialog.pack()
-    dialog.setLocationRelativeTo(null)
+    dialog.setLocationRelativeTo(owner)
     dialog.isVisible = true
     if (dialog.isAccepted) {
         configureUiDefaults()
     }
+    initFrame?.dispose()
     return dialog.isAccepted
 }
 
