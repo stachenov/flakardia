@@ -9,7 +9,10 @@ import java.awt.Font
 import java.awt.Frame
 import java.awt.GraphicsEnvironment
 import java.awt.event.ActionEvent
+import java.awt.event.ComponentAdapter
+import java.awt.event.ComponentEvent
 import java.awt.event.KeyEvent
+import java.nio.file.Files
 import java.nio.file.Path
 import javax.swing.*
 import javax.swing.GroupLayout.*
@@ -30,6 +33,10 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
     private val fontBold = JCheckBox("Bold").apply { mnemonic = KeyEvent.VK_B }
     private val fontItalic = JCheckBox("Italic").apply { mnemonic = KeyEvent.VK_I }
     private val ok = JButton("OK").apply { mnemonic = KeyEvent.VK_O }
+    private val status = JLabel("Initializing...")
+
+    private val libraryPath: Path
+        get() = Path.of(dirInput.text)
 
     init {
         val contentPane = JPanel()
@@ -68,17 +75,20 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
                     addPreferredGap(RELATED)
                     addComponent(cancel)
                 })
+                addComponent(status)
             })
             addContainerGap()
         }
         vg.apply {
             addComponent(libraryPanel)
             addComponent(fontPanel)
-            addPreferredGap(RELATED)
+            addPreferredGap(RELATED, DEFAULT_SIZE, INFINITY)
             addGroup(layout.createParallelGroup(BASELINE).apply {
                 addComponent(ok)
                 addComponent(cancel)
             })
+            addPreferredGap(RELATED)
+            addComponent(status)
             addContainerGap()
         }
         layout.setHorizontalGroup(hg)
@@ -109,14 +119,31 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
                 cancel()
             }
         })
+
+        addComponentListener(object : ComponentAdapter() {
+            override fun componentShown(e: ComponentEvent?) {
+                enableDisable()
+            }
+        })
     }
 
     private fun enableDisable() {
-        ok.isEnabled = dirInput.text.isNotEmpty()
+        val isValid = dirInput.text.isNotBlank() && Files.isDirectory(libraryPath)
+        ok.isEnabled = isValid
+        status.foreground = if (isValid) null else INCORRECT_COLOR
+        status.text = if (isValid) {
+            " " // to keep height
+        }
+        else if (dirInput.text.isBlank()) {
+            "Please specify the library directory where flashcards are stored"
+        }
+        else {
+            "The specified library directory doesn't exist or isn't a directory"
+        }
     }
 
     private fun ok() {
-        setLibraryPath(Path.of(dirInput.text))
+        setLibraryPath(libraryPath)
         var fontStyle = 0
         if (fontBold.isSelected) {
             fontStyle = fontStyle or Font.BOLD
