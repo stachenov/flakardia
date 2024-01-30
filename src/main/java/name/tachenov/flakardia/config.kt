@@ -23,9 +23,7 @@ private const val LIBRARY_PATH_KEY = "library_path"
 private const val FONT_KEY = "font"
 private val DEFAULT_FONT = Font("Verdana", 0, 16)
 
-private val preferences: Preferences = Preferences.userNodeForPackage(PackageReference::class.java).apply {
-    remove(LIBRARY_PATH_KEY)
-}
+private val preferences: Preferences = Preferences.userNodeForPackage(PackageReference::class.java)
 
 fun getLibraryPath(): Path? = preferences.get(LIBRARY_PATH_KEY, null)?.let { Path.of(it) }
 
