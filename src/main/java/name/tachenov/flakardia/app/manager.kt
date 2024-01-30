@@ -15,13 +15,15 @@ class CardManager {
     var entries: List<FlashcardSetListEntry> = emptyList()
         private set
 
+    fun enterLibrary(path: Path): DirEnterResult {
+        this.library = path
+        return enter(path)
+    }
+
     fun enter(path: Path): DirEnterResult {
         try {
             entries = readEntries(path)
             this.path = path
-            if (this.library == null) {
-                library = path
-            }
             return DirEnterSuccess
         }
         catch (e: Exception) {
@@ -31,8 +33,9 @@ class CardManager {
 
     private fun readEntries(path: Path): List<FlashcardSetListEntry> {
         val result = mutableListOf<FlashcardSetListEntry>()
-        if (library != null && path != library) {
-            result += FlashcardSetUpEntry(path.parent)
+        val parent = path.parent
+        if (library != null && path != library && parent != null) {
+            result += FlashcardSetUpEntry(parent)
         }
         Files.newDirectoryStream(path).use { dir ->
             dir.forEach { entry ->

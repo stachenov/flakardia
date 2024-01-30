@@ -1,10 +1,18 @@
 package name.tachenov.flakardia
 
+import com.github.weisj.darklaf.LafManager
+import name.tachenov.flakardia.app.CardManager
+import name.tachenov.flakardia.app.DirEnterError
+import name.tachenov.flakardia.app.DirEnterResult
+import name.tachenov.flakardia.app.DirEnterSuccess
 import name.tachenov.flakardia.ui.SettingsDialog
 import java.awt.Font
 import java.nio.file.Path
 import java.util.prefs.Preferences
+import javax.swing.JOptionPane
 import javax.swing.UIManager
+import javax.swing.plaf.FontUIResource
+import kotlin.system.exitProcess
 
 private object PackageReference
 
@@ -28,6 +36,32 @@ fun setAppFont(font: Font) {
     preferences.put(FONT_KEY, "${font.family} ${font.size}${if (font.isBold) " Bold" else ""}${if (font.isItalic) " Italic" else ""}")
 }
 
+fun configureAndEnterLibrary(manager: CardManager) {
+    var dirEnterResult: DirEnterResult? = null
+    while (dirEnterResult !is DirEnterSuccess) {
+        val libraryPath = getLibraryPath()
+        if (libraryPath == null) {
+            if (!showSettingsDialog()) {
+                exitProcess(0)
+            }
+        } else {
+            dirEnterResult = manager.enterLibrary(libraryPath)
+            if (dirEnterResult is DirEnterError) {
+                JOptionPane.showMessageDialog(
+                    null,
+                    "The following error occurred during an attempt to read the library:\n" +
+                        dirEnterResult.message,
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE,
+                )
+                if (!showSettingsDialog()) {
+                    exitProcess(0)
+                }
+            }
+        }
+    }
+}
+
 fun showSettingsDialog(): Boolean {
     val dialog = SettingsDialog()
     dialog.pack()
@@ -41,7 +75,7 @@ fun showSettingsDialog(): Boolean {
 
 fun configureUiDefaults() {
     val uiDefaults = UIManager.getDefaults()
-    val font = getAppFont()
+    val font = FontUIResource(getAppFont())
     uiDefaults["Button.font"] = font
     uiDefaults["List.font"] = font
     uiDefaults["TableHeader.font"] = font
@@ -52,6 +86,7 @@ fun configureUiDefaults() {
     uiDefaults["Spinner.font"] = font
     uiDefaults["TitledBorder.font"] = font
     uiDefaults["ComboBox.font"] = font
+    LafManager.updateLaf()
 }
 
 fun parseFont(s: String): Font {

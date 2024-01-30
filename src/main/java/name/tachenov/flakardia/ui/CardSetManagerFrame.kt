@@ -1,8 +1,10 @@
 package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.app.*
+import name.tachenov.flakardia.configureAndEnterLibrary
 import name.tachenov.flakardia.data.FlashcardSet
 import name.tachenov.flakardia.data.FlashcardSetError
+import name.tachenov.flakardia.showSettingsDialog
 import java.awt.Component
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
@@ -11,6 +13,7 @@ import java.awt.event.MouseEvent
 import java.nio.file.Path
 import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
+import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 import kotlin.math.max
 
@@ -30,6 +33,10 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
     private val cramButton = JButton("Start cram lesson").apply {
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_C
+    }
+    private val settingsButton = JButton("Settings").apply {
+        horizontalAlignment = SwingConstants.LEADING
+        mnemonic = KeyEvent.VK_T
     }
 
     init {
@@ -54,6 +61,7 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
                 addComponent(viewButton)
                 addComponent(simpleButton)
                 addComponent(cramButton)
+                addComponent(settingsButton)
             })
             addContainerGap()
         }
@@ -71,11 +79,13 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
                     addComponent(simpleButton)
                     addPreferredGap(RELATED)
                     addComponent(cramButton)
+                    addPreferredGap(RELATED, DEFAULT_SIZE, INFINITY)
+                    addComponent(settingsButton)
                 })
             })
             addContainerGap()
         }
-        layout.linkSize(SwingConstants.HORIZONTAL, viewButton, simpleButton, cramButton)
+        layout.linkSize(SwingConstants.HORIZONTAL, viewButton, simpleButton, cramButton, settingsButton)
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
         contentPane.layout = layout
@@ -91,6 +101,9 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         }
         cramButton.addActionListener {
             startLesson { flashcardSet -> CramLesson(flashcardSet) }
+        }
+        settingsButton.addActionListener {
+            configure()
         }
 
         list.addMouseListener(object : MouseAdapter() {
@@ -129,6 +142,14 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         }
 
         updateEntries()
+    }
+
+    private fun configure() {
+        if (showSettingsDialog()) {
+            configureAndEnterLibrary(manager)
+            updateEntries()
+            pack()
+        }
     }
 
     private fun enableDisableButtons() {
