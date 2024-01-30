@@ -109,6 +109,9 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
                 enableDisable()
             }
         })
+        dirBrowse.addActionListener {
+            browseForLibrary()
+        }
 
         ok.addActionListener { ok() }
         cancel.addActionListener { cancel() }
@@ -139,6 +142,15 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
         }
         else {
             "The specified library directory doesn't exist or isn't a directory"
+        }
+    }
+
+    private fun browseForLibrary() {
+        val chooser = JFileChooser()
+        chooser.dialogTitle = "Select the library directory"
+        chooser.fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            dirInput.text = chooser.selectedFile.toString()
         }
     }
 
