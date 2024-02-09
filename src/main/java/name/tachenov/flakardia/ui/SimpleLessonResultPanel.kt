@@ -8,6 +8,7 @@ import javax.swing.LayoutStyle
 
 class SimpleLessonResultPanel : LessonResultPanel() {
 
+    private val round = JLabel()
     private val total = JLabel()
     private val correct = JLabel()
     private val incorrect = JLabel()
@@ -17,11 +18,16 @@ class SimpleLessonResultPanel : LessonResultPanel() {
         val layout = GroupLayout(this)
         val hg = layout.createSequentialGroup()
         val vg = layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+        val roundLabel = JLabel("Round:")
         val totalLabel = JLabel("Total:")
         val correctLabel = JLabel("Correct:")
         val incorrectLabel = JLabel("Incorrect:")
         val remainingLabel = JLabel("Remaining:")
         hg.apply {
+            addComponent(roundLabel)
+            addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+            addComponent(round)
+            addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
             addComponent(totalLabel)
             addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
             addComponent(total)
@@ -39,6 +45,8 @@ class SimpleLessonResultPanel : LessonResultPanel() {
             addComponent(remaining)
         }
         vg.apply {
+            addComponent(roundLabel)
+            addComponent(round)
             addComponent(totalLabel)
             addComponent(total)
             addComponent(correctLabel)
@@ -55,6 +63,7 @@ class SimpleLessonResultPanel : LessonResultPanel() {
 
     override fun displayResult(result: LessonResult) {
         result as SimpleLessonResult
+        round.text = result.round.toString()
         total.text = result.total.toString()
         correct.text = result.correct.toString()
         correct.foreground = if (result.correct > 0) CORRECT_COLOR else null

@@ -101,7 +101,9 @@ Note that your answer is compared letter-by-letter to the correct one. Whitespac
 
 5. Simple lessons
 
-Simple lessons are really, really simple. You go through the questions once, you see how many answers you got right. That's it. The order of questions is random, so your muscle memory doesn't get in the way.
+Simple lessons are really, really simple. You go through the questions once, you see how many answers you got right. If you got some wrong, the next round begins, this time you only go through those question you got wrong. The process repeats until you get all of them right.
+
+The order of questions is random, so your muscle memory doesn't get in the way.
 
 6. Cram lessons
 

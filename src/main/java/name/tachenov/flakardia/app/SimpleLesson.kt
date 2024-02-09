@@ -5,33 +5,41 @@ import name.tachenov.flakardia.data.FlashcardSet
 
 class SimpleLesson(flashcardSet: FlashcardSet) : Lesson(flashcardSet) {
 
-    private val flashcards: List<Flashcard> = flashcardSet.cards.shuffled()
-    private var index = -1
+    private val total = flashcardSet.cards.size
+    private val remaining = ArrayDeque(flashcardSet.cards.shuffled())
+    private val incorrect: MutableSet<Flashcard> = hashSetOf()
+    private var round = 1
 
-    override var result: SimpleLessonResult = SimpleLessonResult(flashcards.size)
-        private set
+    private val correct: Int
+        get() = total - remaining.size - incorrect.size
+
+    override val result: SimpleLessonResult
+        get() = SimpleLessonResult(round, total, correct, incorrect.size, remaining.size)
 
     override val currentFlashcard: Flashcard?
-        get() = flashcards.getOrNull(index)
+        get() = remaining.firstOrNull()
 
     override fun goToNextFlashcard() {
-        ++index
+        if (remaining.isEmpty() && incorrect.isNotEmpty()) {
+            ++round
+            remaining.addAll(incorrect.shuffled())
+            incorrect.clear()
+        }
     }
 
     override fun recordAnswerResult(answerResult: AnswerResult) {
-        result = SimpleLessonResult(
-            total = result.total,
-            correct = if (answerResult.isCorrect) result.correct + 1 else result.correct,
-            incorrect = if (answerResult.isCorrect) result.incorrect else result.incorrect + 1,
-        )
+        val current = remaining.removeFirst()
+        if (!answerResult.isCorrect) {
+            incorrect += current
+        }
     }
 
 }
 
 data class SimpleLessonResult(
+    val round: Int,
     val total: Int,
-    val correct: Int = 0,
-    val incorrect: Int = 0,
-) : LessonResult() {
-    val remaining: Int get() = total - (correct + incorrect)
-}
+    val correct: Int,
+    val incorrect: Int,
+    val remaining: Int,
+) : LessonResult()

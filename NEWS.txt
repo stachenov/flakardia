@@ -1,2 +1,5 @@
+0.2 / 2024-02-09
+    Improved the simple lesson: now it repeats the questions answered wrongly
+
 0.1 / 2024-01-30
     The very first version that at least works
