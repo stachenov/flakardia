@@ -179,28 +179,22 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         if (firstEntry !is FlashcardSetUpEntry) {
             return
         }
-        enterDir(firstEntry.dir)
+        enterDir(firstEntry.dir, selectDir = manager.path)
     }
 
     private fun openElement() {
         val selectedEntry = list.selectedValue?.entry ?: return
-        val dirPath = when (selectedEntry) {
-            is FlashcardSetFileEntry -> null
-            is FlashcardSetDirEntry -> selectedEntry.dir
-            is FlashcardSetUpEntry -> selectedEntry.dir
-        }
-        if (dirPath == null) {
-            viewFlashcards()
-        }
-        else {
-            enterDir(dirPath)
+        when (selectedEntry) {
+            is FlashcardSetFileEntry -> viewFlashcards()
+            is FlashcardSetDirEntry -> enterDir(selectedEntry.dir)
+            is FlashcardSetUpEntry -> goUp()
         }
     }
 
-    private fun enterDir(dirPath: Path) {
+    private fun enterDir(dirPath: Path, selectDir: Path? = null) {
         when (val result = manager.enter(dirPath)) {
             is DirEnterSuccess -> {
-                updateEntries()
+                updateEntries(selectDir)
             }
             is DirEnterError -> {
                 JOptionPane.showMessageDialog(
@@ -213,14 +207,19 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
         }
     }
 
-    private fun updateEntries() {
+    private fun updateEntries(selectDir: Path? = null) {
         dir.text = manager.path?.toString()
         model.clear()
         manager.entries.forEach { entry ->
             model.addElement(CardListEntryView(entry))
         }
-        if (model.size() > 0) {
-            list.selectedIndex = 0
+        if (selectDir == null) {
+            if (model.size() > 0) {
+                list.selectedIndex = 0
+            }
+        }
+        else {
+            list.setSelectedValue(CardListEntryView(FlashcardSetDirEntry(selectDir)), true)
         }
         val listAndListAreaWidth = max(list.width, dir.width)
         val listPreferredWidth = list.preferredScrollableViewportSize.width
@@ -269,7 +268,7 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
 
 }
 
-class CardListEntryView(
+data class CardListEntryView(
     val entry: FlashcardSetListEntry,
 ) {
     override fun toString(): String = entry.name

@@ -1,3 +1,6 @@
+0.2.1 / 2024-02-18
+    Fix: select the proper dir when going up
+
 0.2 / 2024-02-09
     Improved the simple lesson: now it repeats the questions answered wrongly
 
