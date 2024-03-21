@@ -5,6 +5,7 @@ import com.github.weisj.darklaf.theme.IntelliJTheme
 import com.github.weisj.darklaf.theme.OneDarkTheme
 import com.github.weisj.darklaf.theme.info.DefaultThemeProvider
 import name.tachenov.flakardia.app.CardManager
+import name.tachenov.flakardia.service.FlashcardService
 import name.tachenov.flakardia.ui.CardSetManagerFrame
 import java.awt.Window
 import javax.swing.SwingUtilities
@@ -28,12 +29,13 @@ fun main() {
 
 private fun start() {
     val manager = CardManager()
+    val service = FlashcardService()
     configureAndEnterLibrary(manager)
-    showManagerFrame(manager)
+    showManagerFrame(manager, service)
 }
 
-private fun showManagerFrame(manager: CardManager) {
-    CardSetManagerFrame(manager).apply {
+private fun showManagerFrame(manager: CardManager, service: FlashcardService) {
+    CardSetManagerFrame(manager, service).apply {
         defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
         pack()
         setLocationRelativeTo(null)
