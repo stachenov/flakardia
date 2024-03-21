@@ -4,6 +4,7 @@ import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.configureAndEnterLibrary
 import name.tachenov.flakardia.data.FlashcardSet
 import name.tachenov.flakardia.data.FlashcardSetError
+import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.service.FlashcardService
 import name.tachenov.flakardia.showHelp
 import name.tachenov.flakardia.showSettingsDialog
@@ -12,7 +13,6 @@ import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
-import java.nio.file.Path
 import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
@@ -184,7 +184,7 @@ class CardSetManagerFrame(
         if (firstEntry !is FlashcardSetUpEntry) {
             return
         }
-        enterDir(firstEntry.dir, selectDir = manager.path)
+        enterDir(firstEntry.dir, selectDir = manager.path?.relativePath)
     }
 
     private fun openElement() {
@@ -196,7 +196,7 @@ class CardSetManagerFrame(
         }
     }
 
-    private fun enterDir(dirPath: Path, selectDir: Path? = null) {
+    private fun enterDir(dirPath: RelativePath, selectDir: RelativePath? = null) {
         service.processEntries(
             source = {
                 manager.enter(dirPath)
@@ -219,7 +219,7 @@ class CardSetManagerFrame(
         )
     }
 
-    private fun updateEntries(selectDir: Path? = null) {
+    private fun updateEntries(selectDir: RelativePath? = null) {
         dir.text = manager.path?.toString()
         model.clear()
         manager.entries.forEach { entry ->

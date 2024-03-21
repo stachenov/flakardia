@@ -1,8 +1,10 @@
 package name.tachenov.flakardia.data
 
+import name.tachenov.flakardia.app.FlashcardSetFileEntry
+import name.tachenov.flakardia.app.FlashcardSetListEntry
+import name.tachenov.flakardia.app.FlashcardSetUpEntry
 import name.tachenov.flakardia.assertBGT
-import java.nio.file.Files
-import java.nio.file.Path
+import name.tachenov.flakardia.storage.FlashcardStorage
 
 sealed class FlashcardSetResult
 
@@ -22,108 +24,46 @@ data class Word(
     val value: String,
 )
 
-data class Library(val path: Path) {
-    fun readFlashcards(file: Path): FlashcardSetResult {
+data class RelativePath(
+    val elements: List<String>,
+) {
+    constructor() : this(emptyList())
+
+    val parent: RelativePath?
+        get() = if (elements.isEmpty()) null else RelativePath(elements.subList(0, elements.size - 1))
+
+    val fileName: String
+        get() = elements.last()
+
+    fun isEmpty(): Boolean = elements.isEmpty()
+
+    override fun toString(): String = elements.joinToString("/")
+}
+
+data class FullPath(
+    val library: Library,
+    val relativePath: RelativePath,
+) {
+    override fun toString(): String = if (relativePath.isEmpty()) library.path else library.path + "/" + relativePath.toString()
+}
+
+data class Library(val storage: FlashcardStorage) {
+
+    val path: String
+        get() = storage.path
+
+    fun readEntries(path: RelativePath): List<FlashcardSetListEntry> {
         assertBGT()
-        val lines = try {
-            Files.readAllLines(file)
-        } catch (e: Exception) {
-            return FlashcardSetError(e.toString())
+        val result = mutableListOf<FlashcardSetListEntry>()
+        val parent = path.parent
+        if (parent != null) {
+            result += FlashcardSetUpEntry(parent)
         }
-        return parse(file.fileName.toString(), lines)
+        result += storage.readEntries(this, path)
+        return result.sortedWith(compareBy({ it is FlashcardSetFileEntry }, { it.name }))
     }
+
+    fun readFlashcards(file: RelativePath): FlashcardSetResult = storage.readFlashcards(file)
+
+    fun fullPath(path: RelativePath): FullPath = FullPath(this, path)
 }
-
-private fun parse(name: String, lines: List<String>): FlashcardSetResult {
-    if (isEmptyLineDelimited(lines)) {
-        return FlashcardSet(name, parseUsingEmptyLines(lines))
-    }
-    else {
-        val delimiter = guessDelimiter(lines)
-        if (delimiter == null) {
-            return FlashcardSetError("Could not determine the delimiter character.\n" +
-                "It must appear once and only once in every non-blank line, but there was no such character")
-        }
-        else {
-            return parse(name, lines, delimiter)
-        }
-    }
-}
-
-private fun isEmptyLineDelimited(lines: List<String>): Boolean {
-    var linesSoFar = 0
-    for (line in (lines + "")) {
-        if (line.isBlank()) {
-            if (linesSoFar != 0 && linesSoFar != 2) {
-                return false
-            }
-            linesSoFar = 0
-        }
-        else {
-            ++linesSoFar
-        }
-    }
-    return true
-}
-
-private fun parseUsingEmptyLines(lines: List<String>): List<Flashcard> {
-    val result = mutableListOf<Flashcard>()
-    val words = mutableListOf<Word>()
-    for (line in (lines + "")) {
-        if (line.isBlank()) {
-            if (words.isNotEmpty()) {
-                result += Flashcard(words[0], words[1])
-            }
-            words.clear()
-        }
-        else {
-            words += parseWord(line)
-        }
-    }
-    return result
-}
-
-private fun guessDelimiter(lines: List<String>): Char? {
-    val encounteredOnce = BooleanArray(65536)
-    val encounteredMultipleTimes = BooleanArray(65536)
-    val totalCount = IntArray(65536)
-    val count = IntArray(65536)
-    var nonBlankLines = 0
-    for (line in lines) {
-        if (line.isBlank()) {
-            continue
-        }
-        ++nonBlankLines
-        for (c in line) {
-            ++count[c.code]
-            ++totalCount[c.code]
-        }
-        for (c in line) {
-            if (count[c.code] > 1) {
-                encounteredMultipleTimes[c.code] = true
-            }
-            else {
-                encounteredOnce[c.code] = true
-            }
-        }
-        // reset back, to avoid iterating over all 65536 elements
-        for (c in line) {
-            count[c.code] = 0
-        }
-    }
-    return (0..65535).firstOrNull { code ->
-        encounteredOnce[code] && !encounteredMultipleTimes[code] && totalCount[code] == nonBlankLines
-    }?.toChar()
-}
-
-private fun parse(name: String, lines: List<String>, delimiter: Char): FlashcardSet =
-    FlashcardSet(
-        name,
-        lines.filter { it.isNotBlank() }.map { parse(it, delimiter) },
-    )
-
-private fun parse(line: String, delimiter: Char): Flashcard = line.split(delimiter)
-    .map { parseWord(it) }
-    .let { Flashcard(it[0], it[1]) }
-
-private fun parseWord(s: String) = Word(s.trim { c -> c.isWhitespace() || c == '"' || c == '\uFEFF' /* BOM */ })

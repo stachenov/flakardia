@@ -1,56 +1,35 @@
 package name.tachenov.flakardia.app
 
-import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.data.FlashcardSetResult
+import name.tachenov.flakardia.data.FullPath
 import name.tachenov.flakardia.data.Library
-import java.nio.file.Files
-import java.nio.file.Path
+import name.tachenov.flakardia.data.RelativePath
 
 class CardManager {
 
     private var library: Library? = null
 
-    var path: Path? = null
+    var path: FullPath? = null
         private set
 
     var entries: List<FlashcardSetListEntry> = emptyList()
         private set
 
-    fun enterLibrary(path: Path): DirEnterResult {
-        this.library = Library(path)
-        return enter(path)
+    fun enterLibrary(library: Library): DirEnterResult {
+        this.library = library
+        return enter(RelativePath())
     }
 
-    fun enter(path: Path): DirEnterResult {
+    fun enter(path: RelativePath): DirEnterResult {
         try {
-            entries = readEntries(path)
-            this.path = path
+            val library = this.library ?: return DirEnterError("No library selected")
+            entries = library.readEntries(path)
+            this.path = library.fullPath(path)
             return DirEnterSuccess
         }
         catch (e: Exception) {
             return DirEnterError(e.toString())
         }
-    }
-
-    private fun readEntries(path: Path): List<FlashcardSetListEntry> {
-        assertBGT()
-        val result = mutableListOf<FlashcardSetListEntry>()
-        val parent = path.parent
-        val library = library ?: return emptyList()
-        if (path != library.path && parent != null) {
-            result += FlashcardSetUpEntry(parent)
-        }
-        Files.newDirectoryStream(path).use { dir ->
-            dir.forEach { entry ->
-                if (Files.isRegularFile(entry) && Files.isReadable(entry)) {
-                    result += FlashcardSetFileEntry(library, entry)
-                }
-                else if (Files.isDirectory(entry)) {
-                    result += FlashcardSetDirEntry(entry)
-                }
-            }
-        }
-        return result.sortedWith(compareBy({ it is FlashcardSetFileEntry}, { it.name }))
     }
 
 }
@@ -65,19 +44,19 @@ sealed class FlashcardSetListEntry {
     abstract val name: String
 }
 
-data class FlashcardSetFileEntry(val library: Library, val file: Path) : FlashcardSetListEntry() {
+data class FlashcardSetFileEntry(val library: Library, val file: RelativePath) : FlashcardSetListEntry() {
     override val name: String
-        get() = file.fileName.toString()
+        get() = file.fileName
 
     fun readCards(): FlashcardSetResult = library.readFlashcards(file)
 }
 
-data class FlashcardSetDirEntry(val dir: Path) : FlashcardSetListEntry() {
+data class FlashcardSetDirEntry(val dir: RelativePath) : FlashcardSetListEntry() {
     override val name: String
-        get() = dir.fileName.toString()
+        get() = dir.fileName
 }
 
-data class FlashcardSetUpEntry(val dir: Path) : FlashcardSetListEntry() {
+data class FlashcardSetUpEntry(val dir: RelativePath) : FlashcardSetListEntry() {
     override val name: String
         get() = ".."
 }

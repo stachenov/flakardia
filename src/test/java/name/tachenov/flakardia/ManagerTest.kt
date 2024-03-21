@@ -2,7 +2,10 @@ package name.tachenov.flakardia
 
 import com.google.common.jimfs.Jimfs
 import name.tachenov.flakardia.app.*
+import name.tachenov.flakardia.data.FullPath
 import name.tachenov.flakardia.data.Library
+import name.tachenov.flakardia.data.RelativePath
+import name.tachenov.flakardia.storage.FlashcardStorage
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -10,18 +13,24 @@ import org.junit.jupiter.api.Test
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.io.path.name
+import kotlin.io.path.relativeTo
 
 class ManagerTest {
 
     private lateinit var fs: FileSystem
-    private lateinit var root: Path
+    private lateinit var storagePath: Path
+    private lateinit var root: RelativePath
+    private lateinit var storage: FlashcardStorage
     private lateinit var library: Library
 
     @BeforeEach
     fun setUp() {
         fs = Jimfs.newFileSystem()
-        root = fs.getPath("cards")
-        library = Library(root)
+        root = RelativePath()
+        storagePath = fs.getPath("cards")
+        storage = FlashcardStorage(storagePath)
+        library = Library(storage)
     }
 
     @AfterEach
@@ -54,7 +63,7 @@ class ManagerTest {
     fun `entering and leaving subdirectory`() {
         create(dir("cards", dir("sub", file("sub-file.cards")), file("file1.cards"), file("file2.cards")))
         val sut = CardManager()
-        var enterResult = sut.enterLibrary(root)
+        var enterResult = sut.enterLibrary(library)
         expect(root, dirPath("cards/sub"), filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
         val subPath = root.resolve("sub")
         enterResult = sut.enter(subPath)
@@ -67,7 +76,7 @@ class ManagerTest {
     fun `entering non-existent dir`() {
         create(dir("cards", file("file1.cards"), file("file2.cards")))
         val sut = CardManager()
-        var enterResult = sut.enterLibrary(root)
+        var enterResult = sut.enterLibrary(library)
         expect(root, filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
         enterResult = sut.enter(root.resolve("sub"))
         expect("sub", root, filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
@@ -78,7 +87,7 @@ class ManagerTest {
             create(structure)
         }
         val sut = CardManager()
-        val enterResult = sut.enterLibrary(root)
+        val enterResult = sut.enterLibrary(library)
         expectation.match(enterResult, sut.path, sut.entries)
     }
 
@@ -97,15 +106,17 @@ class ManagerTest {
 
     private fun file(name: String): File = File(name)
 
-    private fun filePath(path: String): FlashcardSetFileEntry = FlashcardSetFileEntry(library, fs.getPath(path))
+    private fun filePath(path: String): FlashcardSetFileEntry = FlashcardSetFileEntry(library, path.parsePath())
 
-    private fun dirPath(path: String): FlashcardSetDirEntry = FlashcardSetDirEntry(fs.getPath(path))
+    private fun dirPath(path: String): FlashcardSetDirEntry = FlashcardSetDirEntry(path.parsePath())
 
-    private fun upPath(path: String): FlashcardSetUpEntry = FlashcardSetUpEntry(fs.getPath(path))
+    private fun upPath(path: String): FlashcardSetUpEntry = FlashcardSetUpEntry(path.parsePath())
 
-    private fun expect(path: Path?, vararg entry: FlashcardSetListEntry): Expectation = ListExpectation(path, entry.toList())
+    private fun expect(path: RelativePath?, vararg entry: FlashcardSetListEntry): Expectation =
+        ListExpectation(path?.let { FullPath(library, it) }, entry.toList())
 
-    private fun expect(errorMessage: String, path: Path?, vararg entry: FlashcardSetListEntry): Expectation = ErrorExpectation(errorMessage, path, entry.toList())
+    private fun expect(errorMessage: String, path: RelativePath?, vararg entry: FlashcardSetListEntry): Expectation =
+        ErrorExpectation(errorMessage, path?.let { FullPath(library, it) }, entry.toList())
 
     private sealed class Entry
 
@@ -114,14 +125,14 @@ class ManagerTest {
     private class File(val name: String) : Entry()
 
     private sealed class Expectation {
-        abstract fun match(result: DirEnterResult, path: Path?, entries: List<FlashcardSetListEntry>)
+        abstract fun match(result: DirEnterResult, path: FullPath?, entries: List<FlashcardSetListEntry>)
     }
 
     private class ListExpectation(
-        private val expectedPath: Path?,
+        private val expectedPath: FullPath?,
         private val expected: List<FlashcardSetListEntry>,
     ) : Expectation() {
-        override fun match(result: DirEnterResult, path: Path?, entries: List<FlashcardSetListEntry>) {
+        override fun match(result: DirEnterResult, path: FullPath?, entries: List<FlashcardSetListEntry>) {
             assertThat(result).isInstanceOf(DirEnterSuccess::class.java)
             assertThat(path).isEqualTo(expectedPath)
             assertThat(entries).isEqualTo(expected)
@@ -130,10 +141,10 @@ class ManagerTest {
 
     private class ErrorExpectation(
         private val expectedErrorMessage: String,
-        private val expectedPath: Path?,
+        private val expectedPath: FullPath?,
         private val expectedEntries: List<FlashcardSetListEntry>,
     ) : Expectation() {
-        override fun match(result: DirEnterResult, path: Path?, entries: List<FlashcardSetListEntry>) {
+        override fun match(result: DirEnterResult, path: FullPath?, entries: List<FlashcardSetListEntry>) {
             assertThat(result).isInstanceOf(DirEnterError::class.java)
             result as DirEnterError
             assertThat(result.message).containsIgnoringCase(expectedErrorMessage)
@@ -142,4 +153,10 @@ class ManagerTest {
         }
     }
 
+    private fun String.parsePath() = RelativePath(fs.getPath(this).relativeTo(storagePath).let { path ->
+        (0 until path.nameCount).map { path.getName(it).name }.filter { it.isNotEmpty() }
+    })
+
 }
+
+private fun RelativePath.resolve(subDir: String) = RelativePath(elements + subDir)

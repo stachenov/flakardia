@@ -5,6 +5,8 @@ import name.tachenov.flakardia.app.CardManager
 import name.tachenov.flakardia.app.DirEnterError
 import name.tachenov.flakardia.app.DirEnterResult
 import name.tachenov.flakardia.app.DirEnterSuccess
+import name.tachenov.flakardia.data.Library
+import name.tachenov.flakardia.storage.FlashcardStorage
 import name.tachenov.flakardia.ui.InitFrame
 import name.tachenov.flakardia.ui.SettingsDialog
 import java.awt.Font
@@ -46,7 +48,7 @@ fun configureAndEnterLibrary(manager: CardManager, whenDone: () -> Unit) {
                 }
             }
             else {
-                dirEnterResult = background { manager.enterLibrary(libraryPath) }
+                dirEnterResult = background { manager.enterLibrary(Library(FlashcardStorage(libraryPath)) ) }
                 if (dirEnterResult is DirEnterError) {
                     ui {
                         JOptionPane.showMessageDialog(
