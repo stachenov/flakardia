@@ -4,4 +4,5 @@ module flakardia {
     requires java.prefs;
     requires kotlin.stdlib;
     requires darklaf.core;
+    requires kotlinx.coroutines.core;
 }

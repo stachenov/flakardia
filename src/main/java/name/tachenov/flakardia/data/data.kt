@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.data
 
+import name.tachenov.flakardia.assertBGT
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -23,6 +24,7 @@ data class Word(
 
 data class Library(val path: Path) {
     fun readFlashcards(file: Path): FlashcardSetResult {
+        assertBGT()
         val lines = try {
             Files.readAllLines(file)
         } catch (e: Exception) {

@@ -1,11 +1,9 @@
 package name.tachenov.flakardia.ui
 
+import name.tachenov.flakardia.*
 import name.tachenov.flakardia.app.*
-import name.tachenov.flakardia.configureAndEnterLibrary
 import name.tachenov.flakardia.data.FlashcardSet
 import name.tachenov.flakardia.data.FlashcardSetError
-import name.tachenov.flakardia.showHelp
-import name.tachenov.flakardia.showSettingsDialog
 import java.awt.Component
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
@@ -241,27 +239,31 @@ class CardSetManagerFrame(private val manager: CardManager) : JFrame("Flakardia"
     }
 
     private fun openFrame(frame: (FlashcardSet) -> JFrame) {
-        list.requestFocusInWindow()
-        val entry =list.selectedValue?.entry ?: return
-        if (entry !is FlashcardSetFileEntry) {
-            return
-        }
-        when (val result = entry.readCards()) {
-            is FlashcardSet -> {
-                frame(result).apply {
-                    defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
-                    pack()
-                    setLocationRelativeTo(null)
-                    isVisible = true
-                }
+        threading {
+            val entry = ui {
+                list.requestFocusInWindow()
+                list.selectedValue?.entry
+            } ?: return@threading
+            if (entry !is FlashcardSetFileEntry) {
+                return@threading
             }
-            is FlashcardSetError -> {
-                JOptionPane.showMessageDialog(
-                    this,
-                    result.message,
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE,
-                )
+            when (val result = background { entry.readCards() }) {
+                is FlashcardSet -> ui {
+                    frame(result).apply {
+                        defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
+                        pack()
+                        setLocationRelativeTo(null)
+                        isVisible = true
+                    }
+                }
+                is FlashcardSetError -> ui {
+                    JOptionPane.showMessageDialog(
+                        this,
+                        result.message,
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE,
+                    )
+                }
             }
         }
     }
