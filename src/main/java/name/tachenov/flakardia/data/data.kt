@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.data
 
+import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.FlashcardSetListEntry
 import name.tachenov.flakardia.app.FlashcardSetUpEntry
@@ -63,7 +64,24 @@ data class Library(val storage: FlashcardStorage) {
         return result.sortedWith(compareBy({ it is FlashcardSetFileEntry }, { it.name }))
     }
 
-    fun readFlashcards(file: RelativePath): FlashcardSetResult = storage.readFlashcards(file)
+    fun readFlashcards(entry: FlashcardSetListEntry): FlashcardSetResult {
+        assertBGT()
+        return when (entry) {
+            is FlashcardSetFileEntry -> storage.readFlashcards(entry.file)
+            is FlashcardSetDirEntry -> {
+                val result = mutableListOf<Flashcard>()
+                val subEntries = readEntries(entry.dir)
+                for (subEntry in subEntries) {
+                    when (val subResult = readFlashcards(subEntry)) {
+                        is FlashcardSet -> result += subResult.cards
+                        is FlashcardSetError -> return subResult
+                    }
+                }
+                FlashcardSet(entry.name, result)
+            }
+            else -> FlashcardSet("", emptyList())
+        }
+    }
 
     fun fullPath(path: RelativePath): FullPath = FullPath(this, path)
 }

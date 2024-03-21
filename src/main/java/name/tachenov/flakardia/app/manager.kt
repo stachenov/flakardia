@@ -1,13 +1,13 @@
 package name.tachenov.flakardia.app
 
-import name.tachenov.flakardia.data.FlashcardSetResult
 import name.tachenov.flakardia.data.FullPath
 import name.tachenov.flakardia.data.Library
 import name.tachenov.flakardia.data.RelativePath
 
 class CardManager {
 
-    private var library: Library? = null
+    var library: Library? = null
+        private set
 
     var path: FullPath? = null
         private set
@@ -47,8 +47,6 @@ sealed class FlashcardSetListEntry {
 data class FlashcardSetFileEntry(val library: Library, val file: RelativePath) : FlashcardSetListEntry() {
     override val name: String
         get() = file.fileName
-
-    fun readCards(): FlashcardSetResult = library.readFlashcards(file)
 }
 
 data class FlashcardSetDirEntry(val dir: RelativePath) : FlashcardSetListEntry() {

@@ -170,7 +170,7 @@ class CardSetManagerFrame(
 
     private fun enableDisableButtons() {
         val selectedEntry = list.selectedValue?.entry
-        val enabled = selectedEntry is FlashcardSetFileEntry
+        val enabled = selectedEntry is FlashcardSetFileEntry || selectedEntry is FlashcardSetDirEntry
         viewButton.isEnabled = enabled
         simpleButton.isEnabled = enabled
         cramButton.isEnabled = enabled
@@ -255,12 +255,10 @@ class CardSetManagerFrame(
     private fun openFrame(frame: (FlashcardSet) -> JFrame) {
         list.requestFocusInWindow()
         val entry = list.selectedValue?.entry ?: return
-        if (entry !is FlashcardSetFileEntry) {
-            return
-        }
+        val library = manager.library ?: return
         service.processFlashcards(
             source = {
-                entry.readCards()
+                library.readFlashcards(entry)
             },
             processor = { result ->
                 when (result) {

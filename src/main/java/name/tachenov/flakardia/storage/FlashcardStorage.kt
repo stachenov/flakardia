@@ -36,7 +36,7 @@ data class FlashcardStorage(private val fsPath: Path) {
         val lines = try {
             Files.readAllLines(file.toFilePath())
         } catch (e: Exception) {
-            return FlashcardSetError(e.toString())
+            return FlashcardSetError(file.fileName + ": " + e.toString())
         }
         return parse(file.fileName, lines)
     }
@@ -61,7 +61,7 @@ private fun parse(name: String, lines: List<String>): FlashcardSetResult {
     else {
         val delimiter = guessDelimiter(lines)
         if (delimiter == null) {
-            return FlashcardSetError("Could not determine the delimiter character.\n" +
+            return FlashcardSetError("$name: Could not determine the delimiter character.\n" +
                 "It must appear once and only once in every non-blank line, but there was no such character")
         }
         else {
