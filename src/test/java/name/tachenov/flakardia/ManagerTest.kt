@@ -2,6 +2,7 @@ package name.tachenov.flakardia
 
 import com.google.common.jimfs.Jimfs
 import name.tachenov.flakardia.app.*
+import name.tachenov.flakardia.data.Library
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -14,11 +15,13 @@ class ManagerTest {
 
     private lateinit var fs: FileSystem
     private lateinit var root: Path
+    private lateinit var library: Library
 
     @BeforeEach
     fun setUp() {
         fs = Jimfs.newFileSystem()
         root = fs.getPath("cards")
+        library = Library(root)
     }
 
     @AfterEach
@@ -94,7 +97,7 @@ class ManagerTest {
 
     private fun file(name: String): File = File(name)
 
-    private fun filePath(path: String): FlashcardSetFileEntry = FlashcardSetFileEntry(fs.getPath(path))
+    private fun filePath(path: String): FlashcardSetFileEntry = FlashcardSetFileEntry(library, fs.getPath(path))
 
     private fun dirPath(path: String): FlashcardSetDirEntry = FlashcardSetDirEntry(fs.getPath(path))
 

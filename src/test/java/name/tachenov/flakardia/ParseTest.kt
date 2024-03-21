@@ -14,10 +14,12 @@ private const val DEFAULT_NAME = "test.cards"
 class ParseTest {
 
     private lateinit var fs: FileSystem
+    private lateinit var library: Library
 
     @BeforeEach
     fun setUp() {
         fs = Jimfs.newFileSystem()
+        library = Library(fs.getPath("."))
     }
 
     @AfterEach
@@ -72,14 +74,14 @@ class ParseTest {
 
     @Test
     fun `IO error`() {
-        val result = readFlashcards(fs.getPath(DEFAULT_NAME))
+        val result = library.readFlashcards(fs.getPath(DEFAULT_NAME))
         expect("file").match(result)
     }
 
     private fun parse(input: String, expectation: Expectation) {
         val file = fs.getPath(DEFAULT_NAME)
         Files.write(file, input.toByteArray())
-        expectation.match(readFlashcards(file))
+        expectation.match(library.readFlashcards(file))
     }
 
     private abstract class Expectation {

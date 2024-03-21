@@ -21,13 +21,15 @@ data class Word(
     val value: String,
 )
 
-fun readFlashcards(file: Path): FlashcardSetResult {
-    val lines = try {
-        Files.readAllLines(file)
-    } catch (e: Exception) {
-        return FlashcardSetError(e.toString())
+data class Library(val path: Path) {
+    fun readFlashcards(file: Path): FlashcardSetResult {
+        val lines = try {
+            Files.readAllLines(file)
+        } catch (e: Exception) {
+            return FlashcardSetError(e.toString())
+        }
+        return parse(file.fileName.toString(), lines)
     }
-    return parse(file.fileName.toString(), lines)
 }
 
 private fun parse(name: String, lines: List<String>): FlashcardSetResult {
