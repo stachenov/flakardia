@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.app
 
+import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.data.FlashcardSetResult
 import name.tachenov.flakardia.data.Library
 import java.nio.file.Files
@@ -32,6 +33,7 @@ class CardManager {
     }
 
     private fun readEntries(path: Path): List<FlashcardSetListEntry> {
+        assertBGT()
         val result = mutableListOf<FlashcardSetListEntry>()
         val parent = path.parent
         val library = library ?: return emptyList()

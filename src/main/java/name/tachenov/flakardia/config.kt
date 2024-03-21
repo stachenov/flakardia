@@ -35,29 +35,35 @@ fun setAppFont(font: Font) {
     preferences.put(FONT_KEY, "${font.family} ${font.size}${if (font.isBold) " Bold" else ""}${if (font.isItalic) " Italic" else ""}")
 }
 
-fun configureAndEnterLibrary(manager: CardManager) {
-    var dirEnterResult: DirEnterResult? = null
-    while (dirEnterResult !is DirEnterSuccess) {
-        val libraryPath = getLibraryPath()
-        if (libraryPath == null) {
-            if (!showSettingsDialog()) {
-                exitProcess(0)
-            }
-        } else {
-            dirEnterResult = manager.enterLibrary(libraryPath)
-            if (dirEnterResult is DirEnterError) {
-                JOptionPane.showMessageDialog(
-                    null,
-                    "The following error occurred during an attempt to read the library:\n" +
-                        dirEnterResult.message,
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE,
-                )
-                if (!showSettingsDialog()) {
+fun configureAndEnterLibrary(manager: CardManager, whenDone: () -> Unit) {
+    threading {
+        var dirEnterResult: DirEnterResult? = null
+        while (dirEnterResult !is DirEnterSuccess) {
+            val libraryPath = getLibraryPath()
+            if (libraryPath == null) {
+                if (!ui { showSettingsDialog() }) {
                     exitProcess(0)
                 }
             }
+            else {
+                dirEnterResult = background { manager.enterLibrary(libraryPath) }
+                if (dirEnterResult is DirEnterError) {
+                    ui {
+                        JOptionPane.showMessageDialog(
+                            null,
+                            "The following error occurred during an attempt to read the library:\n" +
+                                dirEnterResult.message,
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE,
+                        )
+                    }
+                    if (!ui { showSettingsDialog() }) {
+                        exitProcess(0)
+                    }
+                }
+            }
         }
+        whenDone()
     }
 }
 

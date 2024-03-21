@@ -30,8 +30,9 @@ fun main() {
 private fun start() {
     val manager = CardManager()
     val service = FlashcardService()
-    configureAndEnterLibrary(manager)
-    showManagerFrame(manager, service)
+    configureAndEnterLibrary(manager) {
+        showManagerFrame(manager, service)
+    }
 }
 
 private fun showManagerFrame(manager: CardManager, service: FlashcardService) {

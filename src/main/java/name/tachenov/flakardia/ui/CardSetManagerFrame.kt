@@ -1,10 +1,12 @@
 package name.tachenov.flakardia.ui
 
-import name.tachenov.flakardia.*
 import name.tachenov.flakardia.app.*
+import name.tachenov.flakardia.configureAndEnterLibrary
 import name.tachenov.flakardia.data.FlashcardSet
 import name.tachenov.flakardia.data.FlashcardSetError
 import name.tachenov.flakardia.service.FlashcardService
+import name.tachenov.flakardia.showHelp
+import name.tachenov.flakardia.showSettingsDialog
 import java.awt.Component
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
@@ -159,9 +161,10 @@ class CardSetManagerFrame(
 
     private fun configure() {
         if (showSettingsDialog()) {
-            configureAndEnterLibrary(manager)
-            updateEntries()
-            pack()
+            configureAndEnterLibrary(manager) {
+                updateEntries()
+                pack()
+            }
         }
     }
 
@@ -194,19 +197,26 @@ class CardSetManagerFrame(
     }
 
     private fun enterDir(dirPath: Path, selectDir: Path? = null) {
-        when (val result = manager.enter(dirPath)) {
-            is DirEnterSuccess -> {
-                updateEntries(selectDir)
+        service.processEntries(
+            source = {
+                manager.enter(dirPath)
+            },
+            processor = { result ->
+                when (result) {
+                    is DirEnterSuccess -> {
+                        updateEntries(selectDir)
+                    }
+                    is DirEnterError -> {
+                        JOptionPane.showMessageDialog(
+                            this,
+                            result.message,
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE,
+                        )
+                    }
+                }
             }
-            is DirEnterError -> {
-                JOptionPane.showMessageDialog(
-                        this,
-                        result.message,
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE,
-                )
-            }
-        }
+        )
     }
 
     private fun updateEntries(selectDir: Path? = null) {
