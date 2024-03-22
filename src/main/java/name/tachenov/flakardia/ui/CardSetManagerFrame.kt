@@ -249,7 +249,7 @@ class CardSetManagerFrame(
         val library = manager.library ?: return
         service.processLessonData(
             source = {
-                library.prepareLessonData(entry)
+                library.getAllFlashcards(entry)
             },
             processor = { result ->
                 openFrame(result) { data -> FlashcardSetViewFrame(data) }

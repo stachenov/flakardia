@@ -30,13 +30,26 @@ data class Library(val storage: FlashcardStorage) {
         return result.sortedWith(compareBy({ it is FlashcardSetFileEntry }, { it.name }))
     }
 
+    fun getAllFlashcards(entry: FlashcardSetListEntry): LessonDataResult {
+        assertBGT()
+        return prepareLessonData(entry) { flashcardSet, libraryStats -> LessonData(flashcardSet, libraryStats.filter(flashcardSet)) }
+    }
+
     fun prepareLessonData(entry: FlashcardSetListEntry): LessonDataResult {
+        assertBGT()
+        return prepareLessonData(entry) { flashcardSet, libraryStats -> prepareLessonData(flashcardSet, libraryStats) }
+    }
+
+    private inline fun prepareLessonData(
+        entry: FlashcardSetListEntry,
+        prepare: (FlashcardSet, LibraryStats) -> LessonData,
+    ): LessonDataResult {
         assertBGT()
         return when (val flashcardSet = readFlashcards(entry)) {
             is FlashcardSetError -> LessonDataError(flashcardSet.message)
             is FlashcardSet -> when (val stats = storage.readLibraryStats()) {
                 is LibraryStatsError -> LessonDataError(stats.message)
-                is LibraryStats -> prepareLessonData(flashcardSet, stats)
+                is LibraryStats -> prepare(flashcardSet, stats)
             }
         }
     }
