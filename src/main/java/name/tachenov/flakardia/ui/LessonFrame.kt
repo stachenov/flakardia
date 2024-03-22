@@ -2,6 +2,8 @@ package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.app.Answer
 import name.tachenov.flakardia.app.Lesson
+import name.tachenov.flakardia.data.Library
+import name.tachenov.flakardia.service.FlashcardService
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import javax.swing.*
@@ -9,7 +11,11 @@ import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
 
-class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
+class LessonFrame(
+    private val service: FlashcardService,
+    private val library: Library,
+    private val lesson: Lesson
+) : JFrame(lesson.name) {
 
     private val lessonResultPanel = LessonResultPanel.create(lesson.result)
 
@@ -76,6 +82,7 @@ class LessonFrame(private val lesson: Lesson) : JFrame(lesson.name) {
         questionAnswerPanel.displayAnswerResult(answerResult)
         status.text = "Press Space to continue to the next question"
         lessonResultPanel.displayResult(lesson.result)
+        service.updateStats(library, lesson.stats)
     }
 
 }

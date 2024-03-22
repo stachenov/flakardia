@@ -6,9 +6,11 @@ import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.FlashcardSetListEntry
 import name.tachenov.flakardia.app.FlashcardSetUpEntry
 import name.tachenov.flakardia.assertBGT
+import name.tachenov.flakardia.storage.DurationSerializer
 import name.tachenov.flakardia.storage.FlashcardStorage
 import name.tachenov.flakardia.storage.InstantSerializer
 import name.tachenov.flakardia.storage.WordSerializer
+import java.time.Duration
 import java.time.Instant
 
 sealed class FlashcardSetResult
@@ -19,6 +21,15 @@ data class FlashcardSet(
 ) : FlashcardSetResult()
 
 data class FlashcardSetError(val message: String) : FlashcardSetResult()
+
+sealed class LessonDataResult
+
+data class LessonData(
+    val flashcardSet: FlashcardSet,
+    val stats: LibraryStats,
+) : LessonDataResult()
+
+data class LessonDataError(val message: String) : LessonDataResult()
 
 data class Flashcard(
     val front: Word,
@@ -55,16 +66,35 @@ class Word(val value: String) {
     }
 }
 
+sealed class LibraryStatsResult
+
 @Serializable
 data class LibraryStats(
     val wordStats: Map<Word, WordStats>
-)
+) : LibraryStatsResult() {
+    fun filter(flashcardSet: FlashcardSet): LibraryStats {
+        val words = flashcardSet.cards.asSequence()
+            .map { it.back }
+            .toSet()
+        return LibraryStats(
+            wordStats.filter { it.key in words }
+        )
+    }
+
+    fun update(stats: LibraryStats): LibraryStats = LibraryStats(
+        (wordStats.keys + stats.wordStats.keys).associateWith { (stats.wordStats[it] ?: wordStats.getValue(it)) }
+    )
+}
+
+data class LibraryStatsError(val message: String) : LibraryStatsResult()
 
 @Serializable
 data class WordStats(
     @Serializable(with = InstantSerializer::class)
     val lastLearned: Instant,
-    val attempts: Int,
+    @Serializable(with = DurationSerializer::class)
+    val intervalBeforeLastLearned: Duration,
+    val mistakes: Int,
 )
 
 data class RelativePath(
@@ -102,12 +132,36 @@ data class Library(val storage: FlashcardStorage) {
         if (parent != null) {
             result += FlashcardSetUpEntry(parent)
         }
-        result += storage.readEntries(this, path)
+        result += storage.readEntries(path)
         return result.sortedWith(compareBy({ it is FlashcardSetFileEntry }, { it.name }))
     }
 
-    fun readFlashcards(entry: FlashcardSetListEntry): FlashcardSetResult {
+    fun readLessonData(entry: FlashcardSetListEntry): LessonDataResult {
         assertBGT()
+        return when (val flashcardSet = readFlashcards(entry)) {
+            is FlashcardSetError -> LessonDataError(flashcardSet.message)
+            is FlashcardSet -> when (val stats = storage.readLibraryStats()) {
+                is LibraryStatsError -> LessonDataError(stats.message)
+                is LibraryStats -> LessonData(
+                    flashcardSet,
+                    stats.filter(flashcardSet),
+                )
+            }
+        }
+    }
+
+    fun updateStats(stats: LibraryStats) {
+        assertBGT()
+        when (val allStats = storage.readLibraryStats()) {
+            is LibraryStats -> {
+                val updatedStats = allStats.update(stats)
+                storage.saveLibraryStats(updatedStats)
+            }
+            is LibraryStatsError -> { }
+        }
+    }
+
+    private fun readFlashcards(entry: FlashcardSetListEntry): FlashcardSetResult {
         return when (entry) {
             is FlashcardSetFileEntry -> storage.readFlashcards(entry.file)
             is FlashcardSetDirEntry -> {

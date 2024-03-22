@@ -106,7 +106,7 @@ class ManagerTest {
 
     private fun file(name: String): File = File(name)
 
-    private fun filePath(path: String): FlashcardSetFileEntry = FlashcardSetFileEntry(library, path.parsePath())
+    private fun filePath(path: String): FlashcardSetFileEntry = FlashcardSetFileEntry(path.parsePath())
 
     private fun dirPath(path: String): FlashcardSetDirEntry = FlashcardSetDirEntry(path.parsePath())
 

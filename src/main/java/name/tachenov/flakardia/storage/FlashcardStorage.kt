@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.storage
 
+import kotlinx.serialization.encodeToString
 import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.FlashcardSetListEntry
@@ -7,23 +8,27 @@ import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.data.*
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import kotlin.io.path.name
 import kotlin.io.path.relativeTo
 
 data class FlashcardStorage(private val fsPath: Path) {
 
+    private val flakardiaDir: Path = fsPath.resolve(".flakardia")
+    private val statsFile: Path = flakardiaDir.resolve("stats.json")
+
     val path: String
         get() = fsPath.fileName.toString()
 
-    fun readEntries(library: Library, path: RelativePath): List<FlashcardSetListEntry> {
+    fun readEntries(path: RelativePath): List<FlashcardSetListEntry> {
         assertBGT()
         val result = mutableListOf<FlashcardSetListEntry>()
         Files.newDirectoryStream(path.toFilePath()).use { dir ->
             dir.forEach { entry ->
                 if (Files.isRegularFile(entry) && Files.isReadable(entry)) {
-                    result += FlashcardSetFileEntry(library, entry.toRelativePath())
+                    result += FlashcardSetFileEntry(entry.toRelativePath())
                 }
-                else if (Files.isDirectory(entry)) {
+                else if (Files.isDirectory(entry) && entry != flakardiaDir) {
                     result += FlashcardSetDirEntry(entry.toRelativePath())
                 }
             }
@@ -51,6 +56,36 @@ data class FlashcardStorage(private val fsPath: Path) {
 
     private fun Path.toRelativePath(): RelativePath = relativeTo(fsPath).let { path ->
         RelativePath((0 until path.nameCount).map { path.getName(it).name })
+    }
+
+    fun readLibraryStats(): LibraryStatsResult {
+        assertBGT()
+        try {
+            ensureFlakardiaDirExists()
+            val json = if (Files.exists(statsFile)) {
+                Files.readString(statsFile)
+            }
+            else {
+                return LibraryStats(emptyMap())
+            }
+            return SERIALIZER.decodeFromString<LibraryStats>(json)
+        } catch (e: Exception) {
+            return LibraryStatsError(e.toString())
+        }
+    }
+
+    fun saveLibraryStats(stats: LibraryStats) {
+        assertBGT()
+        ensureFlakardiaDirExists()
+        val tempFile = Files.createTempFile(flakardiaDir, "stats", ".json")
+        Files.writeString(tempFile, SERIALIZER.encodeToString(stats))
+        Files.move(tempFile, statsFile, StandardCopyOption.REPLACE_EXISTING)
+    }
+
+    private fun ensureFlakardiaDirExists() {
+        if (!Files.exists(flakardiaDir)) {
+            Files.createDirectories(flakardiaDir)
+        }
     }
 }
 

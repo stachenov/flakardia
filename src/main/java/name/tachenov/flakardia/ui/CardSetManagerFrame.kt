@@ -2,8 +2,8 @@ package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.configureAndEnterLibrary
-import name.tachenov.flakardia.data.FlashcardSet
-import name.tachenov.flakardia.data.FlashcardSetError
+import name.tachenov.flakardia.data.LessonData
+import name.tachenov.flakardia.data.LessonDataError
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.service.FlashcardService
 import name.tachenov.flakardia.showHelp
@@ -109,10 +109,10 @@ class CardSetManagerFrame(
             viewFlashcards()
         }
         simpleButton.addActionListener {
-            startLesson { flashcardSet -> SimpleLesson(flashcardSet) }
+            startLesson { lessonData -> SimpleLesson(lessonData) }
         }
         cramButton.addActionListener {
-            startLesson { flashcardSet -> CramLesson(flashcardSet) }
+            startLesson { lessonData -> CramLesson(lessonData) }
         }
         settingsButton.addActionListener {
             configure()
@@ -248,21 +248,22 @@ class CardSetManagerFrame(
         openFrame { cards -> FlashcardSetViewFrame(cards) }
     }
 
-    private fun startLesson(lesson: (FlashcardSet) -> Lesson) {
-        openFrame { cards -> LessonFrame(lesson(cards)) }
+    private fun startLesson(lesson: (LessonData) -> Lesson) {
+        val library = manager.library ?: return
+        openFrame { cards -> LessonFrame(service, library, lesson(cards)) }
     }
 
-    private fun openFrame(frame: (FlashcardSet) -> JFrame) {
+    private fun openFrame(frame: (LessonData) -> JFrame) {
         list.requestFocusInWindow()
         val entry = list.selectedValue?.entry ?: return
         val library = manager.library ?: return
-        service.processFlashcards(
+        service.processLessonData(
             source = {
-                library.readFlashcards(entry)
+                library.readLessonData(entry)
             },
             processor = { result ->
                 when (result) {
-                    is FlashcardSet -> {
+                    is LessonData -> {
                         frame(result).apply {
                             defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
                             pack()
@@ -270,7 +271,7 @@ class CardSetManagerFrame(
                             isVisible = true
                         }
                     }
-                    is FlashcardSetError -> {
+                    is LessonDataError -> {
                         JOptionPane.showMessageDialog(
                             this,
                             result.message,

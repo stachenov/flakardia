@@ -1,12 +1,12 @@
 package name.tachenov.flakardia.app
 
 import name.tachenov.flakardia.data.Flashcard
-import name.tachenov.flakardia.data.FlashcardSet
+import name.tachenov.flakardia.data.LessonData
 
-class CramLesson(flashcardSet: FlashcardSet) : Lesson(flashcardSet) {
+class CramLesson(lessonData: LessonData) : Lesson(lessonData) {
 
     private val cardSets: Map<CramLevel, MutableSet<Flashcard>> = CramLevel.entries.associateWith {
-        if (it == CramLevel.LEVEL_1) flashcardSet.cards.toMutableSet() else mutableSetOf()
+        if (it == CramLevel.LEVEL_1) lessonData.flashcardSet.cards.toMutableSet() else mutableSetOf()
     }
 
     private var cramLevel: CramLevel = CramLevel.LEVEL_1

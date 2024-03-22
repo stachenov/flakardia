@@ -1,10 +1,10 @@
 package name.tachenov.flakardia.ui
 
-import name.tachenov.flakardia.data.FlashcardSet
+import name.tachenov.flakardia.data.LessonData
 import javax.swing.*
 import javax.swing.table.DefaultTableModel
 
-class FlashcardSetViewFrame(flashcardSet: FlashcardSet) : JFrame(flashcardSet.name) {
+class FlashcardSetViewFrame(lessonData: LessonData) : JFrame(lessonData.flashcardSet.name) {
 
     init {
         val contentPane = JPanel()
@@ -31,7 +31,7 @@ class FlashcardSetViewFrame(flashcardSet: FlashcardSet) : JFrame(flashcardSet.na
         val model = DefaultTableModel()
         model.addColumn("Question")
         model.addColumn("Answer")
-        for (card in flashcardSet.cards) {
+        for (card in lessonData.flashcardSet.cards) {
             model.addRow(arrayOf(card.front.value, card.back.value))
         }
         table.model = model

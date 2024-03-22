@@ -2,7 +2,9 @@ package name.tachenov.flakardia.service
 
 import name.tachenov.flakardia.app.DirEnterResult
 import name.tachenov.flakardia.background
-import name.tachenov.flakardia.data.FlashcardSetResult
+import name.tachenov.flakardia.data.LessonDataResult
+import name.tachenov.flakardia.data.Library
+import name.tachenov.flakardia.data.LibraryStats
 import name.tachenov.flakardia.threading
 import name.tachenov.flakardia.ui
 
@@ -13,9 +15,9 @@ class FlashcardService {
         processor: (DirEnterResult) -> Unit
     ) = process(source, processor)
 
-    fun processFlashcards(
-        source: () -> FlashcardSetResult,
-        processor: (FlashcardSetResult) -> Unit,
+    fun processLessonData(
+        source: () -> LessonDataResult,
+        processor: (LessonDataResult) -> Unit,
     ) = process(source, processor)
 
     private fun <T : Any> process(
@@ -28,6 +30,14 @@ class FlashcardService {
             }
             ui {
                 processor(result)
+            }
+        }
+    }
+
+    fun updateStats(library: Library, stats: LibraryStats) {
+        threading {
+            background {
+                library.updateStats(stats)
             }
         }
     }

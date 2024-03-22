@@ -1,12 +1,12 @@
 package name.tachenov.flakardia.app
 
 import name.tachenov.flakardia.data.Flashcard
-import name.tachenov.flakardia.data.FlashcardSet
+import name.tachenov.flakardia.data.LessonData
 
-class SimpleLesson(flashcardSet: FlashcardSet) : Lesson(flashcardSet) {
+class SimpleLesson(lessonData: LessonData) : Lesson(lessonData) {
 
-    private val total = flashcardSet.cards.size
-    private val remaining = ArrayDeque(flashcardSet.cards.shuffled())
+    private val total = lessonData.flashcardSet.cards.size
+    private val remaining = ArrayDeque(lessonData.flashcardSet.cards.shuffled())
     private val incorrect: MutableSet<Flashcard> = hashSetOf()
     private var round = 1
 

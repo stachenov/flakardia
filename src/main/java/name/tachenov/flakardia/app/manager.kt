@@ -44,7 +44,7 @@ sealed class FlashcardSetListEntry {
     abstract val name: String
 }
 
-data class FlashcardSetFileEntry(val library: Library, val file: RelativePath) : FlashcardSetListEntry() {
+data class FlashcardSetFileEntry(val file: RelativePath) : FlashcardSetListEntry() {
     override val name: String
         get() = file.fileName
 }
