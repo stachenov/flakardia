@@ -23,7 +23,7 @@ class CardManager {
     fun enter(path: RelativePath): DirEnterResult {
         try {
             val library = this.library ?: return DirEnterError("No library selected")
-            entries = library.readEntries(path)
+            entries = library.listEntries(path)
             this.path = library.fullPath(path)
             return DirEnterSuccess
         }

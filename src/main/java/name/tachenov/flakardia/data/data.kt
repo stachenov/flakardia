@@ -131,7 +131,7 @@ data class Library(val storage: FlashcardStorage) {
     val path: String
         get() = storage.path
 
-    fun readEntries(path: RelativePath): List<FlashcardSetListEntry> {
+    fun listEntries(path: RelativePath): List<FlashcardSetListEntry> {
         assertBGT()
         val result = mutableListOf<FlashcardSetListEntry>()
         val parent = path.parent
@@ -142,7 +142,7 @@ data class Library(val storage: FlashcardStorage) {
         return result.sortedWith(compareBy({ it is FlashcardSetFileEntry }, { it.name }))
     }
 
-    fun readLessonData(entry: FlashcardSetListEntry): LessonDataResult {
+    fun prepareLessonData(entry: FlashcardSetListEntry): LessonDataResult {
         assertBGT()
         return when (val flashcardSet = readFlashcards(entry)) {
             is FlashcardSetError -> LessonDataError(flashcardSet.message)
@@ -172,7 +172,7 @@ data class Library(val storage: FlashcardStorage) {
             is FlashcardSetFileEntry -> storage.readFlashcards(entry.file)
             is FlashcardSetDirEntry -> {
                 val result = mutableListOf<Flashcard>()
-                val subEntries = readEntries(entry.dir)
+                val subEntries = listEntries(entry.dir)
                 for (subEntry in subEntries) {
                     when (val subResult = readFlashcards(subEntry)) {
                         is FlashcardSet -> result += subResult.cards

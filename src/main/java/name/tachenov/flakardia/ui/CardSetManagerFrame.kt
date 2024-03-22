@@ -259,7 +259,7 @@ class CardSetManagerFrame(
         val library = manager.library ?: return
         service.processLessonData(
             source = {
-                library.readLessonData(entry)
+                library.prepareLessonData(entry)
             },
             processor = { result ->
                 when (result) {
