@@ -1,7 +1,6 @@
 package name.tachenov.flakardia.app
 
 import name.tachenov.flakardia.data.FullPath
-import name.tachenov.flakardia.data.Library
 import name.tachenov.flakardia.data.RelativePath
 
 class CardManager {

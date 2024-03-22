@@ -3,7 +3,7 @@ package name.tachenov.flakardia.service
 import name.tachenov.flakardia.app.DirEnterResult
 import name.tachenov.flakardia.background
 import name.tachenov.flakardia.data.LessonDataResult
-import name.tachenov.flakardia.data.Library
+import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.data.LibraryStats
 import name.tachenov.flakardia.data.StatsSaveResult
 import name.tachenov.flakardia.threading

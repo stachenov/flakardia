@@ -2,7 +2,7 @@ package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.app.Answer
 import name.tachenov.flakardia.app.Lesson
-import name.tachenov.flakardia.data.Library
+import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.data.StatsSaveError
 import name.tachenov.flakardia.data.StatsSaveSuccess
 import name.tachenov.flakardia.service.FlashcardService

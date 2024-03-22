@@ -3,7 +3,7 @@ package name.tachenov.flakardia
 import com.google.common.jimfs.Jimfs
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.data.FullPath
-import name.tachenov.flakardia.data.Library
+import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.storage.FlashcardStorage
 import org.assertj.core.api.Assertions.assertThat

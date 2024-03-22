@@ -5,7 +5,7 @@ import name.tachenov.flakardia.app.CardManager
 import name.tachenov.flakardia.app.DirEnterError
 import name.tachenov.flakardia.app.DirEnterResult
 import name.tachenov.flakardia.app.DirEnterSuccess
-import name.tachenov.flakardia.data.Library
+import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.storage.FlashcardStorage
 import name.tachenov.flakardia.ui.InitFrame
 import name.tachenov.flakardia.ui.SettingsDialog
