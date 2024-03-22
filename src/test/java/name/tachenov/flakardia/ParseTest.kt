@@ -1,7 +1,6 @@
 package name.tachenov.flakardia
 
 import com.google.common.jimfs.Jimfs
-import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.data.*
 import name.tachenov.flakardia.storage.FlashcardStorage
 import org.assertj.core.api.Assertions.assertThat
@@ -17,13 +16,11 @@ class ParseTest {
 
     private lateinit var fs: FileSystem
     private lateinit var storage: FlashcardStorage
-    private lateinit var library: Library
 
     @BeforeEach
     fun setUp() {
         fs = Jimfs.newFileSystem()
         storage = FlashcardStorage(fs.getPath("."))
-        library = Library(storage)
     }
 
     @AfterEach
@@ -78,14 +75,14 @@ class ParseTest {
 
     @Test
     fun `IO error`() {
-        val result = library.readFlashcards(FlashcardSetFileEntry(library, RelativePath(listOf(DEFAULT_NAME))))
+        val result = storage.readFlashcards(RelativePath(listOf(DEFAULT_NAME)))
         expect("file").match(result)
     }
 
     private fun parse(input: String, expectation: Expectation) {
         val file = fs.getPath(DEFAULT_NAME)
         Files.write(file, input.toByteArray())
-        expectation.match(library.readFlashcards(FlashcardSetFileEntry(library, RelativePath(listOf(DEFAULT_NAME)))))
+        expectation.match(storage.readFlashcards(RelativePath(listOf(DEFAULT_NAME))))
     }
 
     private abstract class Expectation {
