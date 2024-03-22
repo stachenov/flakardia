@@ -3,6 +3,8 @@ package name.tachenov.flakardia.ui
 import name.tachenov.flakardia.app.Answer
 import name.tachenov.flakardia.app.Lesson
 import name.tachenov.flakardia.data.Library
+import name.tachenov.flakardia.data.StatsSaveError
+import name.tachenov.flakardia.data.StatsSaveSuccess
 import name.tachenov.flakardia.service.FlashcardService
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
@@ -82,7 +84,17 @@ class LessonFrame(
         questionAnswerPanel.displayAnswerResult(answerResult)
         status.text = "Press Space to continue to the next question"
         lessonResultPanel.displayResult(lesson.result)
-        service.updateStats(library, lesson.stats)
+        service.updateStats(library, lesson.stats) { result ->
+            when (result) {
+                is StatsSaveError -> JOptionPane.showMessageDialog(
+                    this,
+                    result.message,
+                    "An error occurred when trying to save word statistics",
+                    JOptionPane.ERROR_MESSAGE,
+                )
+                is StatsSaveSuccess -> { }
+            }
+        }
     }
 
 }

@@ -120,6 +120,12 @@ data class FullPath(
     override fun toString(): String = if (relativePath.isEmpty()) library.path else library.path + "/" + relativePath.toString()
 }
 
+sealed class StatsSaveResult
+
+data object StatsSaveSuccess : StatsSaveResult()
+
+data class StatsSaveError(val message: String) : StatsSaveResult()
+
 data class Library(val storage: FlashcardStorage) {
 
     val path: String
@@ -150,14 +156,14 @@ data class Library(val storage: FlashcardStorage) {
         }
     }
 
-    fun updateStats(stats: LibraryStats) {
+    fun saveUpdatedStats(stats: LibraryStats): StatsSaveResult {
         assertBGT()
-        when (val allStats = storage.readLibraryStats()) {
+        return when (val allStats = storage.readLibraryStats()) {
             is LibraryStats -> {
                 val updatedStats = allStats.update(stats)
                 storage.saveLibraryStats(updatedStats)
             }
-            is LibraryStatsError -> { }
+            is LibraryStatsError -> StatsSaveError(allStats.message)
         }
     }
 

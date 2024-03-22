@@ -74,12 +74,17 @@ data class FlashcardStorage(private val fsPath: Path) {
         }
     }
 
-    fun saveLibraryStats(stats: LibraryStats) {
+    fun saveLibraryStats(stats: LibraryStats): StatsSaveResult {
         assertBGT()
-        ensureFlakardiaDirExists()
-        val tempFile = Files.createTempFile(flakardiaDir, "stats", ".json")
-        Files.writeString(tempFile, SERIALIZER.encodeToString(stats))
-        Files.move(tempFile, statsFile, StandardCopyOption.REPLACE_EXISTING)
+        try {
+            ensureFlakardiaDirExists()
+            val tempFile = Files.createTempFile(flakardiaDir, "stats", ".json")
+            Files.writeString(tempFile, SERIALIZER.encodeToString(stats))
+            Files.move(tempFile, statsFile, StandardCopyOption.REPLACE_EXISTING)
+            return StatsSaveSuccess
+        } catch (e: Exception) {
+            return StatsSaveError(e.toString())
+        }
     }
 
     private fun ensureFlakardiaDirExists() {

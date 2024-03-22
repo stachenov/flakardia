@@ -5,6 +5,7 @@ import name.tachenov.flakardia.background
 import name.tachenov.flakardia.data.LessonDataResult
 import name.tachenov.flakardia.data.Library
 import name.tachenov.flakardia.data.LibraryStats
+import name.tachenov.flakardia.data.StatsSaveResult
 import name.tachenov.flakardia.threading
 import name.tachenov.flakardia.ui
 
@@ -34,10 +35,13 @@ class FlashcardService {
         }
     }
 
-    fun updateStats(library: Library, stats: LibraryStats) {
+    fun updateStats(library: Library, stats: LibraryStats, processor: (StatsSaveResult) -> Unit) {
         threading {
-            background {
-                library.updateStats(stats)
+            val result = background {
+                library.saveUpdatedStats(stats)
+            }
+            ui {
+                processor(result)
             }
         }
     }
