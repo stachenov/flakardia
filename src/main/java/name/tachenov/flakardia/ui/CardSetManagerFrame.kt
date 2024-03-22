@@ -4,6 +4,7 @@ import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.configureAndEnterLibrary
 import name.tachenov.flakardia.data.LessonData
 import name.tachenov.flakardia.data.LessonDataError
+import name.tachenov.flakardia.data.LessonDataResult
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.service.FlashcardService
 import name.tachenov.flakardia.showHelp
@@ -27,15 +28,15 @@ class CardSetManagerFrame(
     private val dir = JLabel()
     private val list = JList<CardListEntryView>()
     private val model = DefaultListModel<CardListEntryView>()
-    private val viewButton = JButton("View flashcards").apply {
+    private val viewButton = ListEntryActionButton("View flashcards").apply {
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_V
     }
-    private val simpleButton = JButton("Start simple lesson").apply {
+    private val simpleButton = ListEntryActionButton("Start simple lesson").apply {
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_S
     }
-    private val cramButton = JButton("Start cram lesson").apply {
+    private val cramButton = ListEntryActionButton("Start cram lesson").apply {
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_C
     }
@@ -105,14 +106,14 @@ class CardSetManagerFrame(
 
         list.model = model
 
-        viewButton.addActionListener {
-            viewFlashcards()
+        viewButton.addEntryActionListener {
+            viewFlashcards(it)
         }
-        simpleButton.addActionListener {
-            startLesson { lessonData -> SimpleLesson(lessonData) }
+        simpleButton.addEntryActionListener {
+            startLesson(it) { lessonData -> SimpleLesson(lessonData) }
         }
-        cramButton.addActionListener {
-            startLesson { lessonData -> CramLesson(lessonData) }
+        cramButton.addEntryActionListener {
+            startLesson(it) { lessonData -> CramLesson(lessonData) }
         }
         settingsButton.addActionListener {
             configure()
@@ -190,7 +191,7 @@ class CardSetManagerFrame(
     private fun openElement() {
         val selectedEntry = list.selectedValue?.entry ?: return
         when (selectedEntry) {
-            is FlashcardSetFileEntry -> viewFlashcards()
+            is FlashcardSetFileEntry -> viewFlashcards(selectedEntry)
             is FlashcardSetDirEntry -> enterDir(selectedEntry.dir)
             is FlashcardSetUpEntry -> goUp()
         }
@@ -244,44 +245,60 @@ class CardSetManagerFrame(
         }
     }
 
-    private fun viewFlashcards() {
-        openFrame { cards -> FlashcardSetViewFrame(cards) }
-    }
-
-    private fun startLesson(lesson: (LessonData) -> Lesson) {
-        val library = manager.library ?: return
-        openFrame { cards -> LessonFrame(service, library, lesson(cards)) }
-    }
-
-    private fun openFrame(frame: (LessonData) -> JFrame) {
-        list.requestFocusInWindow()
-        val entry = list.selectedValue?.entry ?: return
+    private fun viewFlashcards(entry: FlashcardSetListEntry) {
         val library = manager.library ?: return
         service.processLessonData(
             source = {
                 library.prepareLessonData(entry)
             },
             processor = { result ->
-                when (result) {
-                    is LessonData -> {
-                        frame(result).apply {
-                            defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
-                            pack()
-                            setLocationRelativeTo(null)
-                            isVisible = true
-                        }
-                    }
-                    is LessonDataError -> {
-                        JOptionPane.showMessageDialog(
-                            this,
-                            result.message,
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE,
-                        )
-                    }
-                }
+                openFrame(result) { data -> FlashcardSetViewFrame(data) }
             },
         )
+    }
+
+    private fun startLesson(entry: FlashcardSetListEntry, lesson: (LessonData) -> Lesson) {
+        val library = manager.library ?: return
+        service.processLessonData(
+            source = {
+                library.prepareLessonData(entry)
+            },
+            processor = { result ->
+                openFrame(result) { data -> LessonFrame(service, library, lesson(data)) }
+            },
+        )
+    }
+
+    private fun openFrame(result: LessonDataResult, frame: (LessonData) -> JFrame) {
+        when (result) {
+            is LessonData -> {
+                frame(result).apply {
+                    defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
+                    pack()
+                    setLocationRelativeTo(null)
+                    isVisible = true
+                }
+            }
+            is LessonDataError -> {
+                JOptionPane.showMessageDialog(
+                    this,
+                    result.message,
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE,
+                )
+            }
+        }
+    }
+
+    private inner class ListEntryActionButton(text: String) : JButton(text) {
+        fun addEntryActionListener(listener: (FlashcardSetListEntry) -> Unit) {
+            addActionListener {
+                list.requestFocusInWindow()
+                val entry = list.selectedValue?.entry ?: return@addActionListener
+                listener(entry)
+            }
+        }
+
     }
 
 }
