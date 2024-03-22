@@ -3,6 +3,16 @@ package name.tachenov.flakardia.app
 import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.data.*
 import name.tachenov.flakardia.storage.FlashcardStorage
+import java.time.Duration
+import java.time.Instant
+import kotlin.math.roundToLong
+
+private const val maxWordsPerLesson = 30
+private const val intervalMultiplierWithoutMistakes = 1.5
+private const val intervalMultiplierWithMistake = 1.0
+private const val intervalMultiplierWithManyMistakes = 0.5
+private val lastLearnedFallback: Duration = Duration.ofDays(365)
+private val intervalFallback: Duration = Duration.ofDays(1)
 
 data class Library(val storage: FlashcardStorage) {
 
@@ -26,12 +36,41 @@ data class Library(val storage: FlashcardStorage) {
             is FlashcardSetError -> LessonDataError(flashcardSet.message)
             is FlashcardSet -> when (val stats = storage.readLibraryStats()) {
                 is LibraryStatsError -> LessonDataError(stats.message)
-                is LibraryStats -> LessonData(
-                        flashcardSet,
-                        stats.filter(flashcardSet),
-                )
+                is LibraryStats -> prepareLessonData(flashcardSet, stats)
             }
         }
+    }
+
+    private fun prepareLessonData(flashcardSet: FlashcardSet, stats: LibraryStats): LessonData {
+        // Take all flashcards and calculate for every flashcard, when it should be ideally learned next.
+        // This is calculated as the last learned time plus the interval, which is the interval between two
+        // previous learn times, multiplied by a factor that depends on how many mistakes were there the last time.
+        // Then sort all flashcard by the estimated next learn time and simply take N first ones.
+        // In theory this should lead to the selection of the most "forgotten" words.
+        val now: Instant = Instant.now()
+        val flashcards = flashcardSet.cards.toMutableList()
+        flashcards.shuffle()
+        val nextLearnTimes = flashcardSet.cards.associateWith { card ->
+            val word = card.back
+            val lastLearned: Instant = stats.wordStats[word]?.lastLearned ?: now.minus(lastLearnedFallback)
+            val mistakes = stats.wordStats[word]?.mistakes ?: 0
+            val previousInterval: Duration = stats.wordStats[word]?.intervalBeforeLastLearned ?: intervalFallback
+            val interval = previousInterval * (when (mistakes) {
+                0 -> intervalMultiplierWithoutMistakes
+                1 -> intervalMultiplierWithMistake
+                else -> intervalMultiplierWithManyMistakes
+            })
+            lastLearned.plus(interval) as Instant
+        }
+        flashcards.sortBy { nextLearnTimes.getValue(it) }
+        val effectiveFlashcardSet = FlashcardSet(
+            flashcardSet.name,
+            flashcards.subList(0, flashcards.size.coerceAtMost(maxWordsPerLesson))
+        )
+        return LessonData(
+            effectiveFlashcardSet,
+            stats.filter(effectiveFlashcardSet),
+        )
     }
 
     fun saveUpdatedStats(stats: LibraryStats): StatsSaveResult {
@@ -65,3 +104,5 @@ data class Library(val storage: FlashcardStorage) {
 
     fun fullPath(path: RelativePath): FullPath = FullPath(this, path)
 }
+
+private operator fun Duration.times(d: Double): Duration = Duration.ofSeconds((toSeconds().toDouble() * d).roundToLong())
