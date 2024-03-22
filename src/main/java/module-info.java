@@ -5,4 +5,7 @@ module flakardia {
     requires kotlin.stdlib;
     requires darklaf.core;
     requires kotlinx.coroutines.core;
+    requires kotlinx.serialization.core;
+    requires kotlinx.serialization.json;
+    exports name.tachenov.flakardia.storage;
 }

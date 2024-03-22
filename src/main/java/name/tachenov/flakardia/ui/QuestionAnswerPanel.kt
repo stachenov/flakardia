@@ -3,6 +3,7 @@ package name.tachenov.flakardia.ui
 import name.tachenov.flakardia.app.Answer
 import name.tachenov.flakardia.app.AnswerResult
 import name.tachenov.flakardia.app.Question
+import name.tachenov.flakardia.data.Word
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import javax.swing.GroupLayout
@@ -30,11 +31,11 @@ class QuestionAnswerPanel(
         answerInput.text = ""
         answerInput.foreground = null
         correctAnswer.isVisible = false
-        question.text = nextQuestion.value
+        question.text = nextQuestion.word.value
     }
 
     fun displayAnswerResult(answerResult: AnswerResult) {
-        answerInput.text = answerResult.yourAnswer?.value
+        answerInput.text = answerResult.yourAnswer?.word?.value
         answerInput.isEditable = false
         answerInput.caret.blinkRate = 0
         answerInput.caret.isVisible = true
@@ -46,7 +47,7 @@ class QuestionAnswerPanel(
         else {
             answerInput.foreground = INCORRECT_COLOR
             correctAnswer.isVisible = true
-            correctAnswer.text = answerResult.correctAnswer.value
+            correctAnswer.text = answerResult.correctAnswer.word.value
         }
     }
 
@@ -74,7 +75,7 @@ class QuestionAnswerPanel(
                 when {
                     answerInput.isEditable && e.keyChar == '\n' -> {
                         e.consume()
-                        answered(Answer(answerInput.text))
+                        answered(Answer(Word(answerInput.text)))
                     }
                     !answerInput.isEditable && e.keyChar == ' ' -> {
                         e.consume()

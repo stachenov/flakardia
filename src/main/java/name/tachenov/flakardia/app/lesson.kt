@@ -2,6 +2,7 @@ package name.tachenov.flakardia.app
 
 import name.tachenov.flakardia.data.Flashcard
 import name.tachenov.flakardia.data.FlashcardSet
+import name.tachenov.flakardia.data.Word
 
 sealed class Lesson(
     flashcardSet: FlashcardSet,
@@ -18,13 +19,13 @@ sealed class Lesson(
 
     fun nextQuestion(): Question? {
         goToNextFlashcard()
-        return currentFlashcard?.let { Question(it.front.value) }
+        return currentFlashcard?.let { Question(it.front) }
     }
 
     fun answer(answer: Answer?): AnswerResult {
         val currentFlashcard = currentFlashcard
         checkNotNull(currentFlashcard) { "Cannot answer when there is no question (active flashcard)" }
-        val answerResult = AnswerResult(answer, Answer(currentFlashcard.back.value))
+        val answerResult = AnswerResult(answer, Answer(currentFlashcard.back))
         recordAnswerResult(answerResult)
         return answerResult
     }
@@ -33,25 +34,10 @@ sealed class Lesson(
 
 sealed class LessonResult
 
-data class Question(val value: String)
+data class Question(val word: Word)
 
-data class Answer(val value: String)
+data class Answer(val word: Word)
 
 data class AnswerResult(val yourAnswer: Answer?, val correctAnswer: Answer) {
-    val isCorrect: Boolean get() = answersMatch(yourAnswer, correctAnswer)
-}
-
-private fun answersMatch(yourAnswer: Answer?, correctAnswer: Answer): Boolean = normalize(yourAnswer) == normalize(correctAnswer)
-
-fun normalize(answer: Answer?): String? {
-    if (answer == null) {
-        return null
-    }
-    val sb = StringBuilder()
-    for (c in answer.value) {
-        if (c.isLetter()) {
-            sb.append(c)
-        }
-    }
-    return sb.toString()
+    val isCorrect: Boolean get() = yourAnswer?.word == correctAnswer.word
 }

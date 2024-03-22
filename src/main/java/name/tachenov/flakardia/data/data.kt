@@ -1,11 +1,15 @@
 package name.tachenov.flakardia.data
 
+import kotlinx.serialization.Serializable
 import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.FlashcardSetListEntry
 import name.tachenov.flakardia.app.FlashcardSetUpEntry
 import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.storage.FlashcardStorage
+import name.tachenov.flakardia.storage.InstantSerializer
+import name.tachenov.flakardia.storage.WordSerializer
+import java.time.Instant
 
 sealed class FlashcardSetResult
 
@@ -21,8 +25,46 @@ data class Flashcard(
     val back: Word,
 )
 
-data class Word(
-    val value: String,
+@Serializable(with = WordSerializer::class)
+class Word(val value: String) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Word
+
+        return normalized() == other.normalized()
+    }
+
+    override fun hashCode(): Int {
+        return normalized().hashCode()
+    }
+
+    private fun normalized(): String {
+        val sb = StringBuilder()
+        for (c in value) {
+            if (c.isLetter()) {
+                sb.append(c)
+            }
+        }
+        return sb.toString()
+    }
+
+    override fun toString(): String {
+        return "Word(value='$value')"
+    }
+}
+
+@Serializable
+data class LibraryStats(
+    val wordStats: Map<Word, WordStats>
+)
+
+@Serializable
+data class WordStats(
+    @Serializable(with = InstantSerializer::class)
+    val lastLearned: Instant,
+    val attempts: Int,
 )
 
 data class RelativePath(
