@@ -21,6 +21,9 @@ class FlashcardService {
         processor: (LessonDataResult) -> Unit,
     ) = process(source, processor)
 
+    fun updateStats(library: Library, stats: LibraryStats, processor: (StatsSaveResult) -> Unit) =
+        process({ library.saveUpdatedStats(stats) }, processor)
+
     private fun <T : Any> process(
         source: () -> T,
         processor: (T) -> Unit,
@@ -28,17 +31,6 @@ class FlashcardService {
         threading {
             val result = background {
                 source()
-            }
-            ui {
-                processor(result)
-            }
-        }
-    }
-
-    fun updateStats(library: Library, stats: LibraryStats, processor: (StatsSaveResult) -> Unit) {
-        threading {
-            val result = background {
-                library.saveUpdatedStats(stats)
             }
             ui {
                 processor(result)
