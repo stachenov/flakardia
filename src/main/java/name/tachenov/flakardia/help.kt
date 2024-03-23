@@ -49,7 +49,7 @@ You'll be able to have a look at this help again once you've selected your libra
 
 1. Setting up
     
-If this is the first time you run Flakardia, then, as soon as you close this window, you should see a settings dialog, in which you should select a folder to use as your flashcard library. It can be any folder anywhere, and it doesn't have to actually contain any flashcard sets at this point, it just must exist.
+If this is the first time you run Flakardia, then, as soon as you close this window, you should see a settings dialog, in which you should select a folder to use as your flashcard library. It can be any folder anywhere, and it doesn't have to actually contain any flashcard sets at this point, it just must exist and must be writable.
 
 You can also optionally select the font to use and adjust its size and style. This font will be used everywhere in the app.
 
@@ -59,7 +59,7 @@ You'll be able to open the settings dialog again at any time if you wish.
 
 2. Organizing your flashcard library
 
-The library is just a folder that should contain text files with flashcard sets. If you have a lot of those, you can put them into subfolders. You'll be able to navigate those freely from the main window.
+The library is just a folder that should contain text files with flashcard sets. If you have a lot of those, you can put them into subfolders. You'll be able to navigate those freely from the main window. It's a good idea to have a few top-level subfolders, as you can then run lessons on the entire subfolder. To get started, try creating a single subfolder for the language you're going to learn.
 
 A flashcard, as far as Flakardia is concerned, is simply a pair of phrases. You can use any languages you want, and there are no restrictions on phrases, except common sense. In every pair, one phrase is the front of the card, or the question, and the other one is the back of the card, or the answer. During lessons, you'll have to answer these question by typing the answers. 
 
@@ -89,9 +89,9 @@ For detection to succeed, the flashcard set file must contain at least a couple 
 
 In the main window, the list of files and folders in the library will be displayed, with the path to the library above it. You can enter any subfolder by double-clicking it or selecting it and pressing Enter, and then the path to that folder will be displayed. You can leave the subfolder by pressing Backspace or by selecting and clicking (or pressing Enter) the ".." element. But you can't navigate outside the library folder that way, as that wouldn't make any sense.
 
-If you select any file and press Enter or double-click it, then the list of flashcards in that file will be displayed in a new window. The same will happen if you press the View flashcards button.
+If you select any file and press Enter or double-click it, then the list of flashcards in that file will be displayed in a new window. The same will happen if you press the View flashcards button. The button will actually work even if you select a folder, then you'll see the list of flashcards in the entire folder.
 
-To start a lesson, press the Start simple lesson or Start cram lesson button. The lesson will be started in a new window.
+To start a lesson, press the Start lesson button. The lesson will be started in a new window. You can start a lesson on a file or a whole folder. Either way, the lesson will be limited to just 30 flashcards. These 30 flashcards are chosen depending on how much time has passed since you saw a flashcard the last time, and how much mistakes you made the last time. The flashcards that you haven't seen for a while, and hard words you didn't get on the first try will be prioritized. For the first lesson, the choice of 30 flashcards is random.
 
 4. Going through a lesson
 
@@ -99,23 +99,9 @@ You'll see a question and an input field just below it. That's where you type yo
 
 Note that your answer is compared letter-by-letter to the correct one. Whitespace, punctuation and whatever other crazy characters you can type, are ignored completely.
 
-5. Simple lessons
+Once you've gone through all the words, you'll start going through words you didn't get right on the first try, if any. if there are none, the lesson is over. Otherwise, once you've finished working on your mistakes, the second round starts. You'll have to go through all the words again. The lesson will be over once you get all the words right in a single round. The number of the round is displayed above the input field. If it's red, it means you're currently working on the mistakes made in that round.
 
-Simple lessons are really, really simple. You go through the questions once, you see how many answers you got right. If you got some wrong, the next round begins, this time you only go through those question you got wrong. The process repeats until you get all of them right.
-
-The order of questions is random, so your muscle memory doesn't get in the way.
-
-6. Cram lessons
-
-Cram lessons use Leitner-like system. Flashcards are divided into 5 levels. All of them start at the level 1. As you progress, they're promoted. When all of them are promoted to the level 5, the lesson is over.
-
-You start at the level 1 and go through all the questions once. The ones you got right are promoted to the level 2, the rest remain at the level 1. Once you're done with one level, you move to the lowest level that has at least one flashcard. For example, if you got everything right in the first level, you proceed to the level 2. Otherwise, you go over the cards that remained at the level 1. If after that there are still some left, you go over them again and again until all of t hem are promoted to the level 2.
-
-Then everything repeats for the level 2, level 3 and level 4. If during any of those levels you get any single question wrong, it is instantly demoted to the level 1 and you'll have to go back to it and again promote it to the higher levels.
-
-The current level you're dealing with is displayed at the top, and next to it there's a table showing how many cards are currently at every level.
-
-7. Copyright and license information
+5. Copyright and license information
 
 MIT License
 
