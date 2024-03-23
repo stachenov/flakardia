@@ -32,13 +32,9 @@ class CardSetManagerFrame(
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_V
     }
-    private val simpleButton = ListEntryActionButton("Start simple lesson").apply {
+    private val lessonButton = ListEntryActionButton("Start lesson").apply {
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_S
-    }
-    private val cramButton = ListEntryActionButton("Start cram lesson").apply {
-        horizontalAlignment = SwingConstants.LEADING
-        mnemonic = KeyEvent.VK_C
     }
     private val settingsButton = JButton("Settings").apply {
         horizontalAlignment = SwingConstants.LEADING
@@ -69,8 +65,7 @@ class CardSetManagerFrame(
             addPreferredGap(RELATED)
             addGroup(layout.createParallelGroup(LEADING).apply {
                 addComponent(viewButton)
-                addComponent(simpleButton)
-                addComponent(cramButton)
+                addComponent(lessonButton)
                 addComponent(settingsButton)
                 addComponent(helpButton)
             })
@@ -87,9 +82,7 @@ class CardSetManagerFrame(
                 addGroup(layout.createSequentialGroup().apply {
                     addComponent(viewButton)
                     addPreferredGap(RELATED)
-                    addComponent(simpleButton)
-                    addPreferredGap(RELATED)
-                    addComponent(cramButton)
+                    addComponent(lessonButton)
                     addPreferredGap(RELATED, DEFAULT_SIZE, INFINITY)
                     addComponent(settingsButton)
                     addPreferredGap(RELATED)
@@ -98,7 +91,7 @@ class CardSetManagerFrame(
             })
             addContainerGap()
         }
-        layout.linkSize(SwingConstants.HORIZONTAL, viewButton, simpleButton, cramButton, settingsButton, helpButton)
+        layout.linkSize(SwingConstants.HORIZONTAL, viewButton, lessonButton, settingsButton, helpButton)
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
         contentPane.layout = layout
@@ -109,11 +102,8 @@ class CardSetManagerFrame(
         viewButton.addEntryActionListener {
             viewFlashcards(it)
         }
-        simpleButton.addEntryActionListener {
-            startLesson(it) { lessonData -> SimpleLesson(lessonData) }
-        }
-        cramButton.addEntryActionListener {
-            startLesson(it) { lessonData -> CramLesson(lessonData) }
+        lessonButton.addEntryActionListener {
+            startLesson(it)
         }
         settingsButton.addActionListener {
             configure()
@@ -150,7 +140,7 @@ class CardSetManagerFrame(
             enableDisableButtons()
         }
 
-        val focusableComponents = listOf(list, viewButton, simpleButton, cramButton)
+        val focusableComponents = listOf(list, viewButton, lessonButton)
         focusTraversalPolicy = object : SortingFocusTraversalPolicy(compareBy { c ->
             focusableComponents.indexOf(c)
         }) {
@@ -173,8 +163,7 @@ class CardSetManagerFrame(
         val selectedEntry = list.selectedValue?.entry
         val enabled = selectedEntry is FlashcardSetFileEntry || selectedEntry is FlashcardSetDirEntry
         viewButton.isEnabled = enabled
-        simpleButton.isEnabled = enabled
-        cramButton.isEnabled = enabled
+        lessonButton.isEnabled = enabled
     }
 
     private fun goUp() {
@@ -257,14 +246,14 @@ class CardSetManagerFrame(
         )
     }
 
-    private fun startLesson(entry: FlashcardSetListEntry, lesson: (LessonData) -> Lesson) {
+    private fun startLesson(entry: FlashcardSetListEntry) {
         val library = manager.library ?: return
         service.processLessonData(
             source = {
                 library.prepareLessonData(entry)
             },
             processor = { result ->
-                openFrame(result) { data -> LessonFrame(service, library, lesson(data)) }
+                openFrame(result) { data -> LessonFrame(service, library, Lesson(data)) }
             },
         )
     }

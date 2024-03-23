@@ -19,7 +19,7 @@ class LessonFrame(
     private val lesson: Lesson
 ) : JFrame(lesson.name) {
 
-    private val lessonResultPanel = LessonResultPanel.create(lesson.result)
+    private val lessonResultPanel = LessonResultPanel(lesson.result)
 
     private val questionAnswerPanel = QuestionAnswerPanel(
         answered = this::answered,

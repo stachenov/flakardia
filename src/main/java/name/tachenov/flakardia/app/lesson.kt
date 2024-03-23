@@ -4,7 +4,24 @@ import name.tachenov.flakardia.data.*
 import java.time.Duration
 import java.time.Instant
 
-sealed class Lesson(
+data class LessonResult(
+    val round: Int,
+    val correctingMistakes: Boolean,
+    val total: Int,
+    val correct: Int,
+    val incorrect: Int,
+    val remaining: Int,
+)
+
+data class Question(val word: Word)
+
+data class Answer(val word: Word)
+
+data class AnswerResult(val yourAnswer: Answer?, val correctAnswer: Answer) {
+    val isCorrect: Boolean get() = yourAnswer?.word == correctAnswer.word
+}
+
+class Lesson(
     private val lessonData: LessonData,
 ) {
 
@@ -14,9 +31,19 @@ sealed class Lesson(
     // For a word learned for the first time, we need some sensible fake stats to initialize them.
     private val previousIntervalFallback: Duration = Duration.ofDays(1L)
 
+    private val total = lessonData.flashcardSet.cards.size
+    private var correctingMistakes = false
+    private val remaining = ArrayDeque<Flashcard>()
+    private val incorrect: MutableSet<Flashcard> = hashSetOf()
+    private var round = 0
+
+    private val correct: Int
+        get() = total - remaining.size - incorrect.size
+
     val name: String = lessonData.flashcardSet.name
 
-    abstract val result: LessonResult
+    val result: LessonResult
+        get() = LessonResult(round, correctingMistakes, total, correct, incorrect.size, remaining.size)
 
     val stats: LibraryStats
         get() = LibraryStats(
@@ -36,11 +63,8 @@ sealed class Lesson(
                 }
         )
 
-    protected abstract val currentFlashcard: Flashcard?
-
-    protected abstract fun goToNextFlashcard()
-
-    protected abstract fun recordAnswerResult(answerResult: AnswerResult)
+    private var currentFlashcard: Flashcard? = null
+        private set
 
     fun nextQuestion(): Question? {
         goToNextFlashcard()
@@ -61,14 +85,34 @@ sealed class Lesson(
         return answerResult
     }
 
-}
+    private fun goToNextFlashcard() {
+        when {
+            remaining.isNotEmpty() -> { }
+            incorrect.isNotEmpty() -> {
+                correctingMistakes = true
+                remaining.addAll(incorrect.shuffled())
+                incorrect.clear()
+            }
+            correctingMistakes || round == 0 -> {
+                ++round
+                correctingMistakes = false
+                remaining.addAll(lessonData.flashcardSet.cards.shuffled())
+            }
+        }
+        if (remaining.isNotEmpty()) {
+            currentFlashcard = remaining.first()
+        }
+        else {
+            currentFlashcard = null
+        }
+    }
 
-sealed class LessonResult
+    private fun recordAnswerResult(answerResult: AnswerResult) {
+        val current = remaining.removeFirst()
+        currentFlashcard = null
+        if (!answerResult.isCorrect) {
+            incorrect += current
+        }
+    }
 
-data class Question(val word: Word)
-
-data class Answer(val word: Word)
-
-data class AnswerResult(val yourAnswer: Answer?, val correctAnswer: Answer) {
-    val isCorrect: Boolean get() = yourAnswer?.word == correctAnswer.word
 }
