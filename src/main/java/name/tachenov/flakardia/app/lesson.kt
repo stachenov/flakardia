@@ -13,7 +13,10 @@ data class LessonResult(
     val remaining: Int,
 )
 
-data class Question(val word: Word)
+data class Question(
+    val flashcardSetPath: RelativePath,
+    val word: Word,
+)
 
 data class Answer(val word: Word)
 
@@ -64,11 +67,10 @@ class Lesson(
         )
 
     private var currentFlashcard: FlashcardData? = null
-        private set
 
     fun nextQuestion(): Question? {
         goToNextFlashcard()
-        return currentFlashcard?.let { Question(it.flashcard.front) }
+        return currentFlashcard?.let { Question(it.path, it.flashcard.front) }
     }
 
     fun answer(answer: Answer?): AnswerResult {

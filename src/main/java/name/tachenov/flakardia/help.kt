@@ -97,6 +97,8 @@ To start a lesson, press the Start lesson button. The lesson will be started in 
 
 You'll see a question and an input field just below it. That's where you type your answer into and press Enter. If you don't remember the answer, press Esc to give up. If you typed the correct answer, it'll be highlighted green. Otherwise, it'll be highlighted red and the correct answer will be displayed just below the input field. After that, press Space to continue the lesson.
 
+If you point the mouse at the question, you'll see the path to the flashcard set file that contains the displayed word. While this can be used as a hint (you may remember the word once you've figured out which flashcard set it belongs to), it's best to avoid this and use this to correct mistakes in flashcard sets (naturally, you need to identify which set to correct first, which is where these tooltips come in handy).
+
 Note that your answer is compared letter-by-letter to the correct one. Whitespace, punctuation and whatever other crazy characters you can type, are ignored completely.
 
 Once you've gone through all the words, you'll start going through words you didn't get right on the first try, if any. if there are none, the lesson is over. Otherwise, once you've finished working on your mistakes, the second round starts. You'll have to go through all the words again. The lesson will be over once you get all the words right in a single round. The number of the round is displayed above the input field. If it's red, it means you're currently working on the mistakes made in that round.

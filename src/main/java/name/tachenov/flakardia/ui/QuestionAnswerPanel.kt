@@ -32,6 +32,7 @@ class QuestionAnswerPanel(
         answerInput.foreground = null
         correctAnswer.isVisible = false
         question.text = nextQuestion.word.value
+        question.toolTipText = nextQuestion.flashcardSetPath.toString()
     }
 
     fun displayAnswerResult(answerResult: AnswerResult) {
