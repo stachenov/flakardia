@@ -43,7 +43,7 @@ data class FlashcardStorage(private val fsPath: Path) {
         } catch (e: Exception) {
             return FlashcardSetError(file.fileName + ": " + e.toString())
         }
-        return parse(file.fileName, lines)
+        return parse(file, lines)
     }
 
     private fun RelativePath.toFilePath(): Path {
@@ -94,18 +94,18 @@ data class FlashcardStorage(private val fsPath: Path) {
     }
 }
 
-private fun parse(name: String, lines: List<String>): FlashcardSetResult {
+private fun parse(path: RelativePath, lines: List<String>): FlashcardSetResult {
     if (isEmptyLineDelimited(lines)) {
-        return FlashcardSet(name, parseUsingEmptyLines(lines))
+        return FlashcardSet(parseUsingEmptyLines(lines).map { FlashcardData(path, it) })
     }
     else {
         val delimiter = guessDelimiter(lines)
         if (delimiter == null) {
-            return FlashcardSetError("$name: Could not determine the delimiter character.\n" +
+            return FlashcardSetError("$path: Could not determine the delimiter character.\n" +
                 "It must appear once and only once in every non-blank line, but there was no such character")
         }
         else {
-            return parse(name, lines, delimiter)
+            return parse(path, lines, delimiter)
         }
     }
 }
@@ -176,10 +176,9 @@ private fun guessDelimiter(lines: List<String>): Char? {
     }?.toChar()
 }
 
-private fun parse(name: String, lines: List<String>, delimiter: Char): FlashcardSet =
+private fun parse(path: RelativePath, lines: List<String>, delimiter: Char): FlashcardSet =
     FlashcardSet(
-        name,
-        lines.filter { it.isNotBlank() }.map { parse(it, delimiter) },
+        lines.filter { it.isNotBlank() }.map { FlashcardData(path, parse(it, delimiter)) },
     )
 
 private fun parse(line: String, delimiter: Char): Flashcard = line.split(delimiter)

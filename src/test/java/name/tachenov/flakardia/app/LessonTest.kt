@@ -11,7 +11,7 @@ class LessonTest {
     private val card1 = card("q1", "a1")
     private val card2 = card("q2", "a2")
     private val card3 = card("q3", "a3")
-    private val flashcardSet = FlashcardSet("test", listOf(card1, card2, card3))
+    private val flashcardSet = FlashcardSet(listOf(card1, card2, card3).map { FlashcardData(RelativePath(listOf("test")), it) })
     private val emptyStats = LibraryStats(emptyMap())
 
     private fun card(front: String, back: String): Flashcard = Flashcard(Word(front), Word(back))
@@ -108,8 +108,8 @@ class LessonTest {
         val lesson = getCreatedLesson()
         val question = getAskedQuestion()
         for (card in flashcardSet.cards) {
-            if (card.front == question.word) {
-                lesson.answer(Answer(card.back))
+            if (card.flashcard.front == question.word) {
+                lesson.answer(Answer(card.flashcard.back))
                 return
             }
         }
@@ -125,7 +125,7 @@ class LessonTest {
     private fun getAskedQuestion(): Question = this.question ?: throw AssertionError("No current question")
 
     private fun startLesson(flashcardSet: FlashcardSet, stats: LibraryStats) {
-        lesson = Lesson(LessonData(flashcardSet, stats))
+        lesson = Lesson(LessonData("test", flashcardSet.cards, stats))
     }
 
 }

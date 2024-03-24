@@ -1,7 +1,7 @@
 package name.tachenov.flakardia.data
 
 import kotlinx.serialization.Serializable
-import name.tachenov.flakardia.app.*
+import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.storage.DurationSerializer
 import name.tachenov.flakardia.storage.InstantSerializer
 import name.tachenov.flakardia.storage.WordSerializer
@@ -11,8 +11,7 @@ import java.time.Instant
 sealed class FlashcardSetResult
 
 data class FlashcardSet(
-    val name: String,
-    val cards: List<Flashcard>,
+    val cards: List<FlashcardData>,
 ) : FlashcardSetResult()
 
 data class FlashcardSetError(val message: String) : FlashcardSetResult()
@@ -20,11 +19,17 @@ data class FlashcardSetError(val message: String) : FlashcardSetResult()
 sealed class LessonDataResult
 
 data class LessonData(
-    val flashcardSet: FlashcardSet,
+    val name: String,
+    val flashcards: List<FlashcardData>,
     val stats: LibraryStats,
 ) : LessonDataResult()
 
 data class LessonDataError(val message: String) : LessonDataResult()
+
+data class FlashcardData(
+    val path: RelativePath,
+    val flashcard: Flashcard,
+)
 
 data class Flashcard(
     val front: Word,
@@ -67,9 +72,9 @@ sealed class LibraryStatsResult
 data class LibraryStats(
     val wordStats: Map<Word, WordStats>
 ) : LibraryStatsResult() {
-    fun filter(flashcardSet: FlashcardSet): LibraryStats {
-        val words = flashcardSet.cards.asSequence()
-            .map { it.back }
+    fun filter(flashcards: List<FlashcardData>): LibraryStats {
+        val words = flashcards.asSequence()
+            .map { it.flashcard.back }
             .toSet()
         return LibraryStats(
             wordStats.filter { it.key in words }

@@ -174,14 +174,14 @@ class CardSetManagerFrame(
         if (firstEntry !is FlashcardSetUpEntry) {
             return
         }
-        enterDir(firstEntry.dir, selectDir = manager.path?.relativePath)
+        enterDir(firstEntry.path, selectDir = manager.path?.relativePath)
     }
 
     private fun openElement() {
         val selectedEntry = list.selectedValue?.entry ?: return
         when (selectedEntry) {
             is FlashcardSetFileEntry -> viewFlashcards(selectedEntry)
-            is FlashcardSetDirEntry -> enterDir(selectedEntry.dir)
+            is FlashcardSetDirEntry -> enterDir(selectedEntry.path)
             is FlashcardSetUpEntry -> goUp()
         }
     }

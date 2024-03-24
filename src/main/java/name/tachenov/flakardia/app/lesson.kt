@@ -31,16 +31,16 @@ class Lesson(
     // For a word learned for the first time, we need some sensible fake stats to initialize them.
     private val previousIntervalFallback: Duration = Duration.ofDays(1L)
 
-    private val total = lessonData.flashcardSet.cards.size
+    private val total = lessonData.flashcards.size
     private var correctingMistakes = false
-    private val remaining = ArrayDeque<Flashcard>()
-    private val incorrect: MutableSet<Flashcard> = hashSetOf()
+    private val remaining = ArrayDeque<FlashcardData>()
+    private val incorrect: MutableSet<FlashcardData> = hashSetOf()
     private var round = 0
 
     private val correct: Int
         get() = total - remaining.size - incorrect.size
 
-    val name: String = lessonData.flashcardSet.name
+    val name: String = lessonData.name
 
     val result: LessonResult
         get() = LessonResult(round, correctingMistakes, total, correct, incorrect.size, remaining.size)
@@ -63,18 +63,18 @@ class Lesson(
                 }
         )
 
-    private var currentFlashcard: Flashcard? = null
+    private var currentFlashcard: FlashcardData? = null
         private set
 
     fun nextQuestion(): Question? {
         goToNextFlashcard()
-        return currentFlashcard?.let { Question(it.front) }
+        return currentFlashcard?.let { Question(it.flashcard.front) }
     }
 
     fun answer(answer: Answer?): AnswerResult {
         val currentFlashcard = currentFlashcard
         checkNotNull(currentFlashcard) { "Cannot answer when there is no question (active flashcard)" }
-        val answerResult = AnswerResult(answer, Answer(currentFlashcard.back))
+        val answerResult = AnswerResult(answer, Answer(currentFlashcard.flashcard.back))
         val word = answerResult.correctAnswer.word
         var mistakes = this.mistakes[word] ?: 0
         if (!answerResult.isCorrect) {
@@ -96,7 +96,7 @@ class Lesson(
             correctingMistakes || round == 0 -> {
                 ++round
                 correctingMistakes = false
-                remaining.addAll(lessonData.flashcardSet.cards.shuffled())
+                remaining.addAll(lessonData.flashcards.shuffled())
             }
         }
         if (remaining.isNotEmpty()) {

@@ -32,39 +32,39 @@ data class Library(val storage: FlashcardStorage) {
 
     fun getAllFlashcards(entry: FlashcardSetListEntry): LessonDataResult {
         assertBGT()
-        return prepareLessonData(entry) { flashcardSet, libraryStats -> LessonData(flashcardSet, libraryStats.filter(flashcardSet)) }
+        return prepareLessonData(entry) { name, flashcards, stats -> LessonData(name, flashcards, stats.filter(flashcards)) }
     }
 
     fun prepareLessonData(entry: FlashcardSetListEntry): LessonDataResult {
         assertBGT()
-        return prepareLessonData(entry) { flashcardSet, libraryStats -> prepareLessonData(flashcardSet, libraryStats) }
+        return prepareLessonData(entry) { name, flashcards, stats -> prepareLessonData(name, flashcards, stats) }
     }
 
     private inline fun prepareLessonData(
         entry: FlashcardSetListEntry,
-        prepare: (FlashcardSet, LibraryStats) -> LessonData,
+        prepare: (String, List<FlashcardData>, LibraryStats) -> LessonData,
     ): LessonDataResult {
         assertBGT()
-        return when (val flashcardSet = readFlashcards(entry)) {
+        return when (val flashcardSet = readFlashcards(entry.path, entry)) {
             is FlashcardSetError -> LessonDataError(flashcardSet.message)
             is FlashcardSet -> when (val stats = storage.readLibraryStats()) {
                 is LibraryStatsError -> LessonDataError(stats.message)
-                is LibraryStats -> prepare(flashcardSet, stats)
+                is LibraryStats -> prepare(entry.name, flashcardSet.cards, stats)
             }
         }
     }
 
-    private fun prepareLessonData(flashcardSet: FlashcardSet, stats: LibraryStats): LessonData {
+    private fun prepareLessonData(name: String, flashcardList: List<FlashcardData>, stats: LibraryStats): LessonData {
         // Take all flashcards and calculate for every flashcard, when it should be ideally learned next.
         // This is calculated as the last learned time plus the interval, which is the interval between two
         // previous learn times, multiplied by a factor that depends on how many mistakes were there the last time.
         // Then sort all flashcard by the estimated next learn time and simply take N first ones.
         // In theory this should lead to the selection of the most "forgotten" words.
         val now: Instant = Instant.now()
-        val flashcards = flashcardSet.cards.toMutableList()
+        val flashcards = flashcardList.toMutableList()
         flashcards.shuffle()
-        val nextLearnTimes = flashcardSet.cards.associateWith { card ->
-            val word = card.back
+        val nextLearnTimes = flashcardList.associateWith { cardData ->
+            val word = cardData.flashcard.back
             val lastLearned: Instant = stats.wordStats[word]?.lastLearned ?: now.minus(lastLearnedFallback)
             val mistakes = stats.wordStats[word]?.mistakes ?: 0
             val previousInterval: Duration = stats.wordStats[word]?.intervalBeforeLastLearned ?: intervalFallback
@@ -76,13 +76,11 @@ data class Library(val storage: FlashcardStorage) {
             lastLearned.plus(interval) as Instant
         }
         flashcards.sortBy { nextLearnTimes.getValue(it) }
-        val effectiveFlashcardSet = FlashcardSet(
-            flashcardSet.name,
-            flashcards.subList(0, flashcards.size.coerceAtMost(maxWordsPerLesson))
-        )
+        val effectiveFlashcards = flashcards.subList(0, flashcards.size.coerceAtMost(maxWordsPerLesson))
         return LessonData(
-            effectiveFlashcardSet,
-            stats.filter(effectiveFlashcardSet),
+            name,
+            effectiveFlashcards,
+            stats.filter(effectiveFlashcards),
         )
     }
 
@@ -97,21 +95,21 @@ data class Library(val storage: FlashcardStorage) {
         }
     }
 
-    private fun readFlashcards(entry: FlashcardSetListEntry): FlashcardSetResult {
+    private fun readFlashcards(path: RelativePath, entry: FlashcardSetListEntry): FlashcardSetResult {
         return when (entry) {
-            is FlashcardSetFileEntry -> storage.readFlashcards(entry.file)
+            is FlashcardSetFileEntry -> storage.readFlashcards(entry.path)
             is FlashcardSetDirEntry -> {
-                val result = mutableListOf<Flashcard>()
-                val subEntries = listEntries(entry.dir)
+                val result = mutableListOf<FlashcardData>()
+                val subEntries = listEntries(entry.path)
                 for (subEntry in subEntries) {
-                    when (val subResult = readFlashcards(subEntry)) {
+                    when (val subResult = readFlashcards(path, subEntry)) {
                         is FlashcardSet -> result += subResult.cards
                         is FlashcardSetError -> return subResult
                     }
                 }
-                FlashcardSet(entry.name, result)
+                FlashcardSet(result)
             }
-            else -> FlashcardSet("", emptyList())
+            else -> FlashcardSet(emptyList())
         }
     }
 

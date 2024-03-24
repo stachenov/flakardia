@@ -92,8 +92,7 @@ class ParseTest {
     private fun expect(vararg cards: Pair<String, String>): Expectation = object : Expectation() {
 
         private val expected = FlashcardSet(
-            DEFAULT_NAME,
-            cards.map { Flashcard(Word(it.first), Word(it.second)) },
+            cards.map { FlashcardData(RelativePath(listOf(DEFAULT_NAME)),  Flashcard(Word(it.first), Word(it.second))) },
         )
 
         override fun match(flashcardSetResult: FlashcardSetResult) {

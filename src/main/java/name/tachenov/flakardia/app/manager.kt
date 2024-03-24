@@ -40,20 +40,21 @@ data object DirEnterSuccess : DirEnterResult()
 data class DirEnterError(val message: String) : DirEnterResult()
 
 sealed class FlashcardSetListEntry {
+    abstract val path: RelativePath
     abstract val name: String
 }
 
-data class FlashcardSetFileEntry(val file: RelativePath) : FlashcardSetListEntry() {
+data class FlashcardSetFileEntry(override val path: RelativePath) : FlashcardSetListEntry() {
     override val name: String
-        get() = file.fileName
+        get() = path.fileName
 }
 
-data class FlashcardSetDirEntry(val dir: RelativePath) : FlashcardSetListEntry() {
+data class FlashcardSetDirEntry(override val path: RelativePath) : FlashcardSetListEntry() {
     override val name: String
-        get() = dir.fileName
+        get() = path.fileName
 }
 
-data class FlashcardSetUpEntry(val dir: RelativePath) : FlashcardSetListEntry() {
+data class FlashcardSetUpEntry(override val path: RelativePath) : FlashcardSetListEntry() {
     override val name: String
         get() = ".."
 }
