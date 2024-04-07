@@ -1,3 +1,7 @@
+0.4.1 / 2024-04-07
+    Fix flashcard list sorting bugs
+    Ignore files and dirs starting with a dot (e.g. Vim swp files)
+
 0.4 / 2024-03-24
     Show paths and statistics in the lst of flashcards
     Show path as a tooltip in lessons
