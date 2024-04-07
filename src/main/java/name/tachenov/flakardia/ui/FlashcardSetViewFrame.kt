@@ -1,15 +1,18 @@
 package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.data.LessonData
+import name.tachenov.flakardia.data.RelativePath
 import java.awt.Dimension
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
+import java.text.Collator
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import javax.swing.*
 import javax.swing.table.DefaultTableColumnModel
 import javax.swing.table.DefaultTableModel
+import javax.swing.table.TableRowSorter
 import kotlin.math.max
 
 
@@ -41,13 +44,13 @@ class FlashcardSetViewFrame(lessonData: LessonData) : JFrame(lessonData.name) {
         contentPane.layout = layout
         this.contentPane = contentPane
 
-        val model = DefaultTableModel()
-        model.addColumn("Path")
-        model.addColumn("Question")
-        model.addColumn("Answer")
-        model.addColumn("Last learned")
-        model.addColumn("Mistakes made")
-        model.addColumn("Learn interval (days)")
+        val model = MyTableModel()
+        model.addColumn("Path", RelativePath::class.java)
+        model.addColumn("Question", String::class.java)
+        model.addColumn("Answer", String::class.java)
+        model.addColumn("Last learned", LastLearnedViewModel::class.java)
+        model.addColumn("Mistakes made", Int::class.javaObjectType)
+        model.addColumn("Learn interval (days)", IntervalViewModel::class.java)
         for (card in lessonData.flashcards) {
             val stats = lessonData.stats.wordStats[card.flashcard.back]
             model.addRow(arrayOf(
@@ -55,13 +58,18 @@ class FlashcardSetViewFrame(lessonData: LessonData) : JFrame(lessonData.name) {
                 card.flashcard.front.value,
                 card.flashcard.back.value,
                 LastLearnedViewModel(stats?.lastLearned),
-                stats?.mistakes ?: "",
+                stats?.mistakes,
                 IntervalViewModel(stats?.intervalBeforeLastLearned),
             ))
         }
         table.model = model
         table.autoResizeMode = JTable.AUTO_RESIZE_OFF
         table.autoCreateRowSorter = true
+        for (i in 0 until model.columnCount) {
+            if (model.getColumnClass(i) == String::class.java) {
+                (table.rowSorter as TableRowSorter).setComparator(i, COLLATOR)
+            }
+        }
         packColumns(table)
         pack()
         addComponentListener(object : ComponentAdapter() {
@@ -76,19 +84,37 @@ class FlashcardSetViewFrame(lessonData: LessonData) : JFrame(lessonData.name) {
 
 }
 
+private class MyTableModel : DefaultTableModel() {
+
+    private val classes = mutableListOf<Class<*>>()
+
+    fun addColumn(columnName: String, columnClass: Class<*>) {
+        super.addColumn(columnName)
+        classes += columnClass
+    }
+
+    override fun getColumnClass(columnIndex: Int): Class<*> = classes[columnIndex]
+}
+
+private val COLLATOR = Collator.getInstance().apply {
+    strength = Collator.PRIMARY
+    decomposition = Collator.CANONICAL_DECOMPOSITION
+}
+
 data class LastLearnedViewModel(val lastLearned: Instant?) {
     override fun toString(): String = lastLearned?.let { String.format("%tF  %<tT", it.atZone(ZoneId.systemDefault())) } ?: ""
 }
 
-data class IntervalViewModel(val interval: Duration?) {
+data class IntervalViewModel(val interval: Duration?) : Comparable<IntervalViewModel> {
     override fun toString(): String = interval?.let { String.format("%.02f", it.toSeconds().toDouble() / 86400.0) } ?: ""
+    override fun compareTo(other: IntervalViewModel): Int = compareValuesBy(this, other) { it.interval }
 }
 
 // Open source utility method from
 // http://www.java2s.com/example/java-utility-method/jtable-column-pack/packcolumns-jtable-table-e8cce.html
 
 /**
- * Adjusts the widths of columns to be just wide enough to show all of
+ * Adjusts the widths of columns to be just wide enough to show all
  * the column headers and the widest cells in the columns
  * @param table Table for which the columns widths must be adjusted
  */
