@@ -23,12 +23,16 @@ data class FlashcardStorage(private val fsPath: Path) {
     fun readEntries(path: RelativePath): List<FlashcardSetListEntry> {
         assertBGT()
         val result = mutableListOf<FlashcardSetListEntry>()
-        Files.newDirectoryStream(path.toFilePath()).use { dir ->
+        Files.newDirectoryStream(
+            path.toFilePath()
+        ) {
+            !it.fileName.toString().startsWith(".")
+        }.use { dir ->
             dir.forEach { entry ->
                 if (Files.isRegularFile(entry) && Files.isReadable(entry)) {
                     result += FlashcardSetFileEntry(entry.toRelativePath())
                 }
-                else if (Files.isDirectory(entry) && entry != flakardiaDir) {
+                else if (Files.isDirectory(entry)) {
                     result += FlashcardSetDirEntry(entry.toRelativePath())
                 }
             }
