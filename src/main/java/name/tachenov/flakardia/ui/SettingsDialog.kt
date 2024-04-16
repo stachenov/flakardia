@@ -226,7 +226,7 @@ private class LessonTab(tabs: JTabbedPane) : SettingsTab(tabs, "Lesson") {
         when (value.value) {
             is Int -> SpinnerNumberModel(value.value, value.min as Int, value.max as Int, 1)
             is Double -> SpinnerNumberModel(value.value, value.min as Double, value.max as Double, 0.1)
-            is Duration -> SpinnerNumberModel(value.value.toDouble(), (value.min as Duration).toDouble(), (value.max as Duration).toDouble(), 1.0)
+            is Duration -> SpinnerNumberModel(value.value.toHours(), (value.min as Duration).toHours(), (value.max as Duration).toHours(), 1L)
             else -> throw IllegalArgumentException("Not supported type: ${value.value.javaClass}")
         }
 
@@ -249,7 +249,7 @@ private class LessonTab(tabs: JTabbedPane) : SettingsTab(tabs, "Lesson") {
             addUnrelatedGap()
             addComponent(JLabel("Min interval").apply {
                 labelFor = minIntervalWithoutMistakes
-                toolTipText = "If a word was learned in a lesson without making any mistakes, it won't appear in another lesson until this many days have passed"
+                toolTipText = "If a word was learned in a lesson without making any mistakes, it won't appear in another lesson until this many hours have passed"
             })
             addRelatedGap()
             addComponent(minIntervalWithoutMistakes)
@@ -264,7 +264,7 @@ private class LessonTab(tabs: JTabbedPane) : SettingsTab(tabs, "Lesson") {
             addUnrelatedGap()
             addComponent(JLabel("Min interval").apply {
                 labelFor = minIntervalWithMistake
-                toolTipText = "If a word was learned in a lesson with exactly one mistake, it won't appear in another lesson until this many days have passed"
+                toolTipText = "If a word was learned in a lesson with exactly one mistake, it won't appear in another lesson until this many hours have passed"
             })
             addRelatedGap()
             addComponent(minIntervalWithMistake)
@@ -279,7 +279,7 @@ private class LessonTab(tabs: JTabbedPane) : SettingsTab(tabs, "Lesson") {
             addUnrelatedGap()
             addComponent(JLabel("Min interval").apply {
                 labelFor = minIntervalWithManyMistakes
-                toolTipText = "If a word was learned in a lesson with more than one mistake, it won't appear in another lesson until this many days have passed"
+                toolTipText = "If a word was learned in a lesson with more than one mistake, it won't appear in another lesson until this many hours have passed"
             })
             addRelatedGap()
             addComponent(minIntervalWithManyMistakes)
@@ -290,17 +290,14 @@ private class LessonTab(tabs: JTabbedPane) : SettingsTab(tabs, "Lesson") {
         setLessonSettings(LessonSettings(
             maxWordsInLesson.value as Int,
             intervalMultiplierWithoutMistakes.value as Double,
-            (minIntervalWithoutMistakes.value as Double).toDuration(),
+            Duration.ofHours((minIntervalWithoutMistakes.value as Long)),
             intervalMultiplierWithMistake.value as Double,
-            (minIntervalWithMistake.value as Double).toDuration(),
+            Duration.ofHours((minIntervalWithMistake.value as Long)),
             intervalMultiplierWithManyMistakes.value as Double,
-            (minIntervalWithManyMistakes.value as Double).toDuration(),
+            Duration.ofHours((minIntervalWithManyMistakes.value as Long)),
         ))
     }
 }
-
-private fun Duration.toDouble(): Double = toMillis() / 86_400_000.0
-private fun Double.toDuration(): Duration = Duration.ofMillis((this * 86_400_000.0).toLong())
 
 private enum class Orientation {
     HORIZONTAL,

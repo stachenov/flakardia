@@ -52,42 +52,38 @@ fun getLessonSettings(): LessonSettings {
             INTERVAL_MULTIPLIER_WITHOUT_MISTAKES_KEY,
             defaultLessonSettings.intervalMultiplierWithoutMistakes.value
         ),
-        minIntervalWithoutMistakes = preferences.getDouble(
+        minIntervalWithoutMistakes = Duration.ofHours(preferences.getLong(
             MIN_INTERVAL_WITHOUT_MISTAKES_KEY,
-            defaultLessonSettings.minIntervalWithoutMistakes.value.toDoubleDays()
-        ).fromDoubleDays(),
+            defaultLessonSettings.minIntervalWithoutMistakes.value.toHours()
+        )),
         intervalMultiplierWithMistake = preferences.getDouble(
             INTERVAL_MULTIPLIER_WITH_MISTAKE_KEY,
             defaultLessonSettings.intervalMultiplierWithMistake.value
         ),
-        minIntervalWithMistake = preferences.getDouble(
+        minIntervalWithMistake = Duration.ofHours(preferences.getLong(
             MIN_INTERVAL_WITH_MISTAKE_KEY,
-            defaultLessonSettings.minIntervalWithMistake.value.toDoubleDays()
-        ).fromDoubleDays(),
+            defaultLessonSettings.minIntervalWithMistake.value.toHours()
+        )),
         intervalMultiplierWithManyMistakes = preferences.getDouble(
             INTERVAL_MULTIPLIER_WITH_MANY_MISTAKES_KEY,
             defaultLessonSettings.intervalMultiplierWithManyMistakes.value
         ),
-        minIntervalWithManyMistakes = preferences.getDouble(
+        minIntervalWithManyMistakes = Duration.ofHours(preferences.getLong(
             MIN_INTERVAL_WITH_MANY_MISTAKES_KEY,
-            defaultLessonSettings.minIntervalWithManyMistakes.value.toDoubleDays()
-        ).fromDoubleDays(),
+            defaultLessonSettings.minIntervalWithManyMistakes.value.toHours()
+        )),
     )
 }
 
 fun setLessonSettings(settings: LessonSettings) {
     preferences.putInt(MAX_WORDS_PER_LESSON_KEY, settings.maxWordsPerLesson.value)
     preferences.putDouble(INTERVAL_MULTIPLIER_WITHOUT_MISTAKES_KEY, settings.intervalMultiplierWithoutMistakes.value)
-    preferences.putDouble(MIN_INTERVAL_WITHOUT_MISTAKES_KEY, settings.minIntervalWithoutMistakes.value.toDoubleDays())
+    preferences.putLong(MIN_INTERVAL_WITHOUT_MISTAKES_KEY, settings.minIntervalWithoutMistakes.value.toHours())
     preferences.putDouble(INTERVAL_MULTIPLIER_WITH_MISTAKE_KEY, settings.intervalMultiplierWithMistake.value)
-    preferences.putDouble(MIN_INTERVAL_WITH_MISTAKE_KEY, settings.minIntervalWithMistake.value.toDoubleDays())
+    preferences.putLong(MIN_INTERVAL_WITH_MISTAKE_KEY, settings.minIntervalWithMistake.value.toHours())
     preferences.putDouble(INTERVAL_MULTIPLIER_WITH_MANY_MISTAKES_KEY, settings.intervalMultiplierWithManyMistakes.value)
-    preferences.putDouble(MIN_INTERVAL_WITH_MANY_MISTAKES_KEY, settings.minIntervalWithManyMistakes.value.toDoubleDays())
+    preferences.putLong(MIN_INTERVAL_WITH_MANY_MISTAKES_KEY, settings.minIntervalWithManyMistakes.value.toHours())
 }
-
-private fun Duration.toDoubleDays(): Double = toMillis() / 86_400_000.0
-
-private fun Double.fromDoubleDays(): Duration = Duration.ofMillis((this * 86_400_000.0).toLong())
 
 fun configureAndEnterLibrary(manager: CardManager, whenDone: () -> Unit) {
     threading {

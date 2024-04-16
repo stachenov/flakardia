@@ -14,11 +14,11 @@ private val defaultLessonSettings = LessonSettings()
 data class LessonSettings(
     val maxWordsPerLesson: LimitedValue<Int> = LimitedValue.of(30, 3, 100),
     val intervalMultiplierWithoutMistakes: LimitedValue<Double> = LimitedValue.of(1.5, 1.0, 100.0),
-    val minIntervalWithoutMistakes: LimitedValue<Duration> = LimitedValue.of(Duration.ofDays(1L), Duration.ofHours(3L), Duration.ofDays(100L)),
+    val minIntervalWithoutMistakes: LimitedValue<Duration> = LimitedValue.of(Duration.ofDays(1L), Duration.ofHours(1L), Duration.ofDays(100L)),
     val intervalMultiplierWithMistake: LimitedValue<Double> = LimitedValue.of(1.0, 0.1, 10.0),
-    val minIntervalWithMistake: LimitedValue<Duration> = LimitedValue.of(Duration.ofHours(6L), Duration.ofHours(3L), Duration.ofDays(100L)),
+    val minIntervalWithMistake: LimitedValue<Duration> = LimitedValue.of(Duration.ofHours(3L), Duration.ofHours(1L), Duration.ofDays(100L)),
     val intervalMultiplierWithManyMistakes: LimitedValue<Double> = LimitedValue.of(0.5, 0.01, 100.0),
-    val minIntervalWithManyMistakes: LimitedValue<Duration> = LimitedValue.of(Duration.ofHours(3L), Duration.ofHours(3L), Duration.ofDays(100L)),
+    val minIntervalWithManyMistakes: LimitedValue<Duration> = LimitedValue.of(Duration.ofHours(1L), Duration.ofHours(1L), Duration.ofDays(100L)),
 ) {
     constructor(
         maxWordsPerLesson: Int,
