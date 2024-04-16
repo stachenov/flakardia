@@ -27,6 +27,7 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
     var isAccepted = false
         private set
 
+    private val dirBrowse: JButton
     private val dirInput = JTextField(getLibraryPath()?.toString() ?: "")
     private val fontName = JComboBox(GraphicsEnvironment.getLocalGraphicsEnvironment().availableFontFamilyNames)
     private val fontSize = JSpinner(SpinnerNumberModel(16, 4, 100, 1))
@@ -43,33 +44,39 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
         val layout = GroupLayout(contentPane)
         val hg = layout.createSequentialGroup()
         val vg = layout.createSequentialGroup()
-        val dirBrowse = JButton("Browse").apply { mnemonic = KeyEvent.VK_R }
-        val libraryPanel = SettingsPanel("Library").apply {
-            addComponent(dirInput, DEFAULT_SIZE, PREFERRED_SIZE, INFINITY)
-            addRelatedGap()
-            addComponent(dirBrowse)
-        }.build()
-        val font = getAppFont()
-        fontName.isEditable = true
-        fontName.selectedItem = font.family
-        fontSize.value = font.size
-        fontBold.isSelected = font.isBold
-        fontItalic.isSelected = font.isItalic
-        val fontPanel = SettingsPanel("Font").apply {
-            addComponent(fontName)
-            addRelatedGap()
-            addComponent(fontSize)
-            addRelatedGap()
-            addComponent(fontBold)
-            addRelatedGap()
-            addComponent(fontItalic)
+        val tabs = JTabbedPane()
+        SettingsTab(tabs, "General").apply {
+            dirBrowse = JButton("Browse").apply { mnemonic = KeyEvent.VK_R }
+            addComponent(
+                TitledPanel("Library").apply {
+                    addComponent(dirInput, DEFAULT_SIZE, PREFERRED_SIZE, INFINITY)
+                    addRelatedGap()
+                    addComponent(dirBrowse)
+                }.build()
+            )
+            val font = getAppFont()
+            fontName.isEditable = true
+            fontName.selectedItem = font.family
+            fontSize.value = font.size
+            fontBold.isSelected = font.isBold
+            fontItalic.isSelected = font.isItalic
+            addComponent(
+                TitledPanel("Font").apply {
+                    addComponent(fontName)
+                    addRelatedGap()
+                    addComponent(fontSize)
+                    addRelatedGap()
+                    addComponent(fontBold)
+                    addRelatedGap()
+                    addComponent(fontItalic)
+                }.build()
+            )
         }.build()
         val cancel = JButton("Cancel").apply { mnemonic = KeyEvent.VK_C }
         hg.apply {
             addContainerGap()
             addGroup(layout.createParallelGroup(LEADING).apply {
-                addComponent(libraryPanel)
-                addComponent(fontPanel)
+                addComponent(tabs)
                 addGroup(layout.createSequentialGroup().apply {
                     addComponent(ok)
                     addPreferredGap(RELATED)
@@ -80,8 +87,7 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
             addContainerGap()
         }
         vg.apply {
-            addComponent(libraryPanel)
-            addComponent(fontPanel)
+            addComponent(tabs)
             addPreferredGap(RELATED, DEFAULT_SIZE, INFINITY)
             addGroup(layout.createParallelGroup(BASELINE).apply {
                 addComponent(ok)
@@ -174,9 +180,16 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
 
 }
 
-private class SettingsPanel(private val name: String) {
+private enum class Orientation {
+    HORIZONTAL,
+    VERTICAL,
+}
+
+private open class SettingsPanel(private val orientation: Orientation) {
 
     private val descriptors = mutableListOf<Descriptor>()
+
+    private val isHorizontal: Boolean get() = orientation == Orientation.HORIZONTAL
 
     fun addComponent(
         component: Component,
@@ -194,8 +207,8 @@ private class SettingsPanel(private val name: String) {
     fun build(): JPanel {
         val result = JPanel()
         val layout = GroupLayout(result)
-        val hg = layout.createSequentialGroup()
-        val vg = layout.createParallelGroup(BASELINE)
+        val hg: Group = if (isHorizontal) layout.createSequentialGroup() else layout.createParallelGroup(LEADING)
+        val vg: Group = if (isHorizontal) layout.createParallelGroup(BASELINE) else layout.createSequentialGroup()
         for (descriptor in descriptors) {
             descriptor.addToHG(hg)
         }
@@ -205,13 +218,15 @@ private class SettingsPanel(private val name: String) {
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
         result.layout = layout
-        result.border = BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), name)
+        afterBuild(result)
         return result
     }
 
+    protected open fun afterBuild(result: JPanel) { }
+
     private sealed class Descriptor {
-        abstract fun addToHG(group: SequentialGroup)
-        abstract fun addToVG(group: ParallelGroup)
+        abstract fun addToHG(group: Group)
+        abstract fun addToVG(group: Group)
     }
 
     private class ComponentDescriptor(
@@ -220,20 +235,40 @@ private class SettingsPanel(private val name: String) {
         private val prefSize: Int = DEFAULT_SIZE,
         private val maxSize: Int = DEFAULT_SIZE,
     ) : Descriptor() {
-        override fun addToHG(group: SequentialGroup) {
+        override fun addToHG(group: Group) {
             group.addComponent(component, minSize, prefSize, maxSize)
         }
-        override fun addToVG(group: ParallelGroup) {
+        override fun addToVG(group: Group) {
             group.addComponent(component)
         }
     }
 
     private data object RelatedGapDescriptor : Descriptor() {
-        override fun addToHG(group: SequentialGroup) {
-            group.addPreferredGap(RELATED)
+        override fun addToHG(group: Group) {
+            addRelatedGap(group)
         }
-        override fun addToVG(group: ParallelGroup) {
+
+        override fun addToVG(group: Group) {
+            addRelatedGap(group)
+        }
+
+        private fun addRelatedGap(group: Group) {
+            if (group is SequentialGroup) {
+                group.addPreferredGap(RELATED)
+            }
         }
     }
 
+}
+
+private class TitledPanel(private val name: String) : SettingsPanel(Orientation.HORIZONTAL) {
+    override fun afterBuild(result: JPanel) {
+        result.border = BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), name)
+    }
+}
+
+private class SettingsTab(private val tabs: JTabbedPane, private val title: String) : SettingsPanel(Orientation.VERTICAL) {
+    override fun afterBuild(result: JPanel) {
+        tabs.addTab(title, result)
+    }
 }
