@@ -1,4 +1,4 @@
-0.5
+0.5 / 2024-04-16
     Improved the word selection algorithm: words are no longer repeated too soon
     Added a settings section to fine-tune word selection
 
