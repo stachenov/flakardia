@@ -25,14 +25,35 @@ class LessonDataTest {
         )
     }
 
+    @Test
+    fun `4 words, 3 recent, 1 very recent without mistakes`() {
+        doTest(
+            "2024-04-16T10:00",
+            testWords = listOf(
+                TestWord("word a", "2024-04-16T09:00", mistakes = 0, prevInterval = 0.01),
+                TestWord("word b", "2024-04-15T09:00", mistakes = 1, prevInterval = 1.0),
+                TestWord("word c", "2024-04-15T09:00", mistakes = 1, prevInterval = 1.0),
+                TestWord("word d", "2024-04-15T11:00", mistakes = 1, prevInterval = 1.0),
+            ),
+            expectedWords = listOf(
+                "word b",
+                "word c",
+                "word d",
+            )
+        )
+    }
+
     private fun doTest(
         now: String,
         testWords: List<TestWord>,
         expectedWords: List<String>,
         maxWordsPerLesson: Int = 3,
         intervalMultiplierWithoutMistakes: Double = 1.5,
+        minIntervalWithoutMistakes: Double = 1.0,
         intervalMultiplierWithMistake: Double = 1.0,
+        minIntervalWithMistake: Double = 0.5,
         intervalMultiplierWithManyMistakes: Double = 0.5,
+        minIntervalWithManyMistakes: Double = 0.1,
     ) {
         val actualWords = prepareLessonData(
             time(now),
@@ -42,8 +63,11 @@ class LessonDataTest {
             LessonSettings(
                 maxWordsPerLesson,
                 intervalMultiplierWithoutMistakes,
+                interval(minIntervalWithoutMistakes),
                 intervalMultiplierWithMistake,
+                interval(minIntervalWithMistake),
                 intervalMultiplierWithManyMistakes,
+                interval(minIntervalWithManyMistakes),
             )
         ).flashcards.map { it.flashcard.back }
         val actualWordSet = actualWords.toSet()

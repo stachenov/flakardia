@@ -11,8 +11,11 @@ import kotlin.math.roundToLong
 data class LessonSettings(
     val maxWordsPerLesson: Int,
     val intervalMultiplierWithoutMistakes: Double,
+    val minIntervalWithoutMistakes: Duration,
     val intervalMultiplierWithMistake: Double,
+    val minIntervalWithMistake: Duration,
     val intervalMultiplierWithManyMistakes: Double,
+    val minIntervalWithManyMistakes: Duration,
 )
 
 private val lastLearnedFallback: Duration = Duration.ofDays(365)
@@ -106,7 +109,7 @@ fun prepareLessonData(
     // In theory this should lead to the selection of the most "forgotten" words.
     val flashcards = flashcardList.toMutableList()
     flashcards.shuffle()
-    val nextLearnTimes = flashcardList.associateWith { cardData ->
+    val orderingKeys = flashcardList.associateWith { cardData ->
         val word = cardData.flashcard.back
         val lastLearned: Instant = stats.wordStats[word]?.lastLearned ?: now.minus(lastLearnedFallback)
         val mistakes = stats.wordStats[word]?.mistakes ?: 0
@@ -116,14 +119,30 @@ fun prepareLessonData(
             1 -> settings.intervalMultiplierWithMistake
             else -> settings.intervalMultiplierWithManyMistakes
         })
-        lastLearned.plus(interval) as Instant
+        val minInterval = when (mistakes) {
+            0 -> settings.minIntervalWithoutMistakes
+            1 -> settings.minIntervalWithMistake
+            else -> settings.minIntervalWithManyMistakes
+        }
+        val isVeryRecent = Duration.between(lastLearned, now) < minInterval
+        OrderingKey(lastLearned.plus(interval) as Instant, isVeryRecent)
     }
-    flashcards.sortBy { nextLearnTimes.getValue(it) }
+    flashcards.sortBy { orderingKeys.getValue(it) }
     val effectiveFlashcards = flashcards.subList(0, flashcards.size.coerceAtMost(settings.maxWordsPerLesson))
     return LessonData(
         name,
         effectiveFlashcards,
         stats.filter(effectiveFlashcards),
+    )
+}
+
+private data class OrderingKey(
+    val nextLearnTime: Instant,
+    val isVeryRecent: Boolean,
+) : Comparable<OrderingKey> {
+    override fun compareTo(other: OrderingKey): Int = compareValuesBy(this, other,
+        { it.isVeryRecent },
+        { it.nextLearnTime },
     )
 }
 

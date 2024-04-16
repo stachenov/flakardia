@@ -7,6 +7,7 @@ import name.tachenov.flakardia.ui.InitFrame
 import name.tachenov.flakardia.ui.SettingsDialog
 import java.awt.Font
 import java.nio.file.Path
+import java.time.Duration
 import java.util.prefs.Preferences
 import javax.swing.JOptionPane
 import javax.swing.UIManager
@@ -37,8 +38,11 @@ fun getLessonSettings(): LessonSettings {
     return LessonSettings(
         maxWordsPerLesson = 30,
         intervalMultiplierWithoutMistakes = 1.5,
+        minIntervalWithoutMistakes = Duration.ofDays(1L),
         intervalMultiplierWithMistake = 1.0,
+        minIntervalWithMistake = Duration.ofHours(4L),
         intervalMultiplierWithManyMistakes = 0.5,
+        minIntervalWithManyMistakes = Duration.ofHours(1L),
     )
 }
 
