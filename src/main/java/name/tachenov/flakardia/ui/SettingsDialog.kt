@@ -27,17 +27,11 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
     var isAccepted = false
         private set
 
-    private val dirBrowse: JButton
-    private val dirInput = JTextField(getLibraryPath()?.toString() ?: "")
-    private val fontName = JComboBox(GraphicsEnvironment.getLocalGraphicsEnvironment().availableFontFamilyNames)
-    private val fontSize = JSpinner(SpinnerNumberModel(16, 4, 100, 1))
-    private val fontBold = JCheckBox("Bold").apply { mnemonic = KeyEvent.VK_B }
-    private val fontItalic = JCheckBox("Italic").apply { mnemonic = KeyEvent.VK_I }
+    private val tabs = mutableListOf<SettingsTab>()
+    private val generalTab: GeneralTab
+
     private val ok = JButton("OK").apply { mnemonic = KeyEvent.VK_O }
     private val status = JLabel("Initializing...")
-
-    private val libraryPath: Path
-        get() = Path.of(dirInput.text)
 
     init {
         val contentPane = JPanel()
@@ -45,33 +39,7 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
         val hg = layout.createSequentialGroup()
         val vg = layout.createSequentialGroup()
         val tabs = JTabbedPane()
-        SettingsTab(tabs, "General").apply {
-            dirBrowse = JButton("Browse").apply { mnemonic = KeyEvent.VK_R }
-            addComponent(
-                TitledPanel("Library").apply {
-                    addComponent(dirInput, DEFAULT_SIZE, PREFERRED_SIZE, INFINITY)
-                    addRelatedGap()
-                    addComponent(dirBrowse)
-                }.build()
-            )
-            val font = getAppFont()
-            fontName.isEditable = true
-            fontName.selectedItem = font.family
-            fontSize.value = font.size
-            fontBold.isSelected = font.isBold
-            fontItalic.isSelected = font.isItalic
-            addComponent(
-                TitledPanel("Font").apply {
-                    addComponent(fontName)
-                    addRelatedGap()
-                    addComponent(fontSize)
-                    addRelatedGap()
-                    addComponent(fontBold)
-                    addRelatedGap()
-                    addComponent(fontItalic)
-                }.build()
-            )
-        }.build()
+        generalTab = addTab(GeneralTab(tabs))
         val cancel = JButton("Cancel").apply { mnemonic = KeyEvent.VK_C }
         hg.apply {
             addContainerGap()
@@ -102,23 +70,6 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
         contentPane.layout = layout
         this.contentPane = contentPane
 
-        dirInput.document.addDocumentListener(object : DocumentListener {
-            override fun insertUpdate(e: DocumentEvent?) {
-                enableDisable()
-            }
-
-            override fun removeUpdate(e: DocumentEvent?) {
-                enableDisable()
-            }
-
-            override fun changedUpdate(e: DocumentEvent?) {
-                enableDisable()
-            }
-        })
-        dirBrowse.addActionListener {
-            browseForLibrary()
-        }
-
         ok.addActionListener { ok() }
         cancel.addActionListener { cancel() }
         rootPane.defaultButton = ok
@@ -136,40 +87,29 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
         })
     }
 
-    private fun enableDisable() {
-        val isValid = dirInput.text.isNotBlank() && Files.isDirectory(libraryPath)
-        ok.isEnabled = isValid
-        status.foreground = if (isValid) null else INCORRECT_COLOR
-        status.text = if (isValid) {
-            " " // to keep height
-        }
-        else if (dirInput.text.isBlank()) {
-            "Please specify the library directory where flashcards are stored"
-        }
-        else {
-            "The specified library directory doesn't exist or isn't a directory"
-        }
+    private fun <T : SettingsTab> addTab(tab: T): T {
+        tabs += tab
+        tab.addChangeListener { enableDisable() }
+        return tab
     }
 
-    private fun browseForLibrary() {
-        val chooser = JFileChooser()
-        chooser.dialogTitle = "Select the library directory"
-        chooser.fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
-        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            dirInput.text = chooser.selectedFile.toString()
+    private fun enableDisable() {
+        ok.isEnabled = true
+        status.foreground = null
+        status.text = " " // to keep height
+        for (tab in tabs) {
+            val error = tab.errorMessage
+            if (error != null) {
+                ok.isEnabled = false
+                status.text = error
+                status.foreground = INCORRECT_COLOR
+                break
+            }
         }
     }
 
     private fun ok() {
-        setLibraryPath(libraryPath)
-        var fontStyle = 0
-        if (fontBold.isSelected) {
-            fontStyle = fontStyle or Font.BOLD
-        }
-        if (fontItalic.isSelected) {
-            fontStyle = fontStyle or Font.ITALIC
-        }
-        setAppFont(Font(fontName.selectedItem?.toString(),fontStyle, fontSize.value as Int))
+        generalTab.apply()
         isAccepted = true
         dispose()
     }
@@ -180,6 +120,95 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
 
 }
 
+private class GeneralTab(tabs: JTabbedPane) : SettingsTab(tabs, "General") {
+    private val dirBrowse: JButton = JButton("Browse").apply { mnemonic = KeyEvent.VK_R }
+    private val dirInput = JTextField(getLibraryPath()?.toString() ?: "")
+    private val fontName = JComboBox(GraphicsEnvironment.getLocalGraphicsEnvironment().availableFontFamilyNames)
+    private val fontSize = JSpinner(SpinnerNumberModel(16, 4, 100, 1))
+    private val fontBold = JCheckBox("Bold").apply { mnemonic = KeyEvent.VK_B }
+    private val fontItalic = JCheckBox("Italic").apply { mnemonic = KeyEvent.VK_I }
+
+    private val libraryPath: Path
+        get() = Path.of(dirInput.text)
+
+    init {
+        addComponent(
+            TitledPanel("Library").apply {
+                addComponent(dirInput, DEFAULT_SIZE, PREFERRED_SIZE, INFINITY)
+                addRelatedGap()
+                addComponent(dirBrowse)
+            }.build()
+        )
+        val font = getAppFont()
+        fontName.isEditable = true
+        fontName.selectedItem = font.family
+        fontSize.value = font.size
+        fontBold.isSelected = font.isBold
+        fontItalic.isSelected = font.isItalic
+        addComponent(
+            TitledPanel("Font").apply {
+                addComponent(fontName)
+                addRelatedGap()
+                addComponent(fontSize)
+                addRelatedGap()
+                addComponent(fontBold)
+                addRelatedGap()
+                addComponent(fontItalic)
+            }.build()
+        )
+        build()
+
+        dirInput.document.addDocumentListener(object : DocumentListener {
+            override fun insertUpdate(e: DocumentEvent?) {
+                fireChanged()
+            }
+
+            override fun removeUpdate(e: DocumentEvent?) {
+                fireChanged()
+            }
+
+            override fun changedUpdate(e: DocumentEvent?) {
+                fireChanged()
+            }
+        })
+        dirBrowse.addActionListener {
+            browseForLibrary()
+        }
+    }
+
+    override val errorMessage: String?
+        get() = if (dirInput.text.isBlank()) {
+            "Please specify the library directory where flashcards are stored"
+        }
+        else if (!Files.isDirectory(libraryPath)) {
+            "The specified library directory doesn't exist or isn't a directory"
+        }
+        else {
+            null
+        }
+
+    private fun browseForLibrary() {
+        val chooser = JFileChooser()
+        chooser.dialogTitle = "Select the library directory"
+        chooser.fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+        if (chooser.showOpenDialog(component) == JFileChooser.APPROVE_OPTION) {
+            dirInput.text = chooser.selectedFile.toString()
+        }
+    }
+
+    override fun apply() {
+        setLibraryPath(libraryPath)
+        var fontStyle = 0
+        if (fontBold.isSelected) {
+            fontStyle = fontStyle or Font.BOLD
+        }
+        if (fontItalic.isSelected) {
+            fontStyle = fontStyle or Font.ITALIC
+        }
+        setAppFont(Font(fontName.selectedItem?.toString(),fontStyle, fontSize.value as Int))
+    }
+}
+
 private enum class Orientation {
     HORIZONTAL,
     VERTICAL,
@@ -187,6 +216,7 @@ private enum class Orientation {
 
 private open class SettingsPanel(private val orientation: Orientation) {
 
+    protected var component: JPanel? = null
     private val descriptors = mutableListOf<Descriptor>()
 
     private val isHorizontal: Boolean get() = orientation == Orientation.HORIZONTAL
@@ -219,6 +249,7 @@ private open class SettingsPanel(private val orientation: Orientation) {
         layout.setVerticalGroup(vg)
         result.layout = layout
         afterBuild(result)
+        component = result
         return result
     }
 
@@ -267,8 +298,23 @@ private class TitledPanel(private val name: String) : SettingsPanel(Orientation.
     }
 }
 
-private class SettingsTab(private val tabs: JTabbedPane, private val title: String) : SettingsPanel(Orientation.VERTICAL) {
+private abstract class SettingsTab(private val tabs: JTabbedPane, private val title: String) : SettingsPanel(Orientation.VERTICAL) {
+
+    abstract val errorMessage: String?
+
+    private val changeListeners = mutableListOf<() -> Unit>()
+
+    fun addChangeListener(listener: () -> Unit) {
+        changeListeners += listener
+    }
+
+    protected fun fireChanged() {
+        changeListeners.forEach { it() }
+    }
+
     override fun afterBuild(result: JPanel) {
         tabs.addTab(title, result)
     }
+
+    abstract fun apply()
 }
