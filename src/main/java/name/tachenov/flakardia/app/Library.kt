@@ -92,7 +92,7 @@ data class Library(val storage: FlashcardStorage) {
     fun fullPath(path: RelativePath): FullPath = FullPath(this, path)
 }
 
-private fun prepareLessonData(
+fun prepareLessonData(
     now: Instant,
     name: String,
     flashcardList: List<FlashcardData>,
