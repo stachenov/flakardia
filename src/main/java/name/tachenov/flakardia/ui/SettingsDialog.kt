@@ -3,6 +3,7 @@ package name.tachenov.flakardia.ui
 import name.tachenov.flakardia.*
 import name.tachenov.flakardia.app.LessonSettings
 import java.awt.Component
+import java.awt.Container
 import java.awt.Font
 import java.awt.Frame
 import java.awt.GraphicsEnvironment
@@ -407,7 +408,22 @@ private abstract class SettingsTab(private val tabs: JTabbedPane, private val ti
     }
 
     override fun afterBuild(result: JPanel) {
+        applyLabelToolTips(result)
         tabs.addTab(title, result)
+    }
+
+    private fun applyLabelToolTips(result: Container) {
+        for (component in result.components) {
+            if (component is JLabel) {
+                val target = component.labelFor
+                if (target is JComponent) {
+                    target.toolTipText = component.toolTipText
+                }
+            }
+            if (component is Container) {
+                applyLabelToolTips(component)
+            }
+        }
     }
 
     abstract fun apply()
