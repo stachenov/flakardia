@@ -11,7 +11,7 @@ What it can do:
 - Load flashcards from text files (a flashcard is just a pair of any phrases).
 - Display the list of files in your flashcard library (any folder you choose).
 - Display the list of flashcards from a selected file or folder.
-- Run a lesson on up to 30 flashcards in one go, repeating them again and again until you get them all right.
+- Run a lesson on up to 1000 (30 by default) flashcards in one go, repeating them again and again until you get them all right.
 - Keep track of when you learned a word the last time and how mistakes you made, to use this information to select flashcards for next lessons.
 - Detect the system theme on startup and try to follow it (four themes are supported: dark, light, dark high contrast and light high contrast).
 - Change the app font.
@@ -21,7 +21,7 @@ What it can't do:
 - Create and edit flashcard sets (any plain text editor will do instead, even Notepad).
 - Automatically refresh the list of flashcard files (just restart the app instead, or navigate between subfolders back and forth inside the app).
 - Display any kind of icons anywhere, not even the app icon (I'm simply not an artist).
-- Store anything on your PC except for a couple of settings and lesson statistics.
+- Store anything on your PC except for some settings and lesson statistics.
 - Store flashcards in some sort of cloud (but of course you can use a 3rd party solution for that).
 
 ## How to install and run

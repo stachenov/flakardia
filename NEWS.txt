@@ -1,3 +1,7 @@
+0.5
+    Improved the word selection algorithm: words are no longer repeated too soon
+    Added a settings section to fine-tune word selection
+
 0.4.1 / 2024-04-07
     Fix flashcard list sorting bugs
     Ignore files and dirs starting with a dot (e.g. Vim swp files)

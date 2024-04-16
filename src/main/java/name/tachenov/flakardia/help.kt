@@ -55,6 +55,8 @@ You can also optionally select the font to use and adjust its size and style. Th
 
 Once you've selected an existing folder or created a new one and selected it, you can close the settings dialog by clicking OK or pressing Enter.
 
+There's also the Lesson tab which you can use to fine-tune the algorithm that selects words for a lesson. You can leave that tab alone for now.
+
 You'll be able to open the settings dialog again at any time if you wish.
 
 2. Organizing your flashcard library
@@ -91,7 +93,9 @@ In the main window, the list of files and folders in the library will be display
 
 If you select any file and press Enter or double-click it, then the list of flashcards in that file will be displayed in a new window. The same will happen if you press the View flashcards button. The button will actually work even if you select a folder, then you'll see the list of flashcards in the entire folder. The information about flashcards include both words (front and back), the path to the flashcard set, and some statistics used for the word selection algorithm. This statistics includes the time of the last lesson when the word was learned, the time interval between this lesson and the previous one, and the number of mistakes made in the last lesson.
 
-To start a lesson, press the Start lesson button. The lesson will be started in a new window. You can start a lesson on a file or a whole folder. Either way, the lesson will be limited to just 30 flashcards. These 30 flashcards are chosen depending on how much time has passed since you saw a flashcard the last time, and how much mistakes you made the last time. The flashcards that you haven't seen for a while, and hard words you didn't get on the first try will be prioritized. For the first lesson, the choice of 30 flashcards is random.
+To start a lesson, press the Start lesson button. The lesson will be started in a new window. You can start a lesson on a file or a whole folder. Either way, the lesson will be limited to a fixed number of flashcards (configurable). These flashcards are chosen depending on how much time has passed since you saw a flashcard the last time, and how much mistakes you made the last time. The flashcards that you haven't seen for a while, and hard words you didn't get on the first try will be prioritized. For the first lesson, the choice of the flashcards is random.
+
+You can fine-tune the algorithm for choosing flashcards in the settings dialog, the Lesson tab. You can configure how many flashcards can appear in a lesson (30 by default), and a couple of parameters for three cases: when you have made no mistakes in a given word, when you have made just one mistake or when you have made more than one. For each of these three cases you can set up an interval multiplier that determines how sooner (lower multiplier) or later (higher multiplier) a word will appear next time. These multipliers don't determine exact timing, instead they're used to prioritize some words over others. You can also set the minimum interval (in days) that determines a cooldown period when a word will never appear even if the algorithm would otherwise have chosen it. For example, if you set this interval to 2.0 for the case when no mistakes were made, then if you get a word correctly in a lesson, it won't appear in another lesson until two days have passed. The only exception is when there are no other valid words to choose from, which can happen if your library is small, then the algorithm will still pick recent words.
 
 4. Going through a lesson
 
