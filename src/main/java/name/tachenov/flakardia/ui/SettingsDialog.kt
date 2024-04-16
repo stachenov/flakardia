@@ -214,13 +214,21 @@ private class LessonTab(tabs: JTabbedPane) : SettingsTab(tabs, "Lesson") {
     override val errorMessage: String? = null
 
     private val lessonSettings = getLessonSettings()
-    private val maxWordsInLesson = JSpinner(SpinnerNumberModel(lessonSettings.maxWordsPerLesson, 3, 1000, 1))
-    private val intervalMultiplierWithoutMistakes = JSpinner(SpinnerNumberModel(lessonSettings.intervalMultiplierWithoutMistakes, 1.0, 100.0, 0.1))
-    private val minIntervalWithoutMistakes = JSpinner(SpinnerNumberModel(lessonSettings.minIntervalWithoutMistakes.toDouble(), 0.01, 100.0, 1.0))
-    private val intervalMultiplierWithMistake = JSpinner(SpinnerNumberModel(lessonSettings.intervalMultiplierWithMistake, 0.1, 10.0, 0.1))
-    private val minIntervalWithMistake = JSpinner(SpinnerNumberModel(lessonSettings.minIntervalWithMistake.toDouble(), 0.01, 100.0, 1.0))
-    private val intervalMultiplierWithManyMistakes = JSpinner(SpinnerNumberModel(lessonSettings.intervalMultiplierWithManyMistakes, 0.1, 1.0, 0.1))
-    private val minIntervalWithManyMistakes = JSpinner(SpinnerNumberModel(lessonSettings.minIntervalWithManyMistakes.toDouble(), 0.01, 100.0, 1.0))
+    private val maxWordsInLesson = JSpinner(SpinnerNumberModel(lessonSettings.maxWordsPerLesson))
+    private val intervalMultiplierWithoutMistakes = JSpinner(SpinnerNumberModel(lessonSettings.intervalMultiplierWithoutMistakes))
+    private val minIntervalWithoutMistakes = JSpinner(SpinnerNumberModel(lessonSettings.minIntervalWithoutMistakes))
+    private val intervalMultiplierWithMistake = JSpinner(SpinnerNumberModel(lessonSettings.intervalMultiplierWithMistake))
+    private val minIntervalWithMistake = JSpinner(SpinnerNumberModel(lessonSettings.minIntervalWithMistake))
+    private val intervalMultiplierWithManyMistakes = JSpinner(SpinnerNumberModel(lessonSettings.intervalMultiplierWithManyMistakes))
+    private val minIntervalWithManyMistakes = JSpinner(SpinnerNumberModel(lessonSettings.minIntervalWithManyMistakes))
+
+    private fun  <T : Comparable<T>> SpinnerNumberModel(value: LimitedValue<T>): SpinnerNumberModel =
+        when (value.value) {
+            is Int -> SpinnerNumberModel(value.value, value.min as Int, value.max as Int, 1)
+            is Double -> SpinnerNumberModel(value.value, value.min as Double, value.max as Double, 0.1)
+            is Duration -> SpinnerNumberModel(value.value.toDouble(), (value.min as Duration).toDouble(), (value.max as Duration).toDouble(), 1.0)
+            else -> throw IllegalArgumentException("Not supported type: ${value.value.javaClass}")
+        }
 
     init {
         addComponent(TitledPanel("Common").apply {

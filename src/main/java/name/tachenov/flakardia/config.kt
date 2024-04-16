@@ -42,25 +42,47 @@ fun setAppFont(font: Font) {
 }
 
 fun getLessonSettings(): LessonSettings {
+    val defaultLessonSettings = LessonSettings()
     return LessonSettings(
-        maxWordsPerLesson = preferences.getInt(MAX_WORDS_PER_LESSON_KEY, 30),
-        intervalMultiplierWithoutMistakes = preferences.getDouble(INTERVAL_MULTIPLIER_WITHOUT_MISTAKES_KEY, 1.5),
-        minIntervalWithoutMistakes = preferences.getDouble(MIN_INTERVAL_WITHOUT_MISTAKES_KEY, 1.0).fromDoubleDays(),
-        intervalMultiplierWithMistake = preferences.getDouble(INTERVAL_MULTIPLIER_WITH_MISTAKE_KEY, 1.0),
-        minIntervalWithMistake = preferences.getDouble(MIN_INTERVAL_WITH_MISTAKE_KEY, 0.25).fromDoubleDays(),
-        intervalMultiplierWithManyMistakes = preferences.getDouble(INTERVAL_MULTIPLIER_WITH_MANY_MISTAKES_KEY, 0.5),
-        minIntervalWithManyMistakes = preferences.getDouble(MIN_INTERVAL_WITH_MANY_MISTAKES_KEY, 0.1).fromDoubleDays(),
+        maxWordsPerLesson = preferences.getInt(
+            MAX_WORDS_PER_LESSON_KEY,
+            defaultLessonSettings.maxWordsPerLesson.value
+        ),
+        intervalMultiplierWithoutMistakes = preferences.getDouble(
+            INTERVAL_MULTIPLIER_WITHOUT_MISTAKES_KEY,
+            defaultLessonSettings.intervalMultiplierWithoutMistakes.value
+        ),
+        minIntervalWithoutMistakes = preferences.getDouble(
+            MIN_INTERVAL_WITHOUT_MISTAKES_KEY,
+            defaultLessonSettings.minIntervalWithoutMistakes.value.toDoubleDays()
+        ).fromDoubleDays(),
+        intervalMultiplierWithMistake = preferences.getDouble(
+            INTERVAL_MULTIPLIER_WITH_MISTAKE_KEY,
+            defaultLessonSettings.intervalMultiplierWithMistake.value
+        ),
+        minIntervalWithMistake = preferences.getDouble(
+            MIN_INTERVAL_WITH_MISTAKE_KEY,
+            defaultLessonSettings.minIntervalWithMistake.value.toDoubleDays()
+        ).fromDoubleDays(),
+        intervalMultiplierWithManyMistakes = preferences.getDouble(
+            INTERVAL_MULTIPLIER_WITH_MANY_MISTAKES_KEY,
+            defaultLessonSettings.intervalMultiplierWithManyMistakes.value
+        ),
+        minIntervalWithManyMistakes = preferences.getDouble(
+            MIN_INTERVAL_WITH_MANY_MISTAKES_KEY,
+            defaultLessonSettings.minIntervalWithManyMistakes.value.toDoubleDays()
+        ).fromDoubleDays(),
     )
 }
 
 fun setLessonSettings(settings: LessonSettings) {
-    preferences.putInt(MAX_WORDS_PER_LESSON_KEY, settings.maxWordsPerLesson)
-    preferences.putDouble(INTERVAL_MULTIPLIER_WITHOUT_MISTAKES_KEY, settings.intervalMultiplierWithoutMistakes)
-    preferences.putDouble(MIN_INTERVAL_WITHOUT_MISTAKES_KEY, settings.minIntervalWithoutMistakes.toDoubleDays())
-    preferences.putDouble(INTERVAL_MULTIPLIER_WITH_MISTAKE_KEY, settings.intervalMultiplierWithMistake)
-    preferences.putDouble(MIN_INTERVAL_WITH_MISTAKE_KEY, settings.minIntervalWithMistake.toDoubleDays())
-    preferences.putDouble(INTERVAL_MULTIPLIER_WITH_MANY_MISTAKES_KEY, settings.intervalMultiplierWithManyMistakes)
-    preferences.putDouble(MIN_INTERVAL_WITH_MANY_MISTAKES_KEY, settings.minIntervalWithManyMistakes.toDoubleDays())
+    preferences.putInt(MAX_WORDS_PER_LESSON_KEY, settings.maxWordsPerLesson.value)
+    preferences.putDouble(INTERVAL_MULTIPLIER_WITHOUT_MISTAKES_KEY, settings.intervalMultiplierWithoutMistakes.value)
+    preferences.putDouble(MIN_INTERVAL_WITHOUT_MISTAKES_KEY, settings.minIntervalWithoutMistakes.value.toDoubleDays())
+    preferences.putDouble(INTERVAL_MULTIPLIER_WITH_MISTAKE_KEY, settings.intervalMultiplierWithMistake.value)
+    preferences.putDouble(MIN_INTERVAL_WITH_MISTAKE_KEY, settings.minIntervalWithMistake.value.toDoubleDays())
+    preferences.putDouble(INTERVAL_MULTIPLIER_WITH_MANY_MISTAKES_KEY, settings.intervalMultiplierWithManyMistakes.value)
+    preferences.putDouble(MIN_INTERVAL_WITH_MANY_MISTAKES_KEY, settings.minIntervalWithManyMistakes.value.toDoubleDays())
 }
 
 private fun Duration.toDoubleDays(): Double = toMillis() / 86_400_000.0

@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.app
 
+import name.tachenov.flakardia.LimitedValue
 import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.data.*
 import name.tachenov.flakardia.getLessonSettings
@@ -8,15 +9,35 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.math.roundToLong
 
+private val defaultLessonSettings = LessonSettings()
+
 data class LessonSettings(
-    val maxWordsPerLesson: Int,
-    val intervalMultiplierWithoutMistakes: Double,
-    val minIntervalWithoutMistakes: Duration,
-    val intervalMultiplierWithMistake: Double,
-    val minIntervalWithMistake: Duration,
-    val intervalMultiplierWithManyMistakes: Double,
-    val minIntervalWithManyMistakes: Duration,
-)
+    val maxWordsPerLesson: LimitedValue<Int> = LimitedValue.of(30, 3, 100),
+    val intervalMultiplierWithoutMistakes: LimitedValue<Double> = LimitedValue.of(1.5, 1.0, 100.0),
+    val minIntervalWithoutMistakes: LimitedValue<Duration> = LimitedValue.of(Duration.ofDays(1L), Duration.ofHours(3L), Duration.ofDays(100L)),
+    val intervalMultiplierWithMistake: LimitedValue<Double> = LimitedValue.of(1.0, 0.1, 10.0),
+    val minIntervalWithMistake: LimitedValue<Duration> = LimitedValue.of(Duration.ofHours(6L), Duration.ofHours(3L), Duration.ofDays(100L)),
+    val intervalMultiplierWithManyMistakes: LimitedValue<Double> = LimitedValue.of(0.5, 0.01, 100.0),
+    val minIntervalWithManyMistakes: LimitedValue<Duration> = LimitedValue.of(Duration.ofHours(3L), Duration.ofHours(3L), Duration.ofDays(100L)),
+) {
+    constructor(
+        maxWordsPerLesson: Int,
+        intervalMultiplierWithoutMistakes: Double,
+        minIntervalWithoutMistakes: Duration,
+        intervalMultiplierWithMistake: Double,
+        minIntervalWithMistake: Duration,
+        intervalMultiplierWithManyMistakes: Double,
+        minIntervalWithManyMistakes: Duration
+    ) : this(
+        defaultLessonSettings.maxWordsPerLesson.withValue(maxWordsPerLesson),
+        defaultLessonSettings.intervalMultiplierWithoutMistakes.withValue(intervalMultiplierWithoutMistakes),
+        defaultLessonSettings.minIntervalWithoutMistakes.withValue(minIntervalWithoutMistakes),
+        defaultLessonSettings.intervalMultiplierWithMistake.withValue(intervalMultiplierWithMistake),
+        defaultLessonSettings.minIntervalWithMistake.withValue(minIntervalWithMistake),
+        defaultLessonSettings.intervalMultiplierWithManyMistakes.withValue(intervalMultiplierWithManyMistakes),
+        defaultLessonSettings.minIntervalWithManyMistakes.withValue(minIntervalWithManyMistakes),
+    )
+}
 
 private val lastLearnedFallback: Duration = Duration.ofDays(365)
 private val intervalFallback: Duration = Duration.ofDays(1)
@@ -115,20 +136,20 @@ fun prepareLessonData(
         val mistakes = stats.wordStats[word]?.mistakes ?: 0
         val previousInterval: Duration = stats.wordStats[word]?.intervalBeforeLastLearned ?: intervalFallback
         val interval = previousInterval * (when (mistakes) {
-            0 -> settings.intervalMultiplierWithoutMistakes
-            1 -> settings.intervalMultiplierWithMistake
-            else -> settings.intervalMultiplierWithManyMistakes
+            0 -> settings.intervalMultiplierWithoutMistakes.value
+            1 -> settings.intervalMultiplierWithMistake.value
+            else -> settings.intervalMultiplierWithManyMistakes.value
         })
         val minInterval = when (mistakes) {
-            0 -> settings.minIntervalWithoutMistakes
-            1 -> settings.minIntervalWithMistake
-            else -> settings.minIntervalWithManyMistakes
+            0 -> settings.minIntervalWithoutMistakes.value
+            1 -> settings.minIntervalWithMistake.value
+            else -> settings.minIntervalWithManyMistakes.value
         }
         val isVeryRecent = Duration.between(lastLearned, now) < minInterval
         OrderingKey(lastLearned.plus(interval) as Instant, isVeryRecent)
     }
     flashcards.sortBy { orderingKeys.getValue(it) }
-    val effectiveFlashcards = flashcards.subList(0, flashcards.size.coerceAtMost(settings.maxWordsPerLesson))
+    val effectiveFlashcards = flashcards.subList(0, flashcards.size.coerceAtMost(settings.maxWordsPerLesson.value))
     return LessonData(
         name,
         effectiveFlashcards,
