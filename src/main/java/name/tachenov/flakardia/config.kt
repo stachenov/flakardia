@@ -1,11 +1,7 @@
 package name.tachenov.flakardia
 
 import com.github.weisj.darklaf.LafManager
-import name.tachenov.flakardia.app.CardManager
-import name.tachenov.flakardia.app.DirEnterError
-import name.tachenov.flakardia.app.DirEnterResult
-import name.tachenov.flakardia.app.DirEnterSuccess
-import name.tachenov.flakardia.app.Library
+import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.storage.FlashcardStorage
 import name.tachenov.flakardia.ui.InitFrame
 import name.tachenov.flakardia.ui.SettingsDialog
@@ -35,6 +31,15 @@ fun getAppFont(): Font = preferences.get(FONT_KEY, null)?.let { parseFont(it) } 
 
 fun setAppFont(font: Font) {
     preferences.put(FONT_KEY, "${font.family} ${font.size}${if (font.isBold) " Bold" else ""}${if (font.isItalic) " Italic" else ""}")
+}
+
+fun getLessonSettings(): LessonSettings {
+    return LessonSettings(
+        maxWordsPerLesson = 30,
+        intervalMultiplierWithoutMistakes = 1.5,
+        intervalMultiplierWithMistake = 1.0,
+        intervalMultiplierWithManyMistakes = 0.5,
+    )
 }
 
 fun configureAndEnterLibrary(manager: CardManager, whenDone: () -> Unit) {
