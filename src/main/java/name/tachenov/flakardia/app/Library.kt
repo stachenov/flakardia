@@ -17,7 +17,7 @@ data class LessonSettings(
     val minIntervalWithoutMistakes: LimitedValue<Duration> = LimitedValue.of(Duration.ofDays(1L), Duration.ofHours(1L), Duration.ofDays(100L)),
     val intervalMultiplierWithMistake: LimitedValue<Double> = LimitedValue.of(1.0, 0.1, 10.0),
     val minIntervalWithMistake: LimitedValue<Duration> = LimitedValue.of(Duration.ofHours(3L), Duration.ofHours(1L), Duration.ofDays(100L)),
-    val intervalMultiplierWithManyMistakes: LimitedValue<Double> = LimitedValue.of(0.5, 0.01, 100.0),
+    val intervalMultiplierWithManyMistakes: LimitedValue<Double> = LimitedValue.of(0.5, 0.01, 1.0),
     val minIntervalWithManyMistakes: LimitedValue<Duration> = LimitedValue.of(Duration.ofHours(1L), Duration.ofHours(1L), Duration.ofDays(100L)),
 ) {
     constructor(
