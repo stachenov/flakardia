@@ -18,6 +18,13 @@ private object PackageReference
 
 private const val LIBRARY_PATH_KEY = "library_path"
 private const val FONT_KEY = "font"
+private const val MAX_WORDS_PER_LESSON_KEY = "max_words_per_lesson"
+private const val INTERVAL_MULTIPLIER_WITHOUT_MISTAKES_KEY = "interval_multiplier_without_mistakes"
+private const val MIN_INTERVAL_WITHOUT_MISTAKES_KEY = "min_interval_without_mistakes"
+private const val INTERVAL_MULTIPLIER_WITH_MISTAKE_KEY = "interval_multiplier_with_mistake"
+private const val MIN_INTERVAL_WITH_MISTAKE_KEY = "min_interval_with_mistake"
+private const val INTERVAL_MULTIPLIER_WITH_MANY_MISTAKES_KEY = "interval_multiplier_with_many_mistakes"
+private const val MIN_INTERVAL_WITH_MANY_MISTAKES_KEY = "min_interval_with_many_mistakes"
 private val DEFAULT_FONT = Font("Verdana", 0, 16)
 
 private val preferences: Preferences = Preferences.userNodeForPackage(PackageReference::class.java)
@@ -36,15 +43,29 @@ fun setAppFont(font: Font) {
 
 fun getLessonSettings(): LessonSettings {
     return LessonSettings(
-        maxWordsPerLesson = 30,
-        intervalMultiplierWithoutMistakes = 1.5,
-        minIntervalWithoutMistakes = Duration.ofDays(1L),
-        intervalMultiplierWithMistake = 1.0,
-        minIntervalWithMistake = Duration.ofHours(4L),
-        intervalMultiplierWithManyMistakes = 0.5,
-        minIntervalWithManyMistakes = Duration.ofHours(1L),
+        maxWordsPerLesson = preferences.getInt(MAX_WORDS_PER_LESSON_KEY, 30),
+        intervalMultiplierWithoutMistakes = preferences.getDouble(INTERVAL_MULTIPLIER_WITHOUT_MISTAKES_KEY, 1.5),
+        minIntervalWithoutMistakes = preferences.getDouble(MIN_INTERVAL_WITHOUT_MISTAKES_KEY, 1.0).fromDoubleDays(),
+        intervalMultiplierWithMistake = preferences.getDouble(INTERVAL_MULTIPLIER_WITH_MISTAKE_KEY, 1.0),
+        minIntervalWithMistake = preferences.getDouble(MIN_INTERVAL_WITH_MISTAKE_KEY, 0.25).fromDoubleDays(),
+        intervalMultiplierWithManyMistakes = preferences.getDouble(INTERVAL_MULTIPLIER_WITH_MANY_MISTAKES_KEY, 0.5),
+        minIntervalWithManyMistakes = preferences.getDouble(MIN_INTERVAL_WITH_MANY_MISTAKES_KEY, 0.1).fromDoubleDays(),
     )
 }
+
+fun setLessonSettings(settings: LessonSettings) {
+    preferences.putInt(MAX_WORDS_PER_LESSON_KEY, settings.maxWordsPerLesson)
+    preferences.putDouble(INTERVAL_MULTIPLIER_WITHOUT_MISTAKES_KEY, settings.intervalMultiplierWithoutMistakes)
+    preferences.putDouble(MIN_INTERVAL_WITHOUT_MISTAKES_KEY, settings.minIntervalWithoutMistakes.toDoubleDays())
+    preferences.putDouble(INTERVAL_MULTIPLIER_WITH_MISTAKE_KEY, settings.intervalMultiplierWithMistake)
+    preferences.putDouble(MIN_INTERVAL_WITH_MISTAKE_KEY, settings.minIntervalWithMistake.toDoubleDays())
+    preferences.putDouble(INTERVAL_MULTIPLIER_WITH_MANY_MISTAKES_KEY, settings.intervalMultiplierWithManyMistakes)
+    preferences.putDouble(MIN_INTERVAL_WITH_MANY_MISTAKES_KEY, settings.minIntervalWithManyMistakes.toDoubleDays())
+}
+
+private fun Duration.toDoubleDays(): Double = toMillis() / 86_400_000.0
+
+private fun Double.fromDoubleDays(): Duration = Duration.ofMillis((this * 86_400_000.0).toLong())
 
 fun configureAndEnterLibrary(manager: CardManager, whenDone: () -> Unit) {
     threading {

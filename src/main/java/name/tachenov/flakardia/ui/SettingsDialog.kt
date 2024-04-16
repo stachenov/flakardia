@@ -1,9 +1,7 @@
 package name.tachenov.flakardia.ui
 
-import name.tachenov.flakardia.getAppFont
-import name.tachenov.flakardia.getLibraryPath
-import name.tachenov.flakardia.setAppFont
-import name.tachenov.flakardia.setLibraryPath
+import name.tachenov.flakardia.*
+import name.tachenov.flakardia.app.LessonSettings
 import java.awt.Component
 import java.awt.Font
 import java.awt.Frame
@@ -14,11 +12,13 @@ import java.awt.event.ComponentEvent
 import java.awt.event.KeyEvent
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import javax.swing.*
 import javax.swing.GroupLayout.*
 import javax.swing.GroupLayout.Alignment.BASELINE
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
+import javax.swing.LayoutStyle.ComponentPlacement.UNRELATED
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
@@ -28,7 +28,6 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
         private set
 
     private val tabs = mutableListOf<SettingsTab>()
-    private val generalTab: GeneralTab
 
     private val ok = JButton("OK").apply { mnemonic = KeyEvent.VK_O }
     private val status = JLabel("Initializing...")
@@ -39,7 +38,8 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
         val hg = layout.createSequentialGroup()
         val vg = layout.createSequentialGroup()
         val tabs = JTabbedPane()
-        generalTab = addTab(GeneralTab(tabs))
+        addTab(GeneralTab(tabs))
+        addTab(LessonTab(tabs))
         val cancel = JButton("Cancel").apply { mnemonic = KeyEvent.VK_C }
         hg.apply {
             addContainerGap()
@@ -88,7 +88,7 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
     }
 
     private fun <T : SettingsTab> addTab(tab: T): T {
-        tabs += tab
+        tabs += tab.apply { build() }
         tab.addChangeListener { enableDisable() }
         return tab
     }
@@ -109,7 +109,9 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
     }
 
     private fun ok() {
-        generalTab.apply()
+        for (tab in tabs) {
+            tab.apply()
+        }
         isAccepted = true
         dispose()
     }
@@ -156,7 +158,6 @@ private class GeneralTab(tabs: JTabbedPane) : SettingsTab(tabs, "General") {
                 addComponent(fontItalic)
             }.build()
         )
-        build()
 
         dirInput.document.addDocumentListener(object : DocumentListener {
             override fun insertUpdate(e: DocumentEvent?) {
@@ -209,6 +210,90 @@ private class GeneralTab(tabs: JTabbedPane) : SettingsTab(tabs, "General") {
     }
 }
 
+private class LessonTab(tabs: JTabbedPane) : SettingsTab(tabs, "Lesson") {
+    override val errorMessage: String? = null
+
+    private val lessonSettings = getLessonSettings()
+    private val maxWordsInLesson = JSpinner(SpinnerNumberModel(lessonSettings.maxWordsPerLesson, 3, 1000, 1))
+    private val intervalMultiplierWithoutMistakes = JSpinner(SpinnerNumberModel(lessonSettings.intervalMultiplierWithoutMistakes, 1.0, 100.0, 0.1))
+    private val minIntervalWithoutMistakes = JSpinner(SpinnerNumberModel(lessonSettings.minIntervalWithoutMistakes.toDouble(), 0.01, 100.0, 1.0))
+    private val intervalMultiplierWithMistake = JSpinner(SpinnerNumberModel(lessonSettings.intervalMultiplierWithMistake, 0.1, 10.0, 0.1))
+    private val minIntervalWithMistake = JSpinner(SpinnerNumberModel(lessonSettings.minIntervalWithMistake.toDouble(), 0.01, 100.0, 1.0))
+    private val intervalMultiplierWithManyMistakes = JSpinner(SpinnerNumberModel(lessonSettings.intervalMultiplierWithManyMistakes, 0.1, 1.0, 0.1))
+    private val minIntervalWithManyMistakes = JSpinner(SpinnerNumberModel(lessonSettings.minIntervalWithManyMistakes.toDouble(), 0.01, 100.0, 1.0))
+
+    init {
+        addComponent(TitledPanel("Common").apply {
+            addComponent(JLabel("Max words per lesson").apply {
+                labelFor = maxWordsInLesson
+                toolTipText = "The maximum number of words that can appear in a single lesson"
+            })
+            addRelatedGap()
+            addComponent(maxWordsInLesson)
+        }.build())
+        addComponent(TitledPanel("If no mistakes were made").apply {
+            addComponent(JLabel("Interval multiplier").apply {
+                labelFor = intervalMultiplierWithoutMistakes
+                toolTipText = "If a word was learned in a lesson without making any mistakes, its interval between lessons will be multiplied by this value"
+            })
+            addRelatedGap()
+            addComponent(intervalMultiplierWithoutMistakes)
+            addUnrelatedGap()
+            addComponent(JLabel("Min interval").apply {
+                labelFor = minIntervalWithoutMistakes
+                toolTipText = "If a word was learned in a lesson without making any mistakes, it won't appear in another lesson until this many days have passed"
+            })
+            addRelatedGap()
+            addComponent(minIntervalWithoutMistakes)
+        }.build())
+        addComponent(TitledPanel("If a single mistake was made").apply {
+            addComponent(JLabel("Interval multiplier").apply {
+                labelFor = intervalMultiplierWithMistake
+                toolTipText = "If a word was learned in a lesson with exactly one mistake, its interval between lessons will be multiplied by this value"
+            })
+            addRelatedGap()
+            addComponent(intervalMultiplierWithMistake)
+            addUnrelatedGap()
+            addComponent(JLabel("Min interval").apply {
+                labelFor = minIntervalWithMistake
+                toolTipText = "If a word was learned in a lesson with exactly one mistake, it won't appear in another lesson until this many days have passed"
+            })
+            addRelatedGap()
+            addComponent(minIntervalWithMistake)
+        }.build())
+        addComponent(TitledPanel("If many mistakes were made").apply {
+            addComponent(JLabel("Interval multiplier").apply {
+                labelFor = intervalMultiplierWithManyMistakes
+                toolTipText = "If a word was learned in a lesson with more than one mistake, its interval between lessons will be multiplied by this value"
+            })
+            addRelatedGap()
+            addComponent(intervalMultiplierWithManyMistakes)
+            addUnrelatedGap()
+            addComponent(JLabel("Min interval").apply {
+                labelFor = minIntervalWithManyMistakes
+                toolTipText = "If a word was learned in a lesson with more than one mistake, it won't appear in another lesson until this many days have passed"
+            })
+            addRelatedGap()
+            addComponent(minIntervalWithManyMistakes)
+        }.build())
+    }
+
+    override fun apply() {
+        setLessonSettings(LessonSettings(
+            maxWordsInLesson.value as Int,
+            intervalMultiplierWithoutMistakes.value as Double,
+            (minIntervalWithoutMistakes.value as Double).toDuration(),
+            intervalMultiplierWithMistake.value as Double,
+            (minIntervalWithMistake.value as Double).toDuration(),
+            intervalMultiplierWithManyMistakes.value as Double,
+            (minIntervalWithManyMistakes.value as Double).toDuration(),
+        ))
+    }
+}
+
+private fun Duration.toDouble(): Double = toMillis() / 86_400_000.0
+private fun Double.toDuration(): Duration = Duration.ofMillis((this * 86_400_000.0).toLong())
+
 private enum class Orientation {
     HORIZONTAL,
     VERTICAL,
@@ -230,8 +315,12 @@ private open class SettingsPanel(private val orientation: Orientation) {
         descriptors.add(ComponentDescriptor(component, minSize, prefSize, maxSize))
     }
 
+    fun addUnrelatedGap() {
+        descriptors.add(GapDescriptor(UNRELATED))
+    }
+
     fun addRelatedGap() {
-        descriptors.add(RelatedGapDescriptor)
+        descriptors.add(GapDescriptor(RELATED))
     }
 
     fun build(): JPanel {
@@ -274,7 +363,7 @@ private open class SettingsPanel(private val orientation: Orientation) {
         }
     }
 
-    private data object RelatedGapDescriptor : Descriptor() {
+    private data class GapDescriptor(val gap: LayoutStyle.ComponentPlacement) : Descriptor() {
         override fun addToHG(group: Group) {
             addRelatedGap(group)
         }
@@ -285,7 +374,7 @@ private open class SettingsPanel(private val orientation: Orientation) {
 
         private fun addRelatedGap(group: Group) {
             if (group is SequentialGroup) {
-                group.addPreferredGap(RELATED)
+                group.addPreferredGap(gap)
             }
         }
     }
