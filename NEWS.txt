@@ -1,4 +1,5 @@
-0.5.1
+0.5.1 / 2024-05-04
+    Introduce randomness to avoid the same groups of words repeating
 
 0.5 / 2024-04-16
     Improved the word selection algorithm: words are no longer repeated too soon
