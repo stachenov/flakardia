@@ -216,6 +216,7 @@ private class LessonTab(tabs: JTabbedPane) : SettingsTab(tabs, "Lesson") {
 
     private val lessonSettings = getLessonSettings()
     private val maxWordsInLesson = JSpinner(SpinnerNumberModel(lessonSettings.maxWordsPerLesson))
+    private val randomness = JSpinner(SpinnerNumberModel(lessonSettings.randomness))
     private val intervalMultiplierWithoutMistakes = JSpinner(SpinnerNumberModel(lessonSettings.intervalMultiplierWithoutMistakes))
     private val minIntervalWithoutMistakes = JSpinner(SpinnerNumberModel(lessonSettings.minIntervalWithoutMistakes))
     private val intervalMultiplierWithMistake = JSpinner(SpinnerNumberModel(lessonSettings.intervalMultiplierWithMistake))
@@ -239,6 +240,13 @@ private class LessonTab(tabs: JTabbedPane) : SettingsTab(tabs, "Lesson") {
             })
             addRelatedGap()
             addComponent(maxWordsInLesson)
+            addUnrelatedGap()
+            addComponent(JLabel("Randomness").apply {
+                labelFor = randomness
+                toolTipText = "To avoid repeating the same group of words, they'll be scattered in time, the more the higher this value is"
+            })
+            addRelatedGap()
+            addComponent(randomness)
         }.build())
         addComponent(TitledPanel("If no mistakes were made").apply {
             addComponent(JLabel("Interval multiplier").apply {
@@ -296,6 +304,7 @@ private class LessonTab(tabs: JTabbedPane) : SettingsTab(tabs, "Lesson") {
             Duration.ofHours((minIntervalWithMistake.value as Long)),
             intervalMultiplierWithManyMistakes.value as Double,
             Duration.ofHours((minIntervalWithManyMistakes.value as Long)),
+            randomness.value as Double,
         ))
     }
 }

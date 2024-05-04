@@ -8,6 +8,7 @@ import name.tachenov.flakardia.storage.FlashcardStorage
 import java.time.Duration
 import java.time.Instant
 import kotlin.math.roundToLong
+import kotlin.random.Random
 
 private val defaultLessonSettings = LessonSettings()
 
@@ -19,6 +20,7 @@ data class LessonSettings(
     val minIntervalWithMistake: LimitedValue<Duration> = LimitedValue.of(Duration.ofHours(3L), Duration.ofHours(1L), Duration.ofDays(100L)),
     val intervalMultiplierWithManyMistakes: LimitedValue<Double> = LimitedValue.of(0.5, 0.01, 1.0),
     val minIntervalWithManyMistakes: LimitedValue<Duration> = LimitedValue.of(Duration.ofHours(1L), Duration.ofHours(1L), Duration.ofDays(100L)),
+    val randomness: LimitedValue<Double> = LimitedValue.of(0.1, 0.0, 0.99)
 ) {
     constructor(
         maxWordsPerLesson: Int,
@@ -27,7 +29,8 @@ data class LessonSettings(
         intervalMultiplierWithMistake: Double,
         minIntervalWithMistake: Duration,
         intervalMultiplierWithManyMistakes: Double,
-        minIntervalWithManyMistakes: Duration
+        minIntervalWithManyMistakes: Duration,
+        randomness: Double,
     ) : this(
         defaultLessonSettings.maxWordsPerLesson.withValue(maxWordsPerLesson),
         defaultLessonSettings.intervalMultiplierWithoutMistakes.withValue(intervalMultiplierWithoutMistakes),
@@ -36,6 +39,7 @@ data class LessonSettings(
         defaultLessonSettings.minIntervalWithMistake.withValue(minIntervalWithMistake),
         defaultLessonSettings.intervalMultiplierWithManyMistakes.withValue(intervalMultiplierWithManyMistakes),
         defaultLessonSettings.minIntervalWithManyMistakes.withValue(minIntervalWithManyMistakes),
+        defaultLessonSettings.randomness.withValue(randomness),
     )
 }
 
@@ -130,6 +134,7 @@ fun prepareLessonData(
     // In theory this should lead to the selection of the most "forgotten" words.
     val flashcards = flashcardList.toMutableList()
     flashcards.shuffle()
+    val random = Random.Default
     val orderingKeys = flashcardList.associateWith { cardData ->
         val word = cardData.flashcard.back
         val lastLearned: Instant = stats.wordStats[word]?.lastLearned ?: now.minus(lastLearnedFallback)
@@ -139,7 +144,7 @@ fun prepareLessonData(
             0 -> settings.intervalMultiplierWithoutMistakes.value
             1 -> settings.intervalMultiplierWithMistake.value
             else -> settings.intervalMultiplierWithManyMistakes.value
-        })
+        }) * (1.0 + settings.randomness.value * random.nextDouble(-1.0, 1.0))
         val minInterval = when (mistakes) {
             0 -> settings.minIntervalWithoutMistakes.value
             1 -> settings.minIntervalWithMistake.value

@@ -25,6 +25,7 @@ private const val INTERVAL_MULTIPLIER_WITH_MISTAKE_KEY = "interval_multiplier_wi
 private const val MIN_INTERVAL_WITH_MISTAKE_KEY = "min_interval_with_mistake"
 private const val INTERVAL_MULTIPLIER_WITH_MANY_MISTAKES_KEY = "interval_multiplier_with_many_mistakes"
 private const val MIN_INTERVAL_WITH_MANY_MISTAKES_KEY = "min_interval_with_many_mistakes"
+private const val RANDOMNESS_KEY = "randomness"
 private val DEFAULT_FONT = Font("Verdana", 0, 16)
 
 private val preferences: Preferences = Preferences.userNodeForPackage(PackageReference::class.java)
@@ -72,6 +73,10 @@ fun getLessonSettings(): LessonSettings {
             MIN_INTERVAL_WITH_MANY_MISTAKES_KEY,
             defaultLessonSettings.minIntervalWithManyMistakes.value.toHours()
         )),
+        randomness = preferences.getDouble(
+            RANDOMNESS_KEY,
+            defaultLessonSettings.randomness.value
+        ),
     )
 }
 
@@ -83,6 +88,7 @@ fun setLessonSettings(settings: LessonSettings) {
     preferences.putLong(MIN_INTERVAL_WITH_MISTAKE_KEY, settings.minIntervalWithMistake.value.toHours())
     preferences.putDouble(INTERVAL_MULTIPLIER_WITH_MANY_MISTAKES_KEY, settings.intervalMultiplierWithManyMistakes.value)
     preferences.putLong(MIN_INTERVAL_WITH_MANY_MISTAKES_KEY, settings.minIntervalWithManyMistakes.value.toHours())
+    preferences.putDouble(RANDOMNESS_KEY, settings.randomness.value)
 }
 
 fun configureAndEnterLibrary(manager: CardManager, whenDone: () -> Unit) {
