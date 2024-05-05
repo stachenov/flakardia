@@ -94,6 +94,8 @@ private class MyTableModel : DefaultTableModel() {
     }
 
     override fun getColumnClass(columnIndex: Int): Class<*> = classes[columnIndex]
+
+    override fun isCellEditable(row: Int, column: Int): Boolean = false
 }
 
 private val COLLATOR = Collator.getInstance().apply {
