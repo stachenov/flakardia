@@ -10,6 +10,10 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import javax.swing.*
+import javax.swing.GroupLayout.Alignment.BASELINE
+import javax.swing.GroupLayout.Alignment.LEADING
+import javax.swing.LayoutStyle.ComponentPlacement.RELATED
+import javax.swing.LayoutStyle.ComponentPlacement.UNRELATED
 import javax.swing.table.DefaultTableColumnModel
 import javax.swing.table.DefaultTableModel
 import javax.swing.table.TableRowSorter
@@ -29,14 +33,28 @@ class FlashcardSetViewFrame(lessonData: LessonData) : JFrame(lessonData.name) {
                 return super.getPreferredSize().apply { width = table.preferredSize.width + EXTRA_PREFERRED_WIDTH }
             }
         }
+        val countLabel = JLabel("Flashcards selected:")
+        val count = JLabel("0")
         hg.apply {
             addContainerGap()
-            addComponent(scrollPane)
+            addGroup(layout.createParallelGroup(LEADING).apply {
+                addComponent(scrollPane)
+                addGroup(layout.createSequentialGroup().apply {
+                    addComponent(countLabel)
+                    addPreferredGap(RELATED)
+                    addComponent(count)
+                })
+            })
             addContainerGap()
         }
         vg.apply {
             addContainerGap()
             addComponent(scrollPane)
+            addPreferredGap(UNRELATED)
+            addGroup(layout.createParallelGroup(BASELINE).apply {
+                addComponent(countLabel)
+                addComponent(count)
+            })
             addContainerGap()
         }
         layout.setHorizontalGroup(hg)
@@ -72,6 +90,9 @@ class FlashcardSetViewFrame(lessonData: LessonData) : JFrame(lessonData.name) {
         }
         packColumns(table)
         pack()
+        table.selectionModel.addListSelectionListener {
+            count.text = table.selectionModel.selectedItemsCount.toString()
+        }
         addComponentListener(object : ComponentAdapter() {
             override fun componentShown(e: ComponentEvent?) {
                 val screenBounds = graphicsConfiguration?.bounds ?: return
