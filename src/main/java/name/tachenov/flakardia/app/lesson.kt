@@ -3,6 +3,7 @@ package name.tachenov.flakardia.app
 import name.tachenov.flakardia.data.*
 import java.time.Duration
 import java.time.Instant
+import kotlin.math.sign
 
 data class LessonResult(
     val round: Int,
@@ -39,6 +40,8 @@ class Lesson(
     private val remaining = ArrayDeque<FlashcardData>()
     private val incorrect: MutableSet<FlashcardData> = hashSetOf()
     private var round = 0
+    private var step = 0
+    private val lastSeen = hashMapOf<FlashcardData, Int>()
 
     private val correct: Int
         get() = total - remaining.size - incorrect.size
@@ -70,7 +73,11 @@ class Lesson(
 
     fun nextQuestion(): Question? {
         goToNextFlashcard()
-        return currentFlashcard?.let { Question(it.path, it.flashcard.front) }
+        ++step
+        return currentFlashcard?.let {
+            lastSeen[it] = step
+            Question(it.path, it.flashcard.front)
+        }
     }
 
     fun answer(answer: Answer?): AnswerResult {
@@ -92,13 +99,13 @@ class Lesson(
             remaining.isNotEmpty() -> { }
             incorrect.isNotEmpty() -> {
                 correctingMistakes = true
-                remaining.addAll(incorrect.shuffled())
+                remaining.addAll(shuffle(incorrect))
                 incorrect.clear()
             }
             correctingMistakes || round == 0 -> {
                 ++round
                 correctingMistakes = false
-                remaining.addAll(lessonData.flashcards.shuffled())
+                remaining.addAll(shuffle(lessonData.flashcards))
             }
         }
         if (remaining.isNotEmpty()) {
@@ -107,6 +114,31 @@ class Lesson(
         else {
             currentFlashcard = null
         }
+    }
+
+    private fun shuffle(cards: Collection<FlashcardData>): List<FlashcardData> {
+        val shuffled = cards.shuffled().toMutableList()
+        // Now move too recent cards to the end.
+        val threshold = shuffled.size / 3
+        val tooRecentByIndex = hashMapOf<Int, Int>()
+        for ((index, flashcard) in shuffled.withIndex()) {
+            val howRecent = stepsSinceLastSeen(flashcard) + index
+            if (howRecent < threshold) {
+                tooRecentByIndex[index] = howRecent
+            }
+        }
+        // Now go over the indices in reverse order to preserve them as elements are removed.
+        val indices = tooRecentByIndex.keys.toList().sortedDescending()
+        val tooRecent = hashSetOf<FlashcardData>()
+        for (index in indices) {
+            tooRecent += shuffled.removeAt(index)
+        }
+        return shuffled + tooRecent
+    }
+
+    private fun stepsSinceLastSeen(flashcard: FlashcardData): Int {
+        val lastSeen = lastSeen[flashcard]
+        return lastSeen?.let { step - lastSeen } ?: total
     }
 
     private fun recordAnswerResult(answerResult: AnswerResult) {
