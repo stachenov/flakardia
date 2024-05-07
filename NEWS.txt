@@ -1,4 +1,7 @@
-0.5.2
+0.5.2 / 2024-05-07
+    Show word count in the flashcard list window
+    The flashcard list no longer allows no-op "edits"
+    A word will no longer be repeated too soon on the next round
 
 0.5.1 / 2024-05-04
     Introduce randomness to avoid the same groups of words repeating
