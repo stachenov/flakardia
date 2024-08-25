@@ -23,7 +23,7 @@ import kotlin.math.max
 class CardSetManagerFrame(
     private val manager: CardManager,
     private val service: FlashcardService,
-) : JFrame("Flakardia 0.5.2") {
+) : JFrame("Flakardia 0.6") {
 
     private val dir = JLabel()
     private val list = JList<CardListEntryView>()
