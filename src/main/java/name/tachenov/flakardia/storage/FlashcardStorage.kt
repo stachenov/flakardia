@@ -6,6 +6,8 @@ import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.FlashcardSetListEntry
 import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.data.*
+import name.tachenov.flakardia.reportCurrentOperation
+import name.tachenov.flakardia.reportProgress
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -99,6 +101,7 @@ data class FlashcardStorage(private val fsPath: Path) {
 }
 
 private fun parse(path: RelativePath, lines: List<String>): FlashcardSetResult {
+    reportCurrentOperation("Reading $path")
     if (isEmptyLineDelimited(lines)) {
         return FlashcardSet(parseUsingEmptyLines(lines).map { FlashcardData(path, it) })
     }
@@ -133,15 +136,16 @@ private fun isEmptyLineDelimited(lines: List<String>): Boolean {
 private fun parseUsingEmptyLines(lines: List<String>): List<Flashcard> {
     val result = mutableListOf<Flashcard>()
     val words = mutableListOf<Word>()
-    for (line in (lines + "")) {
-        if (line.isBlank()) {
+    for (line in (lines + "").withIndex()) {
+        reportProgress(line.index * 100 / lines.size)
+        if (line.value.isBlank()) {
             if (words.isNotEmpty()) {
                 result += Flashcard(words[0], words[1])
             }
             words.clear()
         }
         else {
-            words += parseWord(line)
+            words += parseWord(line.value)
         }
     }
     return result
@@ -182,7 +186,11 @@ private fun guessDelimiter(lines: List<String>): Char? {
 
 private fun parse(path: RelativePath, lines: List<String>, delimiter: Char): FlashcardSet =
     FlashcardSet(
-        lines.filter { it.isNotBlank() }.map { FlashcardData(path, parse(it, delimiter)) },
+        lines.filter { it.isNotBlank() }.withIndex()
+            .map {
+                reportProgress(it.index * 100 / lines.size)
+                FlashcardData(path, parse(it.value, delimiter))
+            },
     )
 
 private fun parse(line: String, delimiter: Char): Flashcard = line.split(delimiter)

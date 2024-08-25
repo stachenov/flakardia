@@ -92,7 +92,7 @@ fun setLessonSettings(settings: LessonSettings) {
 }
 
 fun configureAndEnterLibrary(manager: CardManager, whenDone: () -> Unit) {
-    threading {
+    threading(EmptyProgressIndicator) {
         var dirEnterResult: DirEnterResult? = null
         while (dirEnterResult !is DirEnterSuccess) {
             val libraryPath = getLibraryPath()
@@ -102,7 +102,7 @@ fun configureAndEnterLibrary(manager: CardManager, whenDone: () -> Unit) {
                 }
             }
             else {
-                dirEnterResult = background { manager.enterLibrary(Library(FlashcardStorage(libraryPath)) ) }
+                dirEnterResult = background { manager.enterLibrary(Library(FlashcardStorage(libraryPath))) }
                 if (dirEnterResult is DirEnterError) {
                     ui {
                         JOptionPane.showMessageDialog(

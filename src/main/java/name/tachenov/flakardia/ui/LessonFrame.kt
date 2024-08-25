@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.ui
 
+import name.tachenov.flakardia.EmptyProgressIndicator
 import name.tachenov.flakardia.app.Answer
 import name.tachenov.flakardia.app.Lesson
 import name.tachenov.flakardia.app.Library
@@ -84,7 +85,7 @@ class LessonFrame(
         questionAnswerPanel.displayAnswerResult(answerResult)
         status.text = "Press Space to continue to the next question"
         lessonResultPanel.displayResult(lesson.result)
-        service.updateStats(library, lesson.stats) { result ->
+        service.updateStats(EmptyProgressIndicator, library, lesson.stats) { result ->
             when (result) {
                 is StatsSaveError -> JOptionPane.showMessageDialog(
                     this,

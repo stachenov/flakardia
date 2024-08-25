@@ -188,6 +188,7 @@ class CardSetManagerFrame(
 
     private fun enterDir(dirPath: RelativePath, selectDir: RelativePath? = null) {
         service.processEntries(
+            dialogIndicator(),
             source = {
                 manager.enter(dirPath)
             },
@@ -237,6 +238,7 @@ class CardSetManagerFrame(
     private fun viewFlashcards(entry: FlashcardSetListEntry) {
         val library = manager.library ?: return
         service.processLessonData(
+            dialogIndicator(),
             source = {
                 library.getAllFlashcards(entry)
             },
@@ -249,6 +251,7 @@ class CardSetManagerFrame(
     private fun startLesson(entry: FlashcardSetListEntry) {
         val library = manager.library ?: return
         service.processLessonData(
+            dialogIndicator(),
             source = {
                 library.prepareLessonData(entry)
             },
