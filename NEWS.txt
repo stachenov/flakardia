@@ -1,4 +1,7 @@
-0.6
+0.6 / 2024-08-31
+    The default settings were adjusted according to experience
+    Long-running operations now display a progress dialog
+    Duplicate entries are now detected and displayed as a warning
 
 0.5.2 / 2024-05-07
     Show word count in the flashcard list window

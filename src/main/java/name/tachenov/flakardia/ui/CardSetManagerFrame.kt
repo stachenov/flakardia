@@ -10,6 +10,7 @@ import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.service.FlashcardService
 import name.tachenov.flakardia.showHelp
 import name.tachenov.flakardia.showSettingsDialog
+import name.tachenov.flakardia.version
 import java.awt.Component
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
@@ -24,7 +25,7 @@ import kotlin.math.max
 class CardSetManagerFrame(
     private val manager: CardManager,
     private val service: FlashcardService,
-) : JFrame("Flakardia 0.6") {
+) : JFrame("Flakardia ${version()}") {
 
     private val dir = JLabel()
     private val list = JList<CardListEntryView>()
