@@ -4,7 +4,6 @@ import name.tachenov.flakardia.LimitedValue
 import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.data.*
 import name.tachenov.flakardia.getLessonSettings
-import name.tachenov.flakardia.storage.FlashcardStorage
 import java.time.Duration
 import java.time.Instant
 import kotlin.math.roundToLong
@@ -46,6 +45,14 @@ data class LessonSettings(
 private val lastLearnedFallback: Duration = Duration.ofDays(365)
 private val intervalFallback: Duration = Duration.ofDays(1)
 
+interface FlashcardStorage {
+    val path: String
+    fun readEntries(path: RelativePath): List<FlashcardSetListEntry>
+    fun readFlashcards(path: RelativePath): FlashcardSetResult
+    fun readLibraryStats(): LibraryStatsResult
+    fun saveLibraryStats(stats: LibraryStats): StatsSaveResult
+}
+
 data class Library(val storage: FlashcardStorage) {
 
     val path: String
@@ -83,8 +90,31 @@ data class Library(val storage: FlashcardStorage) {
             is FlashcardSetError -> LessonDataError(flashcardSet.message)
             is FlashcardSet -> when (val stats = storage.readLibraryStats()) {
                 is LibraryStatsError -> LessonDataError(stats.message)
-                is LibraryStats -> prepare(entry.name, flashcardSet.cards, stats)
+                is LibraryStats -> addWarnings(prepare(entry.name, flashcardSet.cards, stats), flashcardSet.cards)
             }
+        }
+    }
+
+    private fun addWarnings(data: LessonData, cards: List<FlashcardData>): LessonDataResult {
+        val cardsByFront = hashMapOf<Word, MutableList<FlashcardData>>()
+        val cardsByBack = hashMapOf<Word, MutableList<FlashcardData>>()
+        for (cardData in cards) {
+            val card = cardData.flashcard
+            cardsByFront.getOrPut(card.front) { mutableListOf() } += cardData
+            cardsByBack.getOrPut(card.back) { mutableListOf() } += cardData
+        }
+        val duplicates = mutableSetOf<FlashcardData>()
+        duplicates += cardsByFront.values.asSequence().filter { it.size > 1 }.flatten().toSet()
+        duplicates += cardsByBack.values.asSequence().filter { it.size > 1 }.flatten().toSet()
+        if (duplicates.isNotEmpty()) {
+            return LessonDataWarnings(
+                data,
+                listOf("The following duplicate words were detected") +
+                duplicates.map { "${it.path}:${it.flashcard.front.value}:${it.flashcard.back.value}" }
+            )
+        }
+        else {
+            return data
         }
     }
 

@@ -4,6 +4,7 @@ import kotlinx.serialization.encodeToString
 import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.FlashcardSetListEntry
+import name.tachenov.flakardia.app.FlashcardStorage
 import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.data.*
 import name.tachenov.flakardia.reportCurrentOperation
@@ -14,15 +15,15 @@ import java.nio.file.StandardCopyOption
 import kotlin.io.path.name
 import kotlin.io.path.relativeTo
 
-data class FlashcardStorage(private val fsPath: Path) {
+data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
 
     private val flakardiaDir: Path = fsPath.resolve(".flakardia")
     private val statsFile: Path = flakardiaDir.resolve("stats.json")
 
-    val path: String
+    override val path: String
         get() = fsPath.fileName.toString()
 
-    fun readEntries(path: RelativePath): List<FlashcardSetListEntry> {
+    override fun readEntries(path: RelativePath): List<FlashcardSetListEntry> {
         assertBGT()
         val result = mutableListOf<FlashcardSetListEntry>()
         Files.newDirectoryStream(
@@ -42,7 +43,7 @@ data class FlashcardStorage(private val fsPath: Path) {
         return result
     }
 
-    fun readFlashcards(file: RelativePath): FlashcardSetResult  {
+    override fun readFlashcards(file: RelativePath): FlashcardSetResult  {
         assertBGT()
         val lines = try {
             Files.readAllLines(file.toFilePath())
@@ -64,7 +65,7 @@ data class FlashcardStorage(private val fsPath: Path) {
         RelativePath((0 until path.nameCount).map { path.getName(it).name })
     }
 
-    fun readLibraryStats(): LibraryStatsResult {
+    override fun readLibraryStats(): LibraryStatsResult {
         assertBGT()
         try {
             ensureFlakardiaDirExists()
@@ -80,7 +81,7 @@ data class FlashcardStorage(private val fsPath: Path) {
         }
     }
 
-    fun saveLibraryStats(stats: LibraryStats): StatsSaveResult {
+    override fun saveLibraryStats(stats: LibraryStats): StatsSaveResult {
         assertBGT()
         try {
             ensureFlakardiaDirExists()

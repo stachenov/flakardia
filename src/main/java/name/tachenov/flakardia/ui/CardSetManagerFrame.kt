@@ -5,6 +5,7 @@ import name.tachenov.flakardia.configureAndEnterLibrary
 import name.tachenov.flakardia.data.LessonData
 import name.tachenov.flakardia.data.LessonDataError
 import name.tachenov.flakardia.data.LessonDataResult
+import name.tachenov.flakardia.data.LessonDataWarnings
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.service.FlashcardService
 import name.tachenov.flakardia.showHelp
@@ -198,12 +199,7 @@ class CardSetManagerFrame(
                         updateEntries(selectDir)
                     }
                     is DirEnterError -> {
-                        JOptionPane.showMessageDialog(
-                            this,
-                            result.message,
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE,
-                        )
+                        showError(result.message)
                     }
                 }
             }
@@ -264,22 +260,47 @@ class CardSetManagerFrame(
     private fun openFrame(result: LessonDataResult, frame: (LessonData) -> JFrame) {
         when (result) {
             is LessonData -> {
-                frame(result).apply {
-                    defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
-                    pack()
-                    setLocationRelativeTo(null)
-                    isVisible = true
-                }
+                showFrame(frame, result)
+            }
+            is LessonDataWarnings -> {
+                showWarnings(result.warnings)
+                showFrame(frame, result.data)
             }
             is LessonDataError -> {
-                JOptionPane.showMessageDialog(
-                    this,
-                    result.message,
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE,
-                )
+                val error = result.message
+                showError(error)
             }
         }
+    }
+
+    private fun showFrame(
+        frame: (LessonData) -> JFrame,
+        result: LessonData
+    ) {
+        frame(result).apply {
+            defaultCloseOperation = DISPOSE_ON_CLOSE
+            pack()
+            setLocationRelativeTo(null)
+            isVisible = true
+        }
+    }
+
+    private fun showWarnings(warnings: List<String>) {
+        JOptionPane.showMessageDialog(
+            this,
+            "<html>" + warnings.joinToString("<br>"),
+            "Warning",
+            JOptionPane.WARNING_MESSAGE,
+        )
+    }
+
+    private fun showError(error: String) {
+        JOptionPane.showMessageDialog(
+            this,
+            error,
+            "Error",
+            JOptionPane.ERROR_MESSAGE,
+        )
     }
 
     private inner class ListEntryActionButton(text: String) : JButton(text) {

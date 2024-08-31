@@ -2,7 +2,7 @@ package name.tachenov.flakardia
 
 import com.github.weisj.darklaf.LafManager
 import name.tachenov.flakardia.app.*
-import name.tachenov.flakardia.storage.FlashcardStorage
+import name.tachenov.flakardia.storage.FlashcardStorageImpl
 import name.tachenov.flakardia.ui.InitFrame
 import name.tachenov.flakardia.ui.SettingsDialog
 import java.awt.Font
@@ -102,7 +102,7 @@ fun configureAndEnterLibrary(manager: CardManager, whenDone: () -> Unit) {
                 }
             }
             else {
-                dirEnterResult = background { manager.enterLibrary(Library(FlashcardStorage(libraryPath))) }
+                dirEnterResult = background { manager.enterLibrary(Library(FlashcardStorageImpl(libraryPath))) }
                 if (dirEnterResult is DirEnterError) {
                     ui {
                         JOptionPane.showMessageDialog(

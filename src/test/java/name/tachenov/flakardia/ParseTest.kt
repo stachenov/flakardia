@@ -2,7 +2,7 @@ package name.tachenov.flakardia
 
 import com.google.common.jimfs.Jimfs
 import name.tachenov.flakardia.data.*
-import name.tachenov.flakardia.storage.FlashcardStorage
+import name.tachenov.flakardia.storage.FlashcardStorageImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -15,12 +15,12 @@ private const val DEFAULT_NAME = "test.cards"
 class ParseTest {
 
     private lateinit var fs: FileSystem
-    private lateinit var storage: FlashcardStorage
+    private lateinit var storage: FlashcardStorageImpl
 
     @BeforeEach
     fun setUp() {
         fs = Jimfs.newFileSystem()
-        storage = FlashcardStorage(fs.getPath("."))
+        storage = FlashcardStorageImpl(fs.getPath("."))
     }
 
     @AfterEach

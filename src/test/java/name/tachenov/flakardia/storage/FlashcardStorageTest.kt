@@ -17,13 +17,13 @@ private const val DOT_FLAKARDIA = ".flakardia"
 class FlashcardStorageTest {
     private lateinit var fs: FileSystem
     private lateinit var root: Path
-    private lateinit var sut: FlashcardStorage
+    private lateinit var sut: FlashcardStorageImpl
 
     @BeforeEach
     fun setUp() {
         fs = Jimfs.newFileSystem()
         root = fs.getPath("cards")
-        sut = FlashcardStorage(root)
+        sut = FlashcardStorageImpl(root)
     }
 
     @AfterEach

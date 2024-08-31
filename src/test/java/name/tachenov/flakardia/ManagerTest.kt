@@ -2,10 +2,10 @@ package name.tachenov.flakardia
 
 import com.google.common.jimfs.Jimfs
 import name.tachenov.flakardia.app.*
-import name.tachenov.flakardia.data.FullPath
 import name.tachenov.flakardia.app.Library
+import name.tachenov.flakardia.data.FullPath
 import name.tachenov.flakardia.data.RelativePath
-import name.tachenov.flakardia.storage.FlashcardStorage
+import name.tachenov.flakardia.storage.FlashcardStorageImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -21,7 +21,7 @@ class ManagerTest {
     private lateinit var fs: FileSystem
     private lateinit var storagePath: Path
     private lateinit var root: RelativePath
-    private lateinit var storage: FlashcardStorage
+    private lateinit var storage: FlashcardStorageImpl
     private lateinit var library: Library
 
     @BeforeEach
@@ -29,7 +29,7 @@ class ManagerTest {
         fs = Jimfs.newFileSystem()
         root = RelativePath()
         storagePath = fs.getPath("cards")
-        storage = FlashcardStorage(storagePath)
+        storage = FlashcardStorageImpl(storagePath)
         library = Library(storage)
     }
 

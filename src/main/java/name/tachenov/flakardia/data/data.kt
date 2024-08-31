@@ -24,6 +24,11 @@ data class LessonData(
     val stats: LibraryStats,
 ) : LessonDataResult()
 
+data class LessonDataWarnings(
+    val data: LessonData,
+    val warnings: List<String>,
+): LessonDataResult()
+
 data class LessonDataError(val message: String) : LessonDataResult()
 
 data class FlashcardData(
@@ -54,7 +59,7 @@ class Word(val value: String) {
     private fun normalized(): String {
         val sb = StringBuilder()
         for (c in value) {
-            if (c.isLetter()) {
+            if (c.isLetter() || c.isDigit()) {
                 sb.append(c)
             }
         }

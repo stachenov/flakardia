@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.time.Instant
 
-class LessonDataTest {
+class PrepareLessonDataTest {
     @Test
     fun `4 words, 3 recent, 1 mistake each`() {
         doTest(
@@ -124,12 +124,6 @@ class LessonDataTest {
         val lastLesson: String,
         val mistakes: Int,
         val prevInterval: Double
-    )
-
-    private fun expectedWords(vararg words: String): List<ExpectedWord> = words.map { ExpectedWord(it) }
-
-    private data class ExpectedWord(
-        val word: String,
     )
 
 }
