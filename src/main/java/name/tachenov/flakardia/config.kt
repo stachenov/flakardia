@@ -102,13 +102,14 @@ fun configureAndEnterLibrary(manager: CardManager, whenDone: () -> Unit) {
                 }
             }
             else {
-                dirEnterResult = background { manager.enterLibrary(Library(FlashcardStorageImpl(libraryPath))) }
-                if (dirEnterResult is DirEnterError) {
+                val dirEnterAttemptResult = background { manager.enterLibrary(Library(FlashcardStorageImpl(libraryPath))) }
+                dirEnterResult = dirEnterAttemptResult
+                if (dirEnterAttemptResult is DirEnterError) {
                     ui {
                         JOptionPane.showMessageDialog(
                             null,
                             "The following error occurred during an attempt to read the library:\n" +
-                                dirEnterResult.message,
+                                dirEnterAttemptResult.message,
                             "Error",
                             JOptionPane.ERROR_MESSAGE,
                         )
