@@ -123,9 +123,9 @@ suspend fun <T> ui(code: () -> T) =
         code()
     }
 
-private val scope = CoroutineScope(SupervisorJob())
+val scope = CoroutineScope(SupervisorJob())
 
-private val edtDispatcher = object : CoroutineDispatcher() {
+val edtDispatcher = object : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         SwingUtilities.invokeLater(block)
     }

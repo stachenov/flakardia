@@ -1,15 +1,15 @@
 package name.tachenov.flakardia.ui
 
-import name.tachenov.flakardia.app.*
-import name.tachenov.flakardia.configureAndEnterLibrary
+import name.tachenov.flakardia.app.FlashcardSetListEntry
+import name.tachenov.flakardia.app.Lesson
+import name.tachenov.flakardia.app.Library
+import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.data.LessonData
-import name.tachenov.flakardia.data.LessonDataError
-import name.tachenov.flakardia.data.LessonDataResult
-import name.tachenov.flakardia.data.LessonDataWarnings
-import name.tachenov.flakardia.data.RelativePath
+import name.tachenov.flakardia.presenter.CardListEntryPresenter
+import name.tachenov.flakardia.presenter.CardSetManagerPresenter
+import name.tachenov.flakardia.presenter.CardSetManagerView
 import name.tachenov.flakardia.service.FlashcardService
 import name.tachenov.flakardia.showHelp
-import name.tachenov.flakardia.showSettingsDialog
 import name.tachenov.flakardia.version
 import java.awt.Component
 import java.awt.event.KeyAdapter
@@ -23,13 +23,13 @@ import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 import kotlin.math.max
 
 class CardSetManagerFrame(
-    private val manager: CardManager,
+    private val presenter: CardSetManagerPresenter,
     private val service: FlashcardService,
-) : JFrame("Flakardia ${version()}") {
+) : JFrame("Flakardia ${version()}"), CardSetManagerView {
 
     private val dir = JLabel()
-    private val list = JList<CardListEntryView>()
-    private val model = DefaultListModel<CardListEntryView>()
+    private val list = JList<CardListEntryPresenter>()
+    private val model = DefaultListModel<CardListEntryPresenter>()
     private val viewButton = ListEntryActionButton("View flashcards").apply {
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_V
@@ -102,13 +102,13 @@ class CardSetManagerFrame(
         list.model = model
 
         viewButton.addEntryActionListener {
-            viewFlashcards(it)
+            presenter.viewFlashcards(it)
         }
         lessonButton.addEntryActionListener {
-            startLesson(it)
+            presenter.startLesson(it)
         }
         settingsButton.addActionListener {
-            configure()
+            presenter.configure()
         }
         helpButton.addActionListener {
             showHelp()
@@ -118,7 +118,7 @@ class CardSetManagerFrame(
             override fun mouseClicked(e: MouseEvent) {
                 if (e.clickCount == 2) {
                     e.consume()
-                    openElement()
+                    presenter.openElement()
                 }
             }
         })
@@ -126,20 +126,20 @@ class CardSetManagerFrame(
             override fun keyTyped(e: KeyEvent) {
                 if (e.keyChar == '\n') {
                     e.consume()
-                    openElement()
+                    presenter.openElement()
                 }
             }
 
             override fun keyPressed(e: KeyEvent) {
                 if (e.keyCode == KeyEvent.VK_BACK_SPACE) {
                     e.consume()
-                    goUp()
+                    presenter.goUp()
                 }
             }
         })
         list.selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
         list.addListSelectionListener {
-            enableDisableButtons()
+            presenter.selectItem(list.selectedValue)
         }
 
         val focusableComponents = listOf(list, viewButton, lessonButton)
@@ -148,79 +148,48 @@ class CardSetManagerFrame(
         }) {
             override fun accept(aComponent: Component?): Boolean = aComponent in focusableComponents
         }
-
-        updateEntries()
+        defaultCloseOperation = EXIT_ON_CLOSE
     }
 
-    private fun configure() {
-        if (showSettingsDialog()) {
-            configureAndEnterLibrary(manager) {
-                updateEntries()
-                pack()
+    override suspend fun run() {
+        presenter.state.collect { state ->
+            var updateWidth = false
+            if (dir.text != state.currentPath) {
+                updateWidth = true
+                dir.text = state.currentPath
+            }
+            if (model.elements().toList() != state.entries) {
+                model.clear()
+                model.addAll(state.entries)
+                updateWidth = true
+            }
+            val shouldScroll = state.isScrollToSelectionRequested
+            list.setSelectedValue(state.selectedEntry, shouldScroll)
+            if (shouldScroll) {
+                presenter.scrollRequestCompleted()
+            }
+            viewButton.isEnabled = state.isViewButtonEnabled
+            lessonButton.isEnabled = state.isLessonButtonEnabled
+            if (!isVisible) {
+                showOnFirstStateInit()
+            } else if (updateWidth) {
+                updateWidth()
             }
         }
     }
 
-    private fun enableDisableButtons() {
-        val selectedEntry = list.selectedValue?.entry
-        val enabled = selectedEntry is FlashcardSetFileEntry || selectedEntry is FlashcardSetDirEntry
-        viewButton.isEnabled = enabled
-        lessonButton.isEnabled = enabled
+    override fun adjustSize() {
+        assertEDT()
+        pack()
     }
 
-    private fun goUp() {
-        if (list.model.size == 0) {
-            return
-        }
-        val firstEntry = list.model.getElementAt(0)?.entry ?: return
-        if (firstEntry !is FlashcardSetUpEntry) {
-            return
-        }
-        enterDir(firstEntry.path, selectDir = manager.path?.relativePath)
+    private fun showOnFirstStateInit() {
+        pack()
+        setLocationRelativeTo(null)
+        isVisible = true
     }
 
-    private fun openElement() {
-        val selectedEntry = list.selectedValue?.entry ?: return
-        when (selectedEntry) {
-            is FlashcardSetFileEntry -> viewFlashcards(selectedEntry)
-            is FlashcardSetDirEntry -> enterDir(selectedEntry.path)
-            is FlashcardSetUpEntry -> goUp()
-        }
-    }
-
-    private fun enterDir(dirPath: RelativePath, selectDir: RelativePath? = null) {
-        service.processEntries(
-            dialogIndicator(),
-            source = {
-                manager.enter(dirPath)
-            },
-            processor = { result ->
-                when (result) {
-                    is DirEnterSuccess -> {
-                        updateEntries(selectDir)
-                    }
-                    is DirEnterError -> {
-                        showError(result.message)
-                    }
-                }
-            }
-        )
-    }
-
-    private fun updateEntries(selectDir: RelativePath? = null) {
-        dir.text = manager.path?.toString()
-        model.clear()
-        manager.entries.forEach { entry ->
-            model.addElement(CardListEntryView(entry))
-        }
-        if (selectDir == null) {
-            if (model.size() > 0) {
-                list.selectedIndex = 0
-            }
-        }
-        else {
-            list.setSelectedValue(CardListEntryView(FlashcardSetDirEntry(selectDir)), true)
-        }
+    private fun updateWidth() {
         val listAndListAreaWidth = max(list.width, dir.width)
         val listPreferredWidth = list.preferredScrollableViewportSize.width
         val dirPreferredWidth = dir.preferredSize.width
@@ -232,51 +201,19 @@ class CardSetManagerFrame(
         }
     }
 
-    private fun viewFlashcards(entry: FlashcardSetListEntry) {
-        val library = manager.library ?: return
-        service.processLessonData(
-            dialogIndicator(),
-            source = {
-                library.getAllFlashcards(entry)
-            },
-            processor = { result ->
-                openFrame(result) { data -> FlashcardSetViewFrame(data) }
-            },
-        )
+    override fun viewFlashcards(result: LessonData) {
+        assertEDT()
+        showFrame(result) { data -> FlashcardSetViewFrame(data) }
     }
 
-    private fun startLesson(entry: FlashcardSetListEntry) {
-        val library = manager.library ?: return
-        service.processLessonData(
-            dialogIndicator(),
-            source = {
-                library.prepareLessonData(entry)
-            },
-            processor = { result ->
-                openFrame(result) { data -> LessonFrame(service, library, Lesson(data)) }
-            },
-        )
-    }
-
-    private fun openFrame(result: LessonDataResult, frame: (LessonData) -> JFrame) {
-        when (result) {
-            is LessonData -> {
-                showFrame(frame, result)
-            }
-            is LessonDataWarnings -> {
-                showWarnings(result.warnings)
-                showFrame(frame, result.data)
-            }
-            is LessonDataError -> {
-                val error = result.message
-                showError(error)
-            }
-        }
+    override fun startLesson(library: Library, result: LessonData) {
+        assertEDT()
+        showFrame(result) { data -> LessonFrame(service, library, Lesson(data)) }
     }
 
     private fun showFrame(
+        result: LessonData,
         frame: (LessonData) -> JFrame,
-        result: LessonData
     ) {
         frame(result).apply {
             defaultCloseOperation = DISPOSE_ON_CLOSE
@@ -286,7 +223,8 @@ class CardSetManagerFrame(
         }
     }
 
-    private fun showWarnings(warnings: List<String>) {
+    override fun showWarnings(warnings: List<String>) {
+        assertEDT()
         JOptionPane.showMessageDialog(
             this,
             "<html>" + warnings.joinToString("<br>"),
@@ -295,7 +233,8 @@ class CardSetManagerFrame(
         )
     }
 
-    private fun showError(error: String) {
+    override fun showError(error: String) {
+        assertEDT()
         JOptionPane.showMessageDialog(
             this,
             error,
@@ -312,13 +251,5 @@ class CardSetManagerFrame(
                 listener(entry)
             }
         }
-
     }
-
-}
-
-data class CardListEntryView(
-    val entry: FlashcardSetListEntry,
-) {
-    override fun toString(): String = entry.name
 }

@@ -4,12 +4,14 @@ import com.github.weisj.darklaf.LafManager
 import com.github.weisj.darklaf.theme.IntelliJTheme
 import com.github.weisj.darklaf.theme.OneDarkTheme
 import com.github.weisj.darklaf.theme.info.DefaultThemeProvider
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import name.tachenov.flakardia.app.CardManager
+import name.tachenov.flakardia.presenter.CardSetManagerPresenter
 import name.tachenov.flakardia.service.FlashcardService
 import name.tachenov.flakardia.ui.CardSetManagerFrame
 import java.awt.Window
 import javax.swing.SwingUtilities
-import javax.swing.WindowConstants
 
 fun main() {
     SwingUtilities.invokeLater {
@@ -36,11 +38,12 @@ private fun start() {
 }
 
 private fun showManagerFrame(manager: CardManager, service: FlashcardService) {
-    CardSetManagerFrame(manager, service).apply {
-        defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
-        pack()
-        setLocationRelativeTo(null)
-        isVisible = true
+    scope.launch {
+        withContext(edtDispatcher) {
+            CardSetManagerPresenter(manager, service) {
+                CardSetManagerFrame(it, service)
+            }.run()
+        }
     }
 }
 
