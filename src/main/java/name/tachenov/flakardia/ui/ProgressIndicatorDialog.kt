@@ -26,6 +26,7 @@ fun dialogIndicator(): ProgressIndicator {
         }
 
         override fun close() {
+            super.close()
             dialog?.dispose()
         }
 

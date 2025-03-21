@@ -8,7 +8,6 @@ import name.tachenov.flakardia.data.LessonData
 import name.tachenov.flakardia.presenter.CardListEntryPresenter
 import name.tachenov.flakardia.presenter.CardSetManagerPresenter
 import name.tachenov.flakardia.presenter.CardSetManagerView
-import name.tachenov.flakardia.service.FlashcardService
 import name.tachenov.flakardia.showHelp
 import name.tachenov.flakardia.version
 import java.awt.Component
@@ -24,7 +23,6 @@ import kotlin.math.max
 
 class CardSetManagerFrame(
     private val presenter: CardSetManagerPresenter,
-    private val service: FlashcardService,
 ) : JFrame("Flakardia ${version()}"), CardSetManagerView {
 
     private val dir = JLabel()
@@ -208,7 +206,7 @@ class CardSetManagerFrame(
 
     override fun startLesson(library: Library, result: LessonData) {
         assertEDT()
-        showFrame(result) { data -> LessonFrame(service, library, Lesson(data)) }
+        showFrame(result) { data -> LessonFrame(library, Lesson(data)) }
     }
 
     private fun showFrame(

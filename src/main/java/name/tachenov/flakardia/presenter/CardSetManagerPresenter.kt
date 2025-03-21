@@ -10,9 +10,9 @@ import name.tachenov.flakardia.data.LessonDataError
 import name.tachenov.flakardia.data.LessonDataResult
 import name.tachenov.flakardia.data.LessonDataWarnings
 import name.tachenov.flakardia.data.RelativePath
-import name.tachenov.flakardia.service.FlashcardService
 import name.tachenov.flakardia.showSettingsDialog
-import name.tachenov.flakardia.ui.dialogIndicator
+import name.tachenov.flakardia.launchUiTask
+import name.tachenov.flakardia.backgroundWithProgress
 
 interface CardSetManagerView {
     suspend fun run()
@@ -45,7 +45,6 @@ data class CardListEntryPresenter(
 
 class CardSetManagerPresenter(
     private val manager: CardManager,
-    private val service: FlashcardService,
     view: (CardSetManagerPresenter) -> CardSetManagerView,
 ) {
 
@@ -101,22 +100,19 @@ class CardSetManagerPresenter(
     }
 
     private fun enterDir(dirPath: RelativePath, selectDir: RelativePath? = null) {
-        service.processEntries(
-            dialogIndicator(),
-            source = {
+        launchUiTask {
+            val result = backgroundWithProgress {
                 manager.enter(dirPath)
-            },
-            processor = { result ->
-                when (result) {
-                    is DirEnterSuccess -> {
-                        updateEntries(selectDir)
-                    }
-                    is DirEnterError -> {
-                        view.showError(result.message)
-                    }
+            }
+            when (result) {
+                is DirEnterSuccess -> {
+                    updateEntries(selectDir)
+                }
+                is DirEnterError -> {
+                    view.showError(result.message)
                 }
             }
-        )
+        }
     }
 
     private fun updateEntries(selectDir: RelativePath? = null) {
@@ -140,32 +136,26 @@ class CardSetManagerPresenter(
 
     fun viewFlashcards(entry: FlashcardSetListEntry) {
         val library = manager.library ?: return
-        service.processLessonData(
-            dialogIndicator(),
-            source = {
+        launchUiTask {
+            val result = backgroundWithProgress {
                 library.getAllFlashcards(entry)
-            },
-            processor = { result ->
-                processResult(result) { lessonData ->
-                    view.viewFlashcards(lessonData)
-                }
-            },
-        )
+            }
+            processResult(result) { lessonData ->
+                view.viewFlashcards(lessonData)
+            }
+        }
     }
 
     fun startLesson(entry: FlashcardSetListEntry) {
         val library = manager.library ?: return
-        service.processLessonData(
-            dialogIndicator(),
-            source = {
+        launchUiTask {
+            val result = backgroundWithProgress {
                 library.prepareLessonData(entry)
-            },
-            processor = { result ->
-                processResult(result) { lessonData ->
-                    view.startLesson(library, lessonData)
-                }
-            },
-        )
+            }
+            processResult(result) { lessonData ->
+                view.startLesson(library, lessonData)
+            }
+        }
     }
 
     private fun processResult(result: LessonDataResult, onSuccess: (LessonData) -> Unit) {

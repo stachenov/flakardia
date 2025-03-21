@@ -1,12 +1,12 @@
 package name.tachenov.flakardia.ui
 
-import name.tachenov.flakardia.EmptyProgressIndicator
 import name.tachenov.flakardia.app.Answer
 import name.tachenov.flakardia.app.Lesson
 import name.tachenov.flakardia.app.Library
+import name.tachenov.flakardia.background
 import name.tachenov.flakardia.data.StatsSaveError
 import name.tachenov.flakardia.data.StatsSaveSuccess
-import name.tachenov.flakardia.service.FlashcardService
+import name.tachenov.flakardia.launchUiTask
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import javax.swing.*
@@ -15,7 +15,6 @@ import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
 
 class LessonFrame(
-    private val service: FlashcardService,
     private val library: Library,
     private val lesson: Lesson
 ) : JFrame(lesson.name) {
@@ -81,11 +80,14 @@ class LessonFrame(
     }
 
     private fun answered(answer: Answer?) {
-        val answerResult = lesson.answer(answer)
-        questionAnswerPanel.displayAnswerResult(answerResult)
-        status.text = "Press Space to continue to the next question"
-        lessonResultPanel.displayResult(lesson.result)
-        service.updateStats(EmptyProgressIndicator, library, lesson.stats) { result ->
+        launchUiTask {
+            val answerResult = lesson.answer(answer)
+            questionAnswerPanel.displayAnswerResult(answerResult)
+            status.text = "Press Space to continue to the next question"
+            lessonResultPanel.displayResult(lesson.result)
+            val result = background {
+                library.saveUpdatedStats(lesson.stats)
+            }
             when (result) {
                 is StatsSaveError -> JOptionPane.showMessageDialog(
                     this,

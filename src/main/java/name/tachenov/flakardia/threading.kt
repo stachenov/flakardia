@@ -1,15 +1,14 @@
 package name.tachenov.flakardia
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import name.tachenov.flakardia.ui.dialogIndicator
+import java.lang.Exception
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 
-object ProgressIndicatorKey: CoroutineContext.Key<ProgressIndicator>
-
-abstract class ProgressIndicator : CoroutineContext.Element {
-    override val key: CoroutineContext.Key<*>
-        get() = ProgressIndicatorKey
+abstract class ProgressIndicator {
     abstract val isCancelled: Boolean
     protected abstract fun cancel()
     abstract var currentOperation: String?
@@ -31,6 +30,8 @@ abstract class UiProgressIndicator : ProgressIndicator() {
     override var isCancelled: Boolean = false
     private val currentOperationFlow = MutableStateFlow<String?>(null)
     private val currentOperationProgressFlow = MutableStateFlow(0)
+    private var currentOperationJob: Job? = null
+    private var currentOperationProgressJob: Job? = null
 
     override var currentOperation: String?
         get() = currentOperationFlow.value
@@ -52,16 +53,21 @@ abstract class UiProgressIndicator : ProgressIndicator() {
     }
 
     override fun init(coroutineScope: CoroutineScope) {
-        coroutineScope.launch(edtDispatcher) {
+        currentOperationJob = coroutineScope.launch(edtDispatcher) {
             currentOperationFlow.collect {
                 publishCurrentOperation(it)
             }
         }
-        coroutineScope.launch(edtDispatcher) {
+        currentOperationProgressJob= coroutineScope.launch(edtDispatcher) {
             currentOperationProgressFlow.collect {
                 publishProgress(it)
             }
         }
+    }
+
+    override fun close() {
+        currentOperationJob?.cancel()
+        currentOperationProgressJob?.cancel()
     }
 }
 
@@ -95,37 +101,47 @@ fun assertEDT() {
     }
 }
 
-fun threading(indicator: ProgressIndicator, code: suspend () -> Unit) {
-    scope.launch(indicator) {
-        indicator.init(scope)
-        try {
-            code()
-        } catch (ignored: CancellationException) {
-        } finally {
-            indicator.close()
+private val taskChannel = Channel<suspend () -> Unit>(Channel.UNLIMITED)
+
+fun launchUiTask(code: suspend () -> Unit) {
+    check(taskChannel.trySend(code).isSuccess)
+}
+
+suspend fun uiTaskLoop() = supervisorScope {
+    for (task in taskChannel) {
+        launch(edtDispatcher) {
+            try {
+                task()
+            }
+            catch (e: Exception) {
+                if (e !is CancellationException) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 }
 
 suspend fun <T> background(code: () -> T): T =
     withContext(Dispatchers.IO) {
-        val indicator = currentCoroutineContext()[ProgressIndicatorKey]
-        currentIndicator.set(indicator)
-        try {
-            code()
-        } finally {
-            currentIndicator.remove()
-        }
-    }
-
-suspend fun <T> ui(code: () -> T) =
-    withContext(edtDispatcher) {
         code()
     }
 
-val scope = CoroutineScope(SupervisorJob())
+suspend fun <T> backgroundWithProgress(code: suspend () -> T): T =
+    withContext(edtDispatcher) {
+        val indicator = dialogIndicator()
+        try {
+            indicator.init(this)
+            withContext(currentIndicator.asContextElement(value = indicator) + Dispatchers.IO) {
+                code()
+            }
+        }
+        finally {
+            indicator.close()
+        }
+    }
 
-val edtDispatcher = object : CoroutineDispatcher() {
+private val edtDispatcher = object : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         SwingUtilities.invokeLater(block)
     }

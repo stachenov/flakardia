@@ -92,29 +92,29 @@ fun setLessonSettings(settings: LessonSettings) {
 }
 
 fun configureAndEnterLibrary(manager: CardManager, whenDone: () -> Unit) {
-    threading(EmptyProgressIndicator) {
+    launchUiTask {
         var dirEnterResult: DirEnterResult? = null
         while (dirEnterResult !is DirEnterSuccess) {
             val libraryPath = getLibraryPath()
             if (libraryPath == null) {
-                if (!ui { showSettingsDialog() }) {
+                if (!showSettingsDialog()) {
                     exitProcess(0)
                 }
             }
             else {
-                val dirEnterAttemptResult = background { manager.enterLibrary(Library(FlashcardStorageImpl(libraryPath))) }
+                val dirEnterAttemptResult = background {
+                    manager.enterLibrary(Library(FlashcardStorageImpl(libraryPath)))
+                }
                 dirEnterResult = dirEnterAttemptResult
                 if (dirEnterAttemptResult is DirEnterError) {
-                    ui {
-                        JOptionPane.showMessageDialog(
-                            null,
-                            "The following error occurred during an attempt to read the library:\n" +
-                                dirEnterAttemptResult.message,
-                            "Error",
-                            JOptionPane.ERROR_MESSAGE,
-                        )
-                    }
-                    if (!ui { showSettingsDialog() }) {
+                    JOptionPane.showMessageDialog(
+                        null,
+                        "The following error occurred during an attempt to read the library:\n" +
+                            dirEnterAttemptResult.message,
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE,
+                    )
+                    if (!showSettingsDialog()) {
                         exitProcess(0)
                     }
                 }
