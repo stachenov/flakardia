@@ -19,9 +19,7 @@ abstract class Presenter<T : View> {
         launch {
             initializeState()
         }
-        launch {
-            view.run()
-        }
+        view.run()
     }
 }
 

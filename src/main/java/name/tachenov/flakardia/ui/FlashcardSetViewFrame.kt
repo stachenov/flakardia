@@ -1,14 +1,14 @@
 package name.tachenov.flakardia.ui
 
-import name.tachenov.flakardia.data.LessonData
 import name.tachenov.flakardia.data.RelativePath
+import name.tachenov.flakardia.presenter.FlashcardSetView
+import name.tachenov.flakardia.presenter.FlashcardSetViewPresenter
+import name.tachenov.flakardia.presenter.IntervalViewModel
+import name.tachenov.flakardia.presenter.LastLearnedViewModel
 import java.awt.Dimension
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.text.Collator
-import java.time.Duration
-import java.time.Instant
-import java.time.ZoneId
 import javax.swing.*
 import javax.swing.GroupLayout.Alignment.BASELINE
 import javax.swing.GroupLayout.Alignment.LEADING
@@ -20,14 +20,19 @@ import javax.swing.table.TableRowSorter
 import kotlin.math.max
 
 
-class FlashcardSetViewFrame(lessonData: LessonData) : JFrame(lessonData.name) {
+class FlashcardSetViewFrame(
+    private val presenter: FlashcardSetViewPresenter,
+) : JFrame(), FlashcardSetView {
+
+    private val table: JTable
+    private val model: MyTableModel
 
     init {
         val contentPane = JPanel()
         val layout = GroupLayout(contentPane)
         val hg = layout.createSequentialGroup()
         val vg = layout.createSequentialGroup()
-        val table = JTable()
+        table = JTable()
         val scrollPane = object : JScrollPane(table) {
             override fun getPreferredSize(): Dimension {
                 return super.getPreferredSize().apply { width = table.preferredSize.width + EXTRA_PREFERRED_WIDTH }
@@ -62,24 +67,13 @@ class FlashcardSetViewFrame(lessonData: LessonData) : JFrame(lessonData.name) {
         contentPane.layout = layout
         this.contentPane = contentPane
 
-        val model = MyTableModel()
+        model = MyTableModel()
         model.addColumn("Path", RelativePath::class.java)
         model.addColumn("Question", String::class.java)
         model.addColumn("Answer", String::class.java)
         model.addColumn("Last learned", LastLearnedViewModel::class.java)
         model.addColumn("Mistakes made", Int::class.javaObjectType)
         model.addColumn("Learn interval (days)", IntervalViewModel::class.java)
-        for (card in lessonData.flashcards) {
-            val stats = lessonData.stats.wordStats[card.flashcard.back]
-            model.addRow(arrayOf(
-                card.path,
-                card.flashcard.front.value,
-                card.flashcard.back.value,
-                LastLearnedViewModel(stats?.lastLearned),
-                stats?.mistakes,
-                IntervalViewModel(stats?.intervalBeforeLastLearned),
-            ))
-        }
         table.model = model
         table.autoResizeMode = JTable.AUTO_RESIZE_OFF
         table.autoCreateRowSorter = true
@@ -88,8 +82,6 @@ class FlashcardSetViewFrame(lessonData: LessonData) : JFrame(lessonData.name) {
                 (table.rowSorter as TableRowSorter).setComparator(i, COLLATOR)
             }
         }
-        packColumns(table)
-        pack()
         table.selectionModel.addListSelectionListener {
             count.text = table.selectionModel.selectedItemsCount.toString()
         }
@@ -101,8 +93,26 @@ class FlashcardSetViewFrame(lessonData: LessonData) : JFrame(lessonData.name) {
                 }
             }
         })
+        defaultCloseOperation = DISPOSE_ON_CLOSE
     }
 
+    override suspend fun run() {
+        title = presenter.state.title
+        for (card in presenter.state.cards) {
+            model.addRow(arrayOf(
+                card.path,
+                card.front,
+                card.back,
+                card.lastLearned,
+                card.mistakes,
+                card.intervalBeforeLastLearned,
+            ))
+        }
+        packColumns(table)
+        pack()
+        setLocationRelativeTo(null)
+        isVisible = true
+    }
 }
 
 private class MyTableModel : DefaultTableModel() {
@@ -122,15 +132,6 @@ private class MyTableModel : DefaultTableModel() {
 private val COLLATOR = Collator.getInstance().apply {
     strength = Collator.PRIMARY
     decomposition = Collator.CANONICAL_DECOMPOSITION
-}
-
-data class LastLearnedViewModel(val lastLearned: Instant?) {
-    override fun toString(): String = lastLearned?.let { String.format("%tF  %<tT", it.atZone(ZoneId.systemDefault())) } ?: ""
-}
-
-data class IntervalViewModel(val interval: Duration?) : Comparable<IntervalViewModel> {
-    override fun toString(): String = interval?.let { String.format("%.02f", it.toSeconds().toDouble() / 86400.0) } ?: ""
-    override fun compareTo(other: IntervalViewModel): Int = compareValuesBy(this, other) { it.interval }
 }
 
 // Open source utility method from

@@ -5,9 +5,7 @@ import name.tachenov.flakardia.app.Lesson
 import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.data.LessonData
-import name.tachenov.flakardia.presenter.CardListEntryPresenter
-import name.tachenov.flakardia.presenter.CardSetManagerPresenter
-import name.tachenov.flakardia.presenter.CardSetManagerView
+import name.tachenov.flakardia.presenter.*
 import name.tachenov.flakardia.showHelp
 import name.tachenov.flakardia.version
 import java.awt.Component
@@ -201,7 +199,10 @@ class CardSetManagerFrame(
 
     override fun viewFlashcards(result: LessonData) {
         assertEDT()
-        showFrame(result) { data -> FlashcardSetViewFrame(data) }
+        showPresenterFrame(
+            presenterFactory = { FlashcardSetViewPresenter(result) },
+            viewFactory = { FlashcardSetViewFrame(it) },
+        )
     }
 
     override fun startLesson(library: Library, result: LessonData) {
