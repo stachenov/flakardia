@@ -1,20 +1,26 @@
 package name.tachenov.flakardia.presenter
 
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import name.tachenov.flakardia.launchUiTask
 
 interface View {
     suspend fun run()
+    fun adjustSize()
 }
 
-abstract class Presenter<T : View> {
-    protected lateinit var view: T
+interface PresenterState
+
+abstract class Presenter<S : PresenterState, V : View> {
+    protected lateinit var view: V
         private set
+
+    abstract val state: Flow<S>
 
     protected abstract fun initializeState()
 
-    suspend fun run(view: T) = coroutineScope {
+    suspend fun run(view: V) = coroutineScope {
         this@Presenter.view = view
         launch {
             initializeState()
@@ -23,7 +29,7 @@ abstract class Presenter<T : View> {
     }
 }
 
-fun <P : Presenter<V>, V : View> showPresenterFrame(
+fun <S : PresenterState, P : Presenter<S, V>, V : View> showPresenterFrame(
     presenterFactory: () -> P,
     viewFactory: (P) -> V,
 ) {

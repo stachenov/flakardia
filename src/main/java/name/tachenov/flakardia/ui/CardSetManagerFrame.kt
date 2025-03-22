@@ -20,8 +20,8 @@ import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 import kotlin.math.max
 
 class CardSetManagerFrame(
-    private val presenter: CardSetManagerPresenter,
-) : JFrame("Flakardia ${version()}"), CardSetManagerView {
+    presenter: CardSetManagerPresenter,
+) : FrameView<CardSetManagerPresenterState, CardSetManagerView, CardSetManagerPresenter>(presenter), CardSetManagerView {
 
     private val dir = JLabel()
     private val list = JList<CardListEntryPresenter>()
@@ -147,42 +147,28 @@ class CardSetManagerFrame(
         defaultCloseOperation = EXIT_ON_CLOSE
     }
 
-    override suspend fun run() {
-        presenter.state.collect { state ->
-            var updateWidth = false
-            if (dir.text != state.currentPath) {
-                updateWidth = true
-                dir.text = state.currentPath
-            }
-            if (model.elements().toList() != state.entries) {
-                model.clear()
-                model.addAll(state.entries)
-                updateWidth = true
-            }
-            val shouldScroll = state.isScrollToSelectionRequested
-            list.setSelectedValue(state.selectedEntry, shouldScroll)
-            if (shouldScroll) {
-                presenter.scrollRequestCompleted()
-            }
-            viewButton.isEnabled = state.isViewButtonEnabled
-            lessonButton.isEnabled = state.isLessonButtonEnabled
-            if (!isVisible) {
-                showOnFirstStateInit()
-            } else if (updateWidth) {
-                updateWidth()
-            }
+    override fun applyState(state: CardSetManagerPresenterState) {
+        title = "Flakardia ${version()}"
+        var updateWidth = false
+        if (dir.text != state.currentPath) {
+            updateWidth = true
+            dir.text = state.currentPath
         }
-    }
-
-    override fun adjustSize() {
-        assertEDT()
-        pack()
-    }
-
-    private fun showOnFirstStateInit() {
-        pack()
-        setLocationRelativeTo(null)
-        isVisible = true
+        if (model.elements().toList() != state.entries) {
+            model.clear()
+            model.addAll(state.entries)
+            updateWidth = true
+        }
+        val shouldScroll = state.isScrollToSelectionRequested
+        list.setSelectedValue(state.selectedEntry, shouldScroll)
+        if (shouldScroll) {
+            presenter.scrollRequestCompleted()
+        }
+        viewButton.isEnabled = state.isViewButtonEnabled
+        lessonButton.isEnabled = state.isLessonButtonEnabled
+        if (updateWidth) {
+            updateWidth()
+        }
     }
 
     private fun updateWidth() {

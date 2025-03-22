@@ -1,10 +1,7 @@
 package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.data.RelativePath
-import name.tachenov.flakardia.presenter.FlashcardSetView
-import name.tachenov.flakardia.presenter.FlashcardSetViewPresenter
-import name.tachenov.flakardia.presenter.IntervalViewModel
-import name.tachenov.flakardia.presenter.LastLearnedViewModel
+import name.tachenov.flakardia.presenter.*
 import java.awt.Dimension
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
@@ -21,8 +18,8 @@ import kotlin.math.max
 
 
 class FlashcardSetViewFrame(
-    private val presenter: FlashcardSetViewPresenter,
-) : JFrame(), FlashcardSetView {
+    presenter: FlashcardSetViewPresenter,
+) : FrameView<FlashcardSetViewPresenterState, FlashcardSetView, FlashcardSetViewPresenter>(presenter), FlashcardSetView {
 
     private val table: JTable
     private val model: MyTableModel
@@ -93,12 +90,11 @@ class FlashcardSetViewFrame(
                 }
             }
         })
-        defaultCloseOperation = DISPOSE_ON_CLOSE
     }
 
-    override suspend fun run() {
-        title = presenter.state.title
-        for (card in presenter.state.cards) {
+    override fun applyState(state: FlashcardSetViewPresenterState) {
+        title = state.title
+        for (card in state.cards) {
             model.addRow(arrayOf(
                 card.path,
                 card.front,
@@ -109,9 +105,6 @@ class FlashcardSetViewFrame(
             ))
         }
         packColumns(table)
-        pack()
-        setLocationRelativeTo(null)
-        isVisible = true
     }
 }
 

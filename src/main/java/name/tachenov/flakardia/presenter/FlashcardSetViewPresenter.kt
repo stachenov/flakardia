@@ -1,5 +1,7 @@
 package name.tachenov.flakardia.presenter
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import name.tachenov.flakardia.data.LessonData
 import name.tachenov.flakardia.data.RelativePath
 import java.time.Duration
@@ -11,7 +13,7 @@ interface FlashcardSetView : View
 data class FlashcardSetViewPresenterState(
     val title: String,
     val cards: List<FlashcardViewModel>,
-)
+) : PresenterState
 
 data class FlashcardViewModel(
     val path: RelativePath,
@@ -33,9 +35,9 @@ data class IntervalViewModel(val interval: Duration?) : Comparable<IntervalViewM
 
 class FlashcardSetViewPresenter(
     lessonData: LessonData,
-) : Presenter<FlashcardSetView>() {
+) : Presenter<FlashcardSetViewPresenterState, FlashcardSetView>() {
 
-    val state: FlashcardSetViewPresenterState = FlashcardSetViewPresenterState(
+    override val state: Flow<FlashcardSetViewPresenterState> = flowOf(FlashcardSetViewPresenterState(
         title = lessonData.name,
         cards = lessonData.let { lessonData ->
             lessonData.flashcards.map { card ->
@@ -50,7 +52,7 @@ class FlashcardSetViewPresenter(
                 )
             }
         }
-    )
+    ))
 
     override fun initializeState() { }
 }

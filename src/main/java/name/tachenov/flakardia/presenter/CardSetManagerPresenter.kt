@@ -1,6 +1,8 @@
 package name.tachenov.flakardia.presenter
 
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.backgroundWithProgress
 import name.tachenov.flakardia.configureAndEnterLibrary
@@ -9,7 +11,6 @@ import name.tachenov.flakardia.launchUiTask
 import name.tachenov.flakardia.showSettingsDialog
 
 interface CardSetManagerView : View {
-    fun adjustSize()
     fun viewFlashcards(result: LessonData)
     fun startLesson(library: Library, result: LessonData)
     fun showWarnings(warnings: List<String>)
@@ -21,7 +22,7 @@ data class CardSetManagerPresenterState(
     val entries: List<CardListEntryPresenter> = emptyList(),
     val selectedEntry: CardListEntryPresenter? = null,
     val isScrollToSelectionRequested: Boolean = false,
-) {
+) : PresenterState {
     private val isSomethingSelected: Boolean
         get() = selectedEntry?.entry?.let { it is FlashcardSetFileEntry || it is FlashcardSetDirEntry } ?: false
     val isViewButtonEnabled: Boolean
@@ -38,9 +39,12 @@ data class CardListEntryPresenter(
 
 class CardSetManagerPresenter(
     private val manager: CardManager,
-): Presenter<CardSetManagerView>() {
+): Presenter<CardSetManagerPresenterState, CardSetManagerView>() {
 
-    val state: MutableStateFlow<CardSetManagerPresenterState> = MutableStateFlow(CardSetManagerPresenterState())
+    private val mutableState: MutableStateFlow<CardSetManagerPresenterState> = MutableStateFlow(CardSetManagerPresenterState())
+
+    override val state: Flow<CardSetManagerPresenterState>
+        get() = mutableState.asStateFlow()
 
     override fun initializeState() {
         updateEntries()
@@ -56,15 +60,15 @@ class CardSetManagerPresenter(
     }
 
     fun selectItem(item: CardListEntryPresenter?) {
-        state.value = state.value.copy(selectedEntry = item)
+        mutableState.value = mutableState.value.copy(selectedEntry = item)
     }
 
     fun scrollRequestCompleted() {
-        state.value = state.value.copy(isScrollToSelectionRequested = false)
+        mutableState.value = mutableState.value.copy(isScrollToSelectionRequested = false)
     }
 
     fun goUp() {
-        val list = state.value.entries
+        val list = mutableState.value.entries
         if (list.isEmpty()) {
             return
         }
@@ -76,7 +80,7 @@ class CardSetManagerPresenter(
     }
 
     fun openElement() {
-        val selectedEntry = state.value.selectedEntry?.entry ?: return
+        val selectedEntry = mutableState.value.selectedEntry?.entry ?: return
         when (selectedEntry) {
             is FlashcardSetFileEntry -> viewFlashcards(selectedEntry)
             is FlashcardSetDirEntry -> enterDir(selectedEntry.path)
@@ -111,7 +115,7 @@ class CardSetManagerPresenter(
             newSelection = CardListEntryPresenter(FlashcardSetDirEntry(selectDir))
             shouldScroll = true
         }
-        state.value = state.value.copy(
+        mutableState.value = mutableState.value.copy(
             currentPath = manager.path?.toString(),
             entries = newList,
             selectedEntry = newSelection,
