@@ -1,21 +1,14 @@
 package name.tachenov.flakardia.presenter
 
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import name.tachenov.flakardia.app.*
-import name.tachenov.flakardia.configureAndEnterLibrary
-import name.tachenov.flakardia.data.LessonData
-import name.tachenov.flakardia.data.LessonDataError
-import name.tachenov.flakardia.data.LessonDataResult
-import name.tachenov.flakardia.data.LessonDataWarnings
-import name.tachenov.flakardia.data.RelativePath
-import name.tachenov.flakardia.showSettingsDialog
-import name.tachenov.flakardia.launchUiTask
 import name.tachenov.flakardia.backgroundWithProgress
+import name.tachenov.flakardia.configureAndEnterLibrary
+import name.tachenov.flakardia.data.*
+import name.tachenov.flakardia.launchUiTask
+import name.tachenov.flakardia.showSettingsDialog
 
-interface CardSetManagerView {
-    suspend fun run()
+interface CardSetManagerView : View {
     fun adjustSize()
     fun viewFlashcards(result: LessonData)
     fun startLesson(library: Library, result: LessonData)
@@ -45,20 +38,12 @@ data class CardListEntryPresenter(
 
 class CardSetManagerPresenter(
     private val manager: CardManager,
-    view: (CardSetManagerPresenter) -> CardSetManagerView,
-) {
+): Presenter<CardSetManagerView>() {
 
     val state: MutableStateFlow<CardSetManagerPresenterState> = MutableStateFlow(CardSetManagerPresenterState())
 
-    private val view = view(this)
-
-    suspend fun run() = coroutineScope {
-        launch {
-            updateEntries()
-        }
-        launch {
-            view.run()
-        }
+    override fun initializeState() {
+        updateEntries()
     }
 
     fun configure() {

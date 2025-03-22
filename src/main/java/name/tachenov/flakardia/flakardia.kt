@@ -7,6 +7,7 @@ import com.github.weisj.darklaf.theme.info.DefaultThemeProvider
 import kotlinx.coroutines.runBlocking
 import name.tachenov.flakardia.app.CardManager
 import name.tachenov.flakardia.presenter.CardSetManagerPresenter
+import name.tachenov.flakardia.presenter.showPresenterFrame
 import name.tachenov.flakardia.ui.CardSetManagerFrame
 import java.awt.Window
 
@@ -37,11 +38,10 @@ private fun start() {
 }
 
 private fun showManagerFrame(manager: CardManager) {
-    launchUiTask {
-        CardSetManagerPresenter(manager) {
-            CardSetManagerFrame(it)
-        }.run()
-    }
+    showPresenterFrame(
+        presenterFactory = { CardSetManagerPresenter(manager) },
+        viewFactory = { CardSetManagerFrame(it) },
+    )
 }
 
 fun getManagerFrame() = Window.getWindows().firstOrNull { it is CardSetManagerFrame }
