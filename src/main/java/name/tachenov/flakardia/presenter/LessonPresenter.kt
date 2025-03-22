@@ -10,9 +10,7 @@ import name.tachenov.flakardia.data.StatsSaveError
 import name.tachenov.flakardia.data.StatsSaveSuccess
 import name.tachenov.flakardia.launchUiTask
 
-interface LessonPresenterView : View {
-    fun displayError(title: String, message: String)
-}
+interface LessonPresenterView : View
 
 sealed class LessonStatusState
 data class QuestionState(val nextQuestion: Question) : LessonStatusState()
@@ -62,7 +60,7 @@ class LessonPresenter(
                 library.saveUpdatedStats(lesson.stats)
             }
             when (result) {
-                is StatsSaveError -> view.displayError("An error occurred when trying to save word statistics", result.message)
+                is StatsSaveError -> view.showError("An error occurred when trying to save word statistics", result.message)
                 is StatsSaveSuccess -> { }
             }
         }

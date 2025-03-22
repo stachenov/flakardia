@@ -8,6 +8,7 @@ import name.tachenov.flakardia.launchUiTask
 interface View {
     suspend fun run()
     fun adjustSize()
+    fun showError(title: String, message: String)
 }
 
 interface PresenterState

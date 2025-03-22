@@ -210,13 +210,7 @@ class CardSetManagerFrame(
     }
 
     override fun showError(error: String) {
-        assertEDT()
-        JOptionPane.showMessageDialog(
-            this,
-            error,
-            "Error",
-            JOptionPane.ERROR_MESSAGE,
-        )
+        showError("Error", error)
     }
 
     private inner class ListEntryActionButton(text: String) : JButton(text) {

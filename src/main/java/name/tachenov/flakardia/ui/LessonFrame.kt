@@ -1,10 +1,13 @@
 package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.presenter.*
-import javax.swing.*
+import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.LayoutStyle
 
 class LessonFrame(
     presenter: LessonPresenter,
@@ -69,14 +72,5 @@ class LessonFrame(
             }
         }
         lessonResultPanel.displayResult(state.lessonResult)
-    }
-
-    override fun displayError(title: String, message: String) {
-        JOptionPane.showMessageDialog(
-            this,
-            message,
-            title,
-            JOptionPane.ERROR_MESSAGE,
-        )
     }
 }

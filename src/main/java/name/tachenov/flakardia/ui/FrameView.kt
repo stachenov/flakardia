@@ -10,6 +10,7 @@ import name.tachenov.flakardia.presenter.View
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import javax.swing.JFrame
+import javax.swing.JOptionPane
 
 abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
     protected val presenter: P,
@@ -48,5 +49,15 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
     override fun adjustSize() {
         assertEDT()
         pack()
+    }
+
+    override fun showError(title: String, message: String) {
+        assertEDT()
+        JOptionPane.showMessageDialog(
+            this,
+            message,
+            title,
+            JOptionPane.ERROR_MESSAGE,
+        )
     }
 }
