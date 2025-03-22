@@ -1,5 +1,6 @@
 package name.tachenov.flakardia
 
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.awt.BorderLayout
 import java.awt.Window
 import java.awt.event.WindowAdapter
@@ -11,7 +12,7 @@ import javax.swing.JTextArea
 
 private const val TITLE = "Flakardia help"
 
-fun showHelp(onDone: (() -> Unit)? = null) {
+suspend fun showHelp() {
     val existingFrame = Window.getWindows().firstOrNull {
         it.isVisible && (it as? JFrame)?.title == TITLE
     } as JFrame?
@@ -32,12 +33,18 @@ fun showHelp(onDone: (() -> Unit)? = null) {
     frame.contentPane = contentPane
     frame.setSize(800, 600)
     frame.setLocationRelativeTo(getManagerFrame())
-    frame.addWindowListener(object : WindowAdapter() {
-        override fun windowClosed(e: WindowEvent?) {
-            onDone?.invoke()
-        }
-    })
     frame.isVisible = true
+    suspendCancellableCoroutine<Unit> { continuation ->
+        val listener = object : WindowAdapter() {
+            override fun windowClosed(e: WindowEvent?) {
+                continuation.resume(Unit) { _, _, _ -> }
+            }
+        }
+        frame.addWindowListener(listener)
+        continuation.invokeOnCancellation {
+            frame.removeWindowListener(listener)
+        }
+    }
 }
 
 private const val HELP = """

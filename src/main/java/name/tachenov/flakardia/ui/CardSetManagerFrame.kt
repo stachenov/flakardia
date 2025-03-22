@@ -6,7 +6,6 @@ import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.data.LessonData
 import name.tachenov.flakardia.presenter.*
-import name.tachenov.flakardia.showHelp
 import name.tachenov.flakardia.version
 import java.awt.Component
 import java.awt.event.KeyAdapter
@@ -107,7 +106,7 @@ class CardSetManagerFrame(
             presenter.configure()
         }
         helpButton.addActionListener {
-            showHelp()
+            presenter.showHelpFrame()
         }
 
         list.addMouseListener(object : MouseAdapter() {

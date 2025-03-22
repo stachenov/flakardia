@@ -3,12 +3,9 @@ package name.tachenov.flakardia.presenter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import name.tachenov.flakardia.*
 import name.tachenov.flakardia.app.*
-import name.tachenov.flakardia.backgroundWithProgress
-import name.tachenov.flakardia.configureAndEnterLibrary
 import name.tachenov.flakardia.data.*
-import name.tachenov.flakardia.launchUiTask
-import name.tachenov.flakardia.showSettingsDialog
 
 interface CardSetManagerView : View {
     fun viewFlashcards(result: LessonData)
@@ -51,11 +48,18 @@ class CardSetManagerPresenter(
     }
 
     fun configure() {
-        if (showSettingsDialog()) {
-            configureAndEnterLibrary(manager) {
+        launchUiTask {
+            if (showSettingsDialog()) {
+                configureAndEnterLibrary(manager)
                 updateEntries()
                 view.adjustSize()
             }
+        }
+    }
+
+    fun showHelpFrame() {
+        launchUiTask {
+            showHelp()
         }
     }
 

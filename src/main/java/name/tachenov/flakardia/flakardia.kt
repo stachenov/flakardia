@@ -19,22 +19,18 @@ fun main(args: Array<String>) {
             LafManager.install(LafManager.themeForPreferredStyle(LafManager.getPreferredThemeStyle()))
             configureUiDefaults()
             if (getLibraryPath() == null) {
-                showHelp {
-                    start()
-                }
-            } else {
-                start()
+                showHelp()
             }
+            start()
         }
         uiTaskLoop()
     }
 }
 
-private fun start() {
+private suspend fun start() {
     val manager = CardManager()
-    configureAndEnterLibrary(manager) {
-        showManagerFrame(manager)
-    }
+    configureAndEnterLibrary(manager)
+    showManagerFrame(manager)
 }
 
 private fun showManagerFrame(manager: CardManager) {
