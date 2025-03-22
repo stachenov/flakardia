@@ -1,5 +1,7 @@
 package name.tachenov.flakardia.ui
 
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import name.tachenov.flakardia.ProgressIndicator
 import name.tachenov.flakardia.UiProgressIndicator
 import name.tachenov.flakardia.assertEDT
@@ -12,10 +14,9 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JProgressBar
 
-fun dialogIndicator(): ProgressIndicator {
-    return object : UiProgressIndicator() {
+fun dialogIndicator(job: Job): ProgressIndicator {
+    return object : UiProgressIndicator(job) {
         private var dialog: ProgressIndicatorDialog? = null
-        private var disposed = false
 
         override fun publishCurrentOperation(currentOperation: String?) {
             dialog()?.operationLabel?.text = currentOperation
@@ -26,20 +27,19 @@ fun dialogIndicator(): ProgressIndicator {
         }
 
         override fun close() {
-            super.close()
             dialog?.dispose()
         }
 
         private fun dialog(): ProgressIndicatorDialog? {
             assertEDT()
-            if (disposed) return null
+            job.ensureActive()
             var dialog = dialog
             if (dialog == null) {
                 dialog = ProgressIndicatorDialog()
                 dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE)
                 dialog.addWindowListener(object : WindowAdapter() {
                     override fun windowClosed(e: WindowEvent?) {
-                        cancel()
+                        job.cancel()
                     }
                 })
                 this.dialog = dialog

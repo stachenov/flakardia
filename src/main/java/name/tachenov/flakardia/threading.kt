@@ -9,29 +9,15 @@ import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 
 abstract class ProgressIndicator {
-    abstract val isCancelled: Boolean
-    protected abstract fun cancel()
+    abstract val job: Job?
     abstract var currentOperation: String?
     abstract var currentOperationProgress: Int
-    abstract fun init(coroutineScope: CoroutineScope)
-    abstract fun close()
+    abstract suspend fun run()
 }
 
-object EmptyProgressIndicator : ProgressIndicator() {
-    override val isCancelled: Boolean = false
-    override fun cancel() { }
-    override var currentOperation: String? = null
-    override var currentOperationProgress: Int = 0
-    override fun init(coroutineScope: CoroutineScope) { }
-    override fun close() { }
-}
-
-abstract class UiProgressIndicator : ProgressIndicator() {
-    override var isCancelled: Boolean = false
+abstract class UiProgressIndicator(override val job: Job) : ProgressIndicator() {
     private val currentOperationFlow = MutableStateFlow<String?>(null)
     private val currentOperationProgressFlow = MutableStateFlow(0)
-    private var currentOperationJob: Job? = null
-    private var currentOperationProgressJob: Job? = null
 
     override var currentOperation: String?
         get() = currentOperationFlow.value
@@ -47,47 +33,42 @@ abstract class UiProgressIndicator : ProgressIndicator() {
 
     protected abstract fun publishCurrentOperation(currentOperation: String?)
     protected abstract fun publishProgress(progress: Int)
+    protected abstract fun close()
 
-    override fun cancel() {
-        isCancelled = true
-    }
 
-    override fun init(coroutineScope: CoroutineScope) {
-        currentOperationJob = coroutineScope.launch(edtDispatcher) {
+    override suspend fun run(): Unit = coroutineScope {
+        launch {
             currentOperationFlow.collect {
                 publishCurrentOperation(it)
             }
         }
-        currentOperationProgressJob= coroutineScope.launch(edtDispatcher) {
+        launch {
             currentOperationProgressFlow.collect {
                 publishProgress(it)
             }
         }
-    }
-
-    override fun close() {
-        currentOperationJob?.cancel()
-        currentOperationProgressJob?.cancel()
+        try {
+            awaitCancellation()
+        }
+        finally {
+            close()
+        }
     }
 }
 
 fun reportCurrentOperation(currentOperation: String) {
-    if (currentIndicator().isCancelled) {
-        throw CancellationException("Cancelled")
-    }
-    currentIndicator().currentOperation = currentOperation
+    currentIndicator()?.job?.ensureActive()
+    currentIndicator()?.currentOperation = currentOperation
 }
 
 fun reportProgress(progress: Int) {
-    if (currentIndicator().isCancelled) {
-        throw CancellationException("Cancelled")
-    }
-    currentIndicator().currentOperationProgress = progress
+    currentIndicator()?.job?.ensureActive()
+    currentIndicator()?.currentOperationProgress = progress
 }
 
 private val currentIndicator = ThreadLocal<ProgressIndicator>()
 
-private fun currentIndicator(): ProgressIndicator = currentIndicator.get() ?: EmptyProgressIndicator
+private fun currentIndicator(): ProgressIndicator? = currentIndicator.get()
 
 fun assertBGT() {
     if (SwingUtilities.isEventDispatchThread()) {
@@ -116,7 +97,7 @@ suspend fun uiTaskLoop() = supervisorScope {
                 task()
             }
             catch (e: Exception) {
-                if (debugMode.isDebugEnabled && e !is CancellationException) {
+                if (debugMode.isDebugEnabled && (e !is CancellationException || debugMode.isVerbose)) {
                     e.printStackTrace()
                 }
             }
@@ -141,15 +122,17 @@ suspend fun <T> background(code: () -> T): T =
 
 suspend fun <T> backgroundWithProgress(code: suspend () -> T): T =
     withContext(edtDispatcher) {
-        val indicator = dialogIndicator()
+        val indicator = dialogIndicator(currentCoroutineContext().job)
+        val indicatorJob = launch {
+            indicator.run()
+        }
         try {
-            indicator.init(this)
             withContext(currentIndicator.asContextElement(value = indicator) + Dispatchers.IO) {
                 code()
             }
         }
         finally {
-            indicator.close()
+            indicatorJob.cancel()
         }
     }
 
