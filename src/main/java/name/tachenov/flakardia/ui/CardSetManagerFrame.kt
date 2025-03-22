@@ -193,19 +193,10 @@ class CardSetManagerFrame(
 
     override fun startLesson(library: Library, result: LessonData) {
         assertEDT()
-        showFrame(result) { data -> LessonFrame(library, Lesson(data)) }
-    }
-
-    private fun showFrame(
-        result: LessonData,
-        frame: (LessonData) -> JFrame,
-    ) {
-        frame(result).apply {
-            defaultCloseOperation = DISPOSE_ON_CLOSE
-            pack()
-            setLocationRelativeTo(null)
-            isVisible = true
-        }
+        showPresenterFrame(
+            presenterFactory = { LessonPresenter(library, Lesson(result)) },
+            viewFactory = { LessonFrame(it) },
+        )
     }
 
     override fun showWarnings(warnings: List<String>) {

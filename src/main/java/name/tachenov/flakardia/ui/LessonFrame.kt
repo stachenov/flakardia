@@ -1,29 +1,20 @@
 package name.tachenov.flakardia.ui
 
-import name.tachenov.flakardia.app.Answer
-import name.tachenov.flakardia.app.Lesson
-import name.tachenov.flakardia.app.Library
-import name.tachenov.flakardia.background
-import name.tachenov.flakardia.data.StatsSaveError
-import name.tachenov.flakardia.data.StatsSaveSuccess
-import name.tachenov.flakardia.launchUiTask
-import java.awt.event.ComponentAdapter
-import java.awt.event.ComponentEvent
+import name.tachenov.flakardia.presenter.*
 import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
 
 class LessonFrame(
-    private val library: Library,
-    private val lesson: Lesson
-) : JFrame(lesson.name) {
+    presenter: LessonPresenter,
+) : FrameView<LessonPresenterState, LessonPresenterView, LessonPresenter>(presenter), LessonPresenterView {
 
-    private val lessonResultPanel = LessonResultPanel(lesson.result)
+    private val lessonResultPanel = LessonResultPanel()
 
     private val questionAnswerPanel = QuestionAnswerPanel(
-        answered = this::answered,
-        nextQuestion = this::nextQuestion,
+        answered = presenter::answered,
+        nextQuestion = presenter::nextQuestion,
     )
     private val done = JLabel("All done!").apply { isVisible = false }
     private val status = JLabel("Initializing...")
@@ -56,48 +47,36 @@ class LessonFrame(
         layout.setVerticalGroup(vg)
         contentPane.layout = layout
         this.contentPane = contentPane
-
-        addComponentListener(object : ComponentAdapter() {
-            override fun componentShown(e: ComponentEvent?) {
-                nextQuestion()
-            }
-        })
     }
 
-    fun nextQuestion() {
-        val nextQuestion = lesson.nextQuestion()
-        if (nextQuestion == null) {
-            questionAnswerPanel.isVisible = false
-            done.isVisible = true
-            status.text = "Nothing more to do, close the window to finish with the lesson"
-        }
-        else {
-            questionAnswerPanel.isVisible = true
-            questionAnswerPanel.displayQuestion(nextQuestion)
-            status.text = "Press Enter to answer the question, or Esc to give up"
-        }
-        lessonResultPanel.displayResult(lesson.result)
-    }
-
-    private fun answered(answer: Answer?) {
-        launchUiTask {
-            val answerResult = lesson.answer(answer)
-            questionAnswerPanel.displayAnswerResult(answerResult)
-            status.text = "Press Space to continue to the next question"
-            lessonResultPanel.displayResult(lesson.result)
-            val result = background {
-                library.saveUpdatedStats(lesson.stats)
+    override fun applyState(state: LessonPresenterState) {
+        title = state.title
+        when (val lessonStatus = state.lessonStatus) {
+            is QuestionState -> {
+                questionAnswerPanel.isVisible = true
+                questionAnswerPanel.displayQuestion(lessonStatus.nextQuestion)
+                status.text = "Press Enter to answer the question, or Esc to give up"
             }
-            when (result) {
-                is StatsSaveError -> JOptionPane.showMessageDialog(
-                    this,
-                    result.message,
-                    "An error occurred when trying to save word statistics",
-                    JOptionPane.ERROR_MESSAGE,
-                )
-                is StatsSaveSuccess -> { }
+            is AnswerState -> {
+                questionAnswerPanel.isVisible = true
+                questionAnswerPanel.displayAnswerResult(lessonStatus.answerResult)
+                status.text = "Press Space to continue to the next question"
+            }
+            is DoneState -> {
+                questionAnswerPanel.isVisible = false
+                done.isVisible = true
+                status.text = "Nothing more to do, close the window to finish with the lesson"
             }
         }
+        lessonResultPanel.displayResult(state.lessonResult)
     }
 
+    override fun displayError(title: String, message: String) {
+        JOptionPane.showMessageDialog(
+            this,
+            message,
+            title,
+            JOptionPane.ERROR_MESSAGE,
+        )
+    }
 }

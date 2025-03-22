@@ -6,7 +6,7 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.LayoutStyle
 
-class LessonResultPanel(result: LessonResult) : JPanel() {
+class LessonResultPanel : JPanel() {
 
     private val round = JLabel()
     private val total = JLabel()
@@ -59,7 +59,6 @@ class LessonResultPanel(result: LessonResult) : JPanel() {
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
         this.layout = layout
-        displayResult(result)
     }
 
     fun displayResult(result: LessonResult) {
