@@ -10,7 +10,8 @@ import name.tachenov.flakardia.presenter.CardSetManagerPresenter
 import name.tachenov.flakardia.ui.CardSetManagerFrame
 import java.awt.Window
 
-fun main() {
+fun main(args: Array<String>) {
+    debugMode = args.firstOrNull()?.let { DebugMode.valueOf(args[0].uppercase()) } ?: DebugMode.NO_DEBUG
     runBlocking {
         launchUiTask {
             LafManager.setThemeProvider(DefaultThemeProvider(IntelliJTheme(), OneDarkTheme()))

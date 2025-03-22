@@ -4,7 +4,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import name.tachenov.flakardia.ui.dialogIndicator
-import java.lang.Exception
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 
@@ -114,7 +113,7 @@ suspend fun uiTaskLoop() = supervisorScope {
                 task()
             }
             catch (e: Exception) {
-                if (e !is CancellationException) {
+                if (debugMode.isDebugEnabled && e !is CancellationException) {
                     e.printStackTrace()
                 }
             }

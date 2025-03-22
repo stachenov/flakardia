@@ -28,7 +28,26 @@ private const val MIN_INTERVAL_WITH_MANY_MISTAKES_KEY = "min_interval_with_many_
 private const val RANDOMNESS_KEY = "randomness"
 private val DEFAULT_FONT = Font("Verdana", 0, 16)
 
-private val preferences: Preferences = Preferences.userNodeForPackage(PackageReference::class.java)
+enum class DebugMode(
+    val isDebugEnabled: Boolean,
+    val isVerbose: Boolean,
+) {
+    NO_DEBUG(false, false),
+    DEBUG(true, false),
+    VERBOSE(true, true),
+}
+
+var debugMode: DebugMode = DebugMode.NO_DEBUG
+
+private val preferences: Preferences get() =
+    Preferences.userNodeForPackage(PackageReference::class.java).let {
+        if (debugMode.isDebugEnabled) {
+            it.node("debug")
+        }
+        else {
+            it
+        }
+    }
 
 fun getLibraryPath(): Path? = preferences.get(LIBRARY_PATH_KEY, null)?.let { Path.of(it) }
 
