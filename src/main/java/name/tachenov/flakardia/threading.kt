@@ -2,6 +2,7 @@ package name.tachenov.flakardia
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import name.tachenov.flakardia.presenter.Presenter
 import name.tachenov.flakardia.ui.dialogIndicator
 import javax.swing.SwingUtilities
 
@@ -84,10 +85,10 @@ suspend fun <T> background(code: () -> T): T =
         code()
     }
 
-suspend fun <T> backgroundWithProgress(code: suspend () -> T): T =
+suspend fun <T> backgroundWithProgress(owner: Presenter<*, *>, code: suspend () -> T): T =
     coroutineScope {
         assertEDT()
-        val indicator = dialogIndicator(currentCoroutineContext().job)
+        val indicator = dialogIndicator(owner, currentCoroutineContext().job)
         val indicatorJob = launch {
             indicator.run()
         }

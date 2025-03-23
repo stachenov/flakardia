@@ -17,7 +17,7 @@ interface View {
 interface PresenterState
 
 abstract class Presenter<S : PresenterState, V : View> {
-    protected lateinit var view: V
+    lateinit var view: V
         private set
 
     abstract val state: Flow<S>

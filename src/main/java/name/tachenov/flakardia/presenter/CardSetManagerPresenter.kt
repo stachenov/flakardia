@@ -95,7 +95,7 @@ class CardSetManagerPresenter(
 
     private fun enterDir(dirPath: RelativePath, selectDir: RelativePath? = null) {
         launchUiTask {
-            val result = backgroundWithProgress {
+            val result = backgroundWithProgress(this) {
                 manager.enter(dirPath)
             }
             when (result) {
@@ -131,7 +131,7 @@ class CardSetManagerPresenter(
     fun viewFlashcards(entry: FlashcardSetListEntry) {
         val library = manager.library ?: return
         launchUiTask {
-            val result = backgroundWithProgress {
+            val result = backgroundWithProgress(this) {
                 library.getAllFlashcards(entry)
             }
             processResult(result) { lessonData ->
@@ -143,7 +143,7 @@ class CardSetManagerPresenter(
     fun startLesson(entry: FlashcardSetListEntry) {
         val library = manager.library ?: return
         launchUiTask {
-            val result = backgroundWithProgress {
+            val result = backgroundWithProgress(this) {
                 library.prepareLessonData(entry)
             }
             processResult(result) { lessonData ->

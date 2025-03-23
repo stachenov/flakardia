@@ -5,6 +5,7 @@ import kotlinx.coroutines.ensureActive
 import name.tachenov.flakardia.ProgressIndicator
 import name.tachenov.flakardia.UiProgressIndicator
 import name.tachenov.flakardia.assertEDT
+import name.tachenov.flakardia.presenter.Presenter
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.event.WindowAdapter
@@ -14,7 +15,7 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JProgressBar
 
-fun dialogIndicator(job: Job): ProgressIndicator {
+fun dialogIndicator(owner: Presenter<*, *>, job: Job): ProgressIndicator {
     return object : UiProgressIndicator(job) {
         private var dialog: ProgressIndicatorDialog? = null
 
@@ -46,7 +47,7 @@ fun dialogIndicator(job: Job): ProgressIndicator {
             }
             if (System.currentTimeMillis() - dialog.created >= 300L) {
                 dialog.pack()
-                dialog.setLocationRelativeTo(null)
+                dialog.setLocationRelativeTo(owner)
                 dialog.isVisible = true
             }
             return dialog
