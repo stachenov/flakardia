@@ -210,7 +210,7 @@ class CardSetManagerFrame(
         assertEDT()
         showPresenterFrame(
             presenterFactory = { LessonPresenter(library, Lesson(result)) },
-            viewFactory = { LessonFrame(it) },
+            viewFactory = { LessonFrame(presenter, it) },
         )
     }
 

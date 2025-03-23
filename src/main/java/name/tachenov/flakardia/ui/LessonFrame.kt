@@ -10,6 +10,7 @@ import javax.swing.JPanel
 import javax.swing.LayoutStyle
 
 class LessonFrame(
+    private val owner: CardSetManagerPresenter,
     presenter: LessonPresenter,
 ) : FrameView<LessonPresenterState, LessonPresenterView, LessonPresenter>(presenter), LessonPresenterView {
 
@@ -53,7 +54,7 @@ class LessonFrame(
     }
 
     override fun applyInitialLocation() {
-        setLocationRelativeTo(null)
+        setLocationRelativeTo(owner)
     }
 
     override fun saveLocation() {
