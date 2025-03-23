@@ -26,6 +26,7 @@ class CardSetManagerFrame(
 
     private val dir = JLabel()
     private val list = JList<CardListEntryPresenter>()
+    private val listScrollPane: JScrollPane
     private val model = DefaultListModel<CardListEntryPresenter>()
     private val viewButton = ListEntryActionButton("View flashcards").apply {
         horizontalAlignment = SwingConstants.LEADING
@@ -49,7 +50,7 @@ class CardSetManagerFrame(
         val layout = GroupLayout(contentPane)
         val hg = layout.createSequentialGroup()
         val vg = layout.createSequentialGroup()
-        val listScrollPane = JScrollPane(list).apply {
+        listScrollPane = JScrollPane(list).apply {
             border = BorderFactory.createCompoundBorder(
                 BorderFactory.createEtchedBorder(),
                 BorderFactory.createEmptyBorder(6, 6, 6, 6)
@@ -156,6 +157,7 @@ class CardSetManagerFrame(
         else {
             this.location = location
         }
+        updateWidth()
     }
 
     override fun saveLocation() {
@@ -187,14 +189,14 @@ class CardSetManagerFrame(
     }
 
     private fun updateWidth() {
-        val listAndListAreaWidth = max(list.width, dir.width)
-        val listPreferredWidth = list.preferredScrollableViewportSize.width
-        val dirPreferredWidth = dir.preferredSize.width
+        val listAndListAreaWidth = max(listScrollPane.width, dir.width)
+        val listPreferredWidth = list.preferredScrollableViewportSize.width + FRAME_EXTRA_WIDTH
+        val dirPreferredWidth = dir.preferredSize.width + FRAME_EXTRA_WIDTH
         val extraForList = listPreferredWidth - listAndListAreaWidth
         val extraForDir = dirPreferredWidth - listAndListAreaWidth
         val extra = max(extraForList, extraForDir)
         if (extra > 0) {
-            setSize(width + extra + FRAME_EXTRA_WIDTH, height)
+            setSize(width + extra, height)
         }
     }
 
