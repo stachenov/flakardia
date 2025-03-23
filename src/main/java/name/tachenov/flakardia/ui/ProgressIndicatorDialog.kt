@@ -19,18 +19,18 @@ fun dialogIndicator(job: Job): ProgressIndicator {
         private var dialog: ProgressIndicatorDialog? = null
 
         override fun publishCurrentOperation(currentOperation: String?) {
-            dialog()?.operationLabel?.text = currentOperation
+            dialog().operationLabel.text = currentOperation
         }
 
         override fun publishProgress(progress: Int) {
-            dialog()?.progressBar?.value = progress
+            dialog().progressBar.value = progress
         }
 
         override fun close() {
             dialog?.dispose()
         }
 
-        private fun dialog(): ProgressIndicatorDialog? {
+        private fun dialog(): ProgressIndicatorDialog {
             assertEDT()
             job.ensureActive()
             var dialog = dialog

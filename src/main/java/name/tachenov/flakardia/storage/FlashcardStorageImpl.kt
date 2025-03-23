@@ -1,6 +1,5 @@
 package name.tachenov.flakardia.storage
 
-import kotlinx.serialization.encodeToString
 import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.FlashcardSetListEntry
@@ -43,14 +42,14 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
         return result
     }
 
-    override fun readFlashcards(file: RelativePath): FlashcardSetResult  {
+    override fun readFlashcards(path: RelativePath): FlashcardSetResult  {
         assertBGT()
         val lines = try {
-            Files.readAllLines(file.toFilePath())
+            Files.readAllLines(path.toFilePath())
         } catch (e: Exception) {
-            return FlashcardSetError(file.fileName + ": " + e.toString())
+            return FlashcardSetError(path.fileName + ": " + e.toString())
         }
-        return parse(file, lines)
+        return parse(path, lines)
     }
 
     private fun RelativePath.toFilePath(): Path {

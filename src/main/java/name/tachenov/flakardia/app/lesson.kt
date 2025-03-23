@@ -3,7 +3,6 @@ package name.tachenov.flakardia.app
 import name.tachenov.flakardia.data.*
 import java.time.Duration
 import java.time.Instant
-import kotlin.math.sign
 
 data class LessonResult(
     val round: Int,
