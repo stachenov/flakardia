@@ -1,6 +1,7 @@
 package name.tachenov.flakardia
 
 import kotlinx.coroutines.suspendCancellableCoroutine
+import name.tachenov.flakardia.ui.FlakardiaFrame
 import java.awt.BorderLayout
 import java.awt.Window
 import java.awt.event.WindowAdapter
@@ -21,7 +22,7 @@ suspend fun showHelp() {
         existingFrame.toFront()
         return
     }
-    val frame = JFrame(TITLE)
+    val frame = FlakardiaFrame().apply { title = TITLE }
     val contentPane = JPanel(BorderLayout())
     val text = JTextArea(HELP).apply {
         isEditable = false
@@ -34,7 +35,7 @@ suspend fun showHelp() {
     frame.setSize(800, 600)
     frame.setLocationRelativeTo(getManagerFrame())
     frame.isVisible = true
-    suspendCancellableCoroutine<Unit> { continuation ->
+    suspendCancellableCoroutine { continuation ->
         val listener = object : WindowAdapter() {
             override fun windowClosed(e: WindowEvent?) {
                 continuation.resume(Unit) { _, _, _ -> }

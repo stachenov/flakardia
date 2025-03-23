@@ -8,35 +8,14 @@ import name.tachenov.flakardia.presenter.PresenterState
 import name.tachenov.flakardia.presenter.View
 import java.awt.Point
 import java.awt.Window
-import java.awt.event.ActionEvent
-import java.awt.event.KeyEvent
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
-import javax.swing.AbstractAction
-import javax.swing.Action
-import javax.swing.JComponent
-import javax.swing.JFrame
 import javax.swing.JOptionPane
-import javax.swing.KeyStroke
-import javax.swing.SwingConstants
 import kotlin.math.abs
 
 abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
     protected val presenter: P,
-) : JFrame(), View {
-
-    init {
-        defaultCloseOperation = DISPOSE_ON_CLOSE
-        if (System.getProperty("os.name").startsWith("mac", ignoreCase = true)) {
-            rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_W, KeyEvent.META_DOWN_MASK), "close")
-            rootPane.actionMap.put("close", object : AbstractAction() {
-                override fun actionPerformed(e: ActionEvent?) {
-                    this@FrameView.dispose()
-                }
-            })
-        }
-    }
+) : FlakardiaFrame(), View {
 
     override suspend fun run() = coroutineScope {
         assertEDT()

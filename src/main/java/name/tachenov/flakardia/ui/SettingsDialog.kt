@@ -86,6 +86,8 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
                 enableDisable()
             }
         })
+
+        rootPane.setupShortcuts(this)
     }
 
     private fun <T : SettingsTab> addTab(tab: T): T {
