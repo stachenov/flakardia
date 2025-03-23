@@ -3,7 +3,6 @@ package name.tachenov.flakardia.ui
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.presenter.*
 import java.awt.Dimension
-import java.awt.Point
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.text.Collator
@@ -19,6 +18,7 @@ import kotlin.math.max
 
 
 class FlashcardSetViewFrame(
+    private val parent: JFrame,
     presenter: FlashcardSetViewPresenter,
 ) : FrameView<FlashcardSetViewPresenterState, FlashcardSetView, FlashcardSetViewPresenter>(presenter), FlashcardSetView {
 
@@ -93,8 +93,8 @@ class FlashcardSetViewFrame(
         })
     }
 
-    override fun initialLocation(): Point? {
-        return null
+    override fun applyInitialLocation() {
+        setLocationRelativeTo(parent)
     }
 
     override fun saveLocation() {

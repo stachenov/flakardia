@@ -10,7 +10,6 @@ import name.tachenov.flakardia.presenter.*
 import name.tachenov.flakardia.setManagerFrameLocation
 import name.tachenov.flakardia.version
 import java.awt.Component
-import java.awt.Point
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
@@ -149,8 +148,14 @@ class CardSetManagerFrame(
         defaultCloseOperation = EXIT_ON_CLOSE
     }
 
-    override fun initialLocation(): Point? {
-        return getManagerFrameLocation()
+    override fun applyInitialLocation() {
+        val location = getManagerFrameLocation()
+        if (location == null) {
+            setLocationRelativeTo(null)
+        }
+        else {
+            this.location = location
+        }
     }
 
     override fun saveLocation() {
@@ -197,7 +202,7 @@ class CardSetManagerFrame(
         assertEDT()
         showPresenterFrame(
             presenterFactory = { FlashcardSetViewPresenter(result) },
-            viewFactory = { FlashcardSetViewFrame(it) },
+            viewFactory = { FlashcardSetViewFrame(this@CardSetManagerFrame, it) },
         )
     }
 
