@@ -6,6 +6,8 @@ import com.github.weisj.darklaf.theme.OneDarkTheme
 import com.github.weisj.darklaf.theme.info.DefaultThemeProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import name.tachenov.flakardia.app.CardManager
 import name.tachenov.flakardia.presenter.CardSetManagerPresenter
@@ -14,6 +16,7 @@ import name.tachenov.flakardia.ui.CardSetManagerFrame
 import java.awt.Window
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
+import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
     debugMode = args.firstOrNull()?.let { DebugMode.valueOf(args[0].uppercase()) } ?: DebugMode.NO_DEBUG
@@ -24,21 +27,25 @@ fun main(args: Array<String>) {
         if (getLibraryPath() == null) {
             showHelp()
         }
-        start()
+        runApp()
+        exitProcess(0)
     }
 }
 
-private suspend fun start() {
+private suspend fun runApp() {
     val manager = CardManager()
     configureAndEnterLibrary(manager)
     showManagerFrame(manager)
 }
 
-private suspend fun showManagerFrame(manager: CardManager) {
-    showPresenterFrame(
-        presenterFactory = { CardSetManagerPresenter(manager) },
-        viewFactory = { CardSetManagerFrame(it) },
-    )
+private suspend fun showManagerFrame(manager: CardManager) = coroutineScope {
+    val showFrameJob = launch {
+        showPresenterFrame(
+            presenterFactory = { CardSetManagerPresenter(manager) },
+            viewFactory = { CardSetManagerFrame(it) },
+        )
+    }
+    showFrameJob.join()
 }
 
 fun getManagerFrame() = Window.getWindows().firstOrNull { it is CardSetManagerFrame }
