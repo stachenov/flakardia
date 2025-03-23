@@ -111,20 +111,16 @@ class CardSetManagerPresenter(
 
     private fun updateEntries(selectDir: RelativePath? = null) {
         val newList = manager.entries.map { CardListEntryPresenter(it) }
-        val newSelection: CardListEntryPresenter?
-        val shouldScroll: Boolean
-        if (selectDir == null) {
-            newSelection = newList.firstOrNull()
-            shouldScroll = false
+        val newSelection: CardListEntryPresenter? = if (selectDir == null) {
+            newList.firstOrNull()
         } else {
-            newSelection = CardListEntryPresenter(FlashcardSetDirEntry(selectDir))
-            shouldScroll = true
+            CardListEntryPresenter(FlashcardSetDirEntry(selectDir))
         }
         mutableState.value = CardSetManagerPresenterState(
             currentPath = manager.path?.toString(),
             entries = newList,
             selectedEntry = newSelection,
-            isScrollToSelectionRequested = shouldScroll,
+            isScrollToSelectionRequested = newSelection != null,
         )
     }
 
