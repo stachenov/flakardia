@@ -121,7 +121,8 @@ suspend fun <T> background(code: () -> T): T =
     }
 
 suspend fun <T> backgroundWithProgress(code: suspend () -> T): T =
-    withContext(edtDispatcher) {
+    coroutineScope {
+        assertEDT()
         val indicator = dialogIndicator(currentCoroutineContext().job)
         val indicatorJob = launch {
             indicator.run()
