@@ -6,6 +6,9 @@ import name.tachenov.flakardia.storage.FlashcardStorageImpl
 import name.tachenov.flakardia.ui.InitFrame
 import name.tachenov.flakardia.ui.SettingsDialog
 import java.awt.Font
+import java.awt.GraphicsEnvironment
+import java.awt.Point
+import java.awt.Rectangle
 import java.nio.file.Path
 import java.time.Duration
 import java.util.prefs.Preferences
@@ -197,3 +200,36 @@ private enum class FontStyle(val value: Int) {
     BOLD(Font.BOLD),
     ITALIC(Font.ITALIC);
 }
+
+fun getManagerFrameLocation(): Point? {
+    val node = screenConfigPreferences()
+    val x = node.getInt("main_x", Int.MIN_VALUE)
+    val y = node.getInt("main_y", Int.MIN_VALUE)
+    return if (x != Int.MIN_VALUE && y != Int.MIN_VALUE) Point(x, y) else null
+}
+
+fun setManagerFrameLocation(point: Point) {
+    val node = screenConfigPreferences()
+    node.putInt("main_x", point.x)
+    node.putInt("main_y", point.y)
+}
+
+private fun screenConfigPreferences(): Preferences = preferences.node(currentScreenConfig().toString())
+
+private data class ScreenConfig(
+    private val screens: List<Screen>,
+) {
+    override fun toString(): String = screens.joinToString("_")
+}
+
+private data class Screen(
+    private val bounds: Rectangle,
+) {
+    override fun toString(): String = "${bounds.width}x${bounds.height}_${bounds.x}_${bounds.y}"
+}
+
+private fun currentScreenConfig() = ScreenConfig(
+    screens = GraphicsEnvironment.getLocalGraphicsEnvironment().screenDevices.map { device ->
+        Screen(bounds = device.defaultConfiguration.bounds)
+    }
+)

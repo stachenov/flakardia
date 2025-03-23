@@ -6,6 +6,7 @@ import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.presenter.Presenter
 import name.tachenov.flakardia.presenter.PresenterState
 import name.tachenov.flakardia.presenter.View
+import java.awt.Point
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import javax.swing.JFrame
@@ -23,6 +24,10 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
         assertEDT()
         val job = coroutineContext.job
         addWindowListener(object : WindowAdapter() {
+            override fun windowClosing(e: WindowEvent?) {
+                saveLocation()
+            }
+
             override fun windowClosed(e: WindowEvent?) {
                 job.cancel()
             }
@@ -39,9 +44,19 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
 
     private fun onFirstStateInit() {
         pack()
-        setLocationRelativeTo(null)
+        val location = initialLocation()
+        if (location == null) {
+            setLocationRelativeTo(null)
+        }
+        else {
+            this.location = location
+        }
         isVisible = true
     }
+
+    protected abstract fun initialLocation(): Point?
+
+    protected abstract fun saveLocation()
 
     protected abstract fun applyState(state: S)
 

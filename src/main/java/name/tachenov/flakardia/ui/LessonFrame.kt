@@ -1,6 +1,7 @@
 package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.presenter.*
+import java.awt.Point
 import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
@@ -50,6 +51,13 @@ class LessonFrame(
         layout.setVerticalGroup(vg)
         contentPane.layout = layout
         this.contentPane = contentPane
+    }
+
+    override fun initialLocation(): Point? {
+        return null
+    }
+
+    override fun saveLocation() {
     }
 
     override fun applyState(state: LessonPresenterState) {

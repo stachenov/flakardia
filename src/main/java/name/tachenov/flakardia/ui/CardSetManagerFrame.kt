@@ -5,9 +5,12 @@ import name.tachenov.flakardia.app.Lesson
 import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.data.LessonData
+import name.tachenov.flakardia.getManagerFrameLocation
 import name.tachenov.flakardia.presenter.*
+import name.tachenov.flakardia.setManagerFrameLocation
 import name.tachenov.flakardia.version
 import java.awt.Component
+import java.awt.Point
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
@@ -144,6 +147,14 @@ class CardSetManagerFrame(
             override fun accept(aComponent: Component?): Boolean = aComponent in focusableComponents
         }
         defaultCloseOperation = EXIT_ON_CLOSE
+    }
+
+    override fun initialLocation(): Point? {
+        return getManagerFrameLocation()
+    }
+
+    override fun saveLocation() {
+        setManagerFrameLocation(location)
     }
 
     override fun applyState(state: CardSetManagerPresenterState) {
