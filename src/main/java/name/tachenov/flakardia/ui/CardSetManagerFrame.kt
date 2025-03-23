@@ -182,7 +182,7 @@ class CardSetManagerFrame(
         }
     }
 
-    override fun viewFlashcards(result: LessonData) {
+    override suspend fun viewFlashcards(result: LessonData) {
         assertEDT()
         showPresenterFrame(
             presenterFactory = { FlashcardSetViewPresenter(result) },
@@ -190,7 +190,7 @@ class CardSetManagerFrame(
         )
     }
 
-    override fun startLesson(library: Library, result: LessonData) {
+    override suspend fun startLesson(library: Library, result: LessonData) {
         assertEDT()
         showPresenterFrame(
             presenterFactory = { LessonPresenter(library, Lesson(result)) },

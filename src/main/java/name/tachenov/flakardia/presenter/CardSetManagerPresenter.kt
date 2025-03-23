@@ -9,8 +9,8 @@ import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.data.*
 
 interface CardSetManagerView : View {
-    fun viewFlashcards(result: LessonData)
-    fun startLesson(library: Library, result: LessonData)
+    suspend fun viewFlashcards(result: LessonData)
+    suspend fun startLesson(library: Library, result: LessonData)
     fun showWarnings(warnings: List<String>)
     fun showError(error: String)
 }
@@ -152,7 +152,7 @@ class CardSetManagerPresenter(
         }
     }
 
-    private fun processResult(result: LessonDataResult, onSuccess: (LessonData) -> Unit) {
+    private suspend fun processResult(result: LessonDataResult, onSuccess: suspend (LessonData) -> Unit) {
         when (result) {
             is LessonData -> {
                 onSuccess(result)

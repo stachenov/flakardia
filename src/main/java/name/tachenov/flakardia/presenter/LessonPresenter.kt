@@ -8,7 +8,6 @@ import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.background
 import name.tachenov.flakardia.data.StatsSaveError
 import name.tachenov.flakardia.data.StatsSaveSuccess
-import name.tachenov.flakardia.launchUiTask
 
 interface LessonPresenterView : View
 

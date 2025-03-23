@@ -1,6 +1,5 @@
 package name.tachenov.flakardia.ui
 
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.job
 import name.tachenov.flakardia.assertEDT
@@ -21,6 +20,7 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
     }
 
     override suspend fun run() = coroutineScope {
+        assertEDT()
         val job = coroutineContext.job
         addWindowListener(object : WindowAdapter() {
             override fun windowClosed(e: WindowEvent?) {
@@ -35,7 +35,6 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
                 isFirstState = false
             }
         }
-        awaitCancellation()
     }
 
     private fun onFirstStateInit() {
