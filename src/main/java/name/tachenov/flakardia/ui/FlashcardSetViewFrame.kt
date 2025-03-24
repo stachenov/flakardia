@@ -151,10 +151,6 @@ private fun <T> JTable.addColumn(
     addColumn(column)
     val cellRenderer = MyTableCellRenderer(this, valueForMaxWidth, valueCutStrategy)
     column.cellRenderer = cellRenderer
-    val maxWidth = cellRenderer.maxWidth
-    if (maxWidth != null) {
-        column.maxWidth = maxWidth
-    }
 }
 
 private class MyTableCellRenderer<T>(
@@ -162,11 +158,13 @@ private class MyTableCellRenderer<T>(
     valueForMaxWidth: T?,
     private val valueCutStrategy: ValueCutStrategy?,
 ) : DefaultTableCellRenderer() {
-    val maxWidth: Int? = valueForMaxWidth?.let {
+    private val maxWidth: Int? = valueForMaxWidth?.let {
         value ->  super.getTableCellRendererComponent(table, value, false, false, 0, 0).preferredSize.width
     }
 
-    fun preferredWidth(value: Any?): Int = super.getTableCellRendererComponent(table, value, false, false, 0, 0).preferredSize.width
+    fun preferredWidth(value: Any?): Int = super.getTableCellRendererComponent(table, value, false, false, 0, 0)
+        .preferredSize.width
+        .coerceAtMost(maxWidth ?: Int.MAX_VALUE)
 
     override fun getTableCellRendererComponent(
         table: JTable,
