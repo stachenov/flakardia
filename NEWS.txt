@@ -1,3 +1,15 @@
+0.6.1 / 2025-03-25
+    The main window position is now saved
+    The current directory and selection are now saved as well
+    For the view flashcards window, the location, size, column widths and sort are saved
+    Added an option to save the lesson window position
+    Put some limits on the view cards window column widths
+    On macOS, Cmd+W now closes windows
+    Fixed a bug when the files / directories list would have a wrong scrolling position
+    Fixed a bug when some labels were cut off for no reason
+    Fixed Escape sometimes not closing the settings dialog
+    Changing settings not related to the library path no longer cause the library to reload
+
 0.6 / 2024-08-31
     The default settings were adjusted according to experience
     Long-running operations now display a progress dialog
