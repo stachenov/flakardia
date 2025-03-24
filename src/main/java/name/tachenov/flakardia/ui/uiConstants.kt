@@ -2,7 +2,7 @@ package name.tachenov.flakardia.ui
 
 import java.awt.Color
 
-const val WIDTH_STRING = "califragilisticexpialidocious / califragilisticexpialidocious / califragilisticexpialidocious"
+const val WIDTH_STRING = "supercalifragilisticexpialidocious / supercalifragilisticexpialidocious / supercalifragilisticexpialidocious"
 const val INFINITY = 100_000
 
 /**
