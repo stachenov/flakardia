@@ -2,6 +2,7 @@ package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.presenter.*
+import java.awt.Component
 import java.awt.Dimension
 import java.awt.Point
 import java.awt.event.ComponentAdapter
@@ -12,9 +13,7 @@ import javax.swing.GroupLayout.Alignment.BASELINE
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 import javax.swing.LayoutStyle.ComponentPlacement.UNRELATED
-import javax.swing.table.DefaultTableColumnModel
-import javax.swing.table.DefaultTableModel
-import javax.swing.table.TableRowSorter
+import javax.swing.table.*
 import kotlin.math.max
 
 
@@ -67,13 +66,14 @@ class FlashcardSetViewFrame(
         this.contentPane = contentPane
 
         model = MyTableModel()
-        model.addColumn("Path", RelativePath::class.java)
-        model.addColumn("Question", String::class.java)
-        model.addColumn("Answer", String::class.java)
-        model.addColumn("Last learned", LastLearnedViewModel::class.java)
-        model.addColumn("Mistakes made", Int::class.javaObjectType)
-        model.addColumn("Learn interval (days)", IntervalViewModel::class.java)
+        table.autoCreateColumnsFromModel = false
         table.model = model
+        table.addColumn("Path", RelativePath::class.java, valueForMaxWidth = RelativePath(listOf("some reasonable file path.txt")))
+        table.addColumn("Question", String::class.java, valueForMaxWidth = "supercalifragilisticexpialidocious")
+        table.addColumn("Answer", String::class.java, valueForMaxWidth = "supercalifragilisticexpialidocious")
+        table.addColumn("Last learned", LastLearnedViewModel::class.java)
+        table.addColumn("Mistakes made", Int::class.javaObjectType)
+        table.addColumn("Learn interval (days)", IntervalViewModel::class.java)
         table.autoResizeMode = JTable.AUTO_RESIZE_OFF
         table.autoCreateRowSorter = true
         for (i in 0 until model.columnCount) {
@@ -129,6 +129,43 @@ private class MyTableModel : DefaultTableModel() {
     override fun getColumnClass(columnIndex: Int): Class<*> = classes[columnIndex]
 
     override fun isCellEditable(row: Int, column: Int): Boolean = false
+}
+
+private fun <T> JTable.addColumn(name: String, type: Class<T>, valueForMaxWidth: T? = null) {
+    val column = TableColumn(model.columnCount)
+    val model = this.model as MyTableModel
+    model.addColumn(name, type)
+    addColumn(column)
+    val cellRenderer = MyTableCellRenderer(this, valueForMaxWidth)
+    column.cellRenderer = cellRenderer
+    val maxWidth = cellRenderer.maxWidth
+    if (maxWidth != null) {
+        column.maxWidth = maxWidth
+    }
+}
+
+private class MyTableCellRenderer<T>(private val table: JTable, valueForMaxWidth: T?) : DefaultTableCellRenderer() {
+    val maxWidth: Int? = valueForMaxWidth?.let {
+        value ->  super.getTableCellRendererComponent(table, value, false, false, 0, 0).preferredSize.width
+    }
+
+    override fun getTableCellRendererComponent(
+        table: JTable?,
+        value: Any?,
+        isSelected: Boolean,
+        hasFocus: Boolean,
+        row: Int,
+        column: Int
+    ): Component? {
+        val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column) as MyTableCellRenderer<T>
+        component.toolTipText = if (maxWidth != null && component.preferredSize.width > maxWidth) {
+            value.toString()
+        }
+        else {
+            null
+        }
+        return component
+    }
 }
 
 private val COLLATOR = Collator.getInstance().apply {
