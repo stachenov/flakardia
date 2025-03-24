@@ -177,6 +177,7 @@ fun configureUiDefaults() {
     uiDefaults["TitledBorder.font"] = font
     uiDefaults["ComboBox.font"] = font
     uiDefaults["TextArea.font"] = font
+    uiDefaults["ToolTip.font"] = font
     LafManager.updateLaf()
 }
 
