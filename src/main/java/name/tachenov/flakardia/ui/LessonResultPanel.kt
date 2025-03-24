@@ -8,21 +8,21 @@ import javax.swing.LayoutStyle
 
 class LessonResultPanel : JPanel() {
 
-    private val round = JLabel()
-    private val total = JLabel()
-    private val correct = JLabel()
-    private val incorrect = JLabel()
-    private val remaining = JLabel()
+    private val round = LabelWithExtraWidth()
+    private val total = LabelWithExtraWidth()
+    private val correct = LabelWithExtraWidth()
+    private val incorrect = LabelWithExtraWidth()
+    private val remaining = LabelWithExtraWidth()
 
     init {
         val layout = GroupLayout(this)
         val hg = layout.createSequentialGroup()
         val vg = layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-        val roundLabel = JLabel("Round:")
-        val totalLabel = JLabel("Total:")
-        val correctLabel = JLabel("Correct:")
-        val incorrectLabel = JLabel("Incorrect:")
-        val remainingLabel = JLabel("Remaining:")
+        val roundLabel = LabelWithExtraWidth("Round:")
+        val totalLabel = LabelWithExtraWidth("Total:")
+        val correctLabel = LabelWithExtraWidth("Correct:")
+        val incorrectLabel = LabelWithExtraWidth("Incorrect:")
+        val remainingLabel = LabelWithExtraWidth("Remaining:")
         hg.apply {
             addComponent(roundLabel)
             addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
@@ -72,4 +72,10 @@ class LessonResultPanel : JPanel() {
         remaining.text = result.remaining.toString()
     }
 
+}
+
+private class LabelWithExtraWidth(text: String? = null) : JLabel(text) {
+    override fun getMinimumSize(): java.awt.Dimension {
+        return super.getMinimumSize().apply { width += LABEL_EXTRA_WIDTH }
+    }
 }
