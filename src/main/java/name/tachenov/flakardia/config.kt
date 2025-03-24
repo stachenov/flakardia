@@ -4,6 +4,7 @@ import com.github.weisj.darklaf.LafManager
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.storage.FlashcardStorageImpl
 import name.tachenov.flakardia.ui.InitFrame
+import name.tachenov.flakardia.ui.LessonFramePosition
 import name.tachenov.flakardia.ui.SettingsDialog
 import java.awt.Font
 import java.awt.GraphicsEnvironment
@@ -173,6 +174,7 @@ fun configureUiDefaults() {
     uiDefaults["Label.font"] = font
     uiDefaults["TextField.font"] = font
     uiDefaults["CheckBox.font"] = font
+    uiDefaults["RadioButton.font"] = font
     uiDefaults["Spinner.font"] = font
     uiDefaults["TitledBorder.font"] = font
     uiDefaults["ComboBox.font"] = font
@@ -202,17 +204,44 @@ private enum class FontStyle(val value: Int) {
     ITALIC(Font.ITALIC);
 }
 
-fun getManagerFrameLocation(): Point? {
+fun getManagerFrameLocation(): Point? = getLocation("main")
+
+fun setManagerFrameLocation(point: Point) {
+    putLocation("main", point)
+}
+
+fun getLessonFrameLocation(): Point? =
+    when (getLessonFramePosition()) {
+        LessonFramePosition.RELATIVE -> null
+        LessonFramePosition.SAVED -> getLocation("lesson")
+    }
+
+fun getLessonFramePosition(): LessonFramePosition =
+    try {
+        LessonFramePosition.valueOf(preferences.get("lesson_frame_position", LessonFramePosition.default().name).uppercase())
+    } catch (e: Exception) {
+        LessonFramePosition.default()
+    }
+
+fun setLessonFramePosition(position: LessonFramePosition) {
+    preferences.put("lesson_frame_position", position.name)
+}
+
+fun setLessonFrameLocation(point: Point) {
+    putLocation("lesson", point)
+}
+
+private fun getLocation(name: String): Point? {
     val node = screenConfigPreferences()
-    val x = node.getInt("main_x", Int.MIN_VALUE)
-    val y = node.getInt("main_y", Int.MIN_VALUE)
+    val x = node.getInt("${name}_x", Int.MIN_VALUE)
+    val y = node.getInt("${name}_y", Int.MIN_VALUE)
     return if (x != Int.MIN_VALUE && y != Int.MIN_VALUE) Point(x, y) else null
 }
 
-fun setManagerFrameLocation(point: Point) {
+private fun putLocation(name: String, point: Point) {
     val node = screenConfigPreferences()
-    node.putInt("main_x", point.x)
-    node.putInt("main_y", point.y)
+    node.putInt("${name}_x", point.x)
+    node.putInt("${name}_y", point.y)
 }
 
 private fun screenConfigPreferences(): Preferences = preferences.node(currentScreenConfig().toString())

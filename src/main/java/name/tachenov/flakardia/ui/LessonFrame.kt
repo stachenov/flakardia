@@ -1,6 +1,8 @@
 package name.tachenov.flakardia.ui
 
+import name.tachenov.flakardia.getLessonFrameLocation
 import name.tachenov.flakardia.presenter.*
+import name.tachenov.flakardia.setLessonFrameLocation
 import java.awt.Point
 import java.awt.Window
 import javax.swing.GroupLayout
@@ -10,6 +12,14 @@ import javax.swing.GroupLayout.PREFERRED_SIZE
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.LayoutStyle
+
+enum class LessonFramePosition {
+    RELATIVE,
+    SAVED;
+    companion object {
+        fun default() = RELATIVE
+    }
+}
 
 class LessonFrame(
     private val owner: Window,
@@ -56,10 +66,17 @@ class LessonFrame(
     }
 
     override fun applyInitialLocation() {
-        setLocationAboveOrBelowOf(owner)
+        val saved = getLessonFrameLocation()
+        if (saved == null) {
+            setLocationAboveOrBelowOf(owner)
+        }
+        else {
+            location = saved
+        }
     }
 
     override fun saveLocation(location: Point) {
+        setLessonFrameLocation(location)
     }
 
     override fun applyState(state: LessonPresenterState) {

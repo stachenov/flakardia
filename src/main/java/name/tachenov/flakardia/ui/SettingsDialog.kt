@@ -132,11 +132,21 @@ private class GeneralTab(tabs: JTabbedPane) : SettingsTab(tabs, "General") {
     private val fontSize = JSpinner(SpinnerNumberModel(16, 4, 100, 1))
     private val fontBold = JCheckBox("Bold").apply { mnemonic = KeyEvent.VK_B }
     private val fontItalic = JCheckBox("Italic").apply { mnemonic = KeyEvent.VK_I }
+    private val lessonPositionRelative = JRadioButton("Above or below the main window").apply {
+        toolTipText = "Whichever is the closest to the screen center"
+        mnemonic = KeyEvent.VK_A
+    }
+    private val lessonPositionSaved = JRadioButton("The last used position").apply {
+        mnemonic = KeyEvent.VK_L
+    }
 
     private val libraryPath: Path
         get() = Path.of(dirInput.text)
 
     init {
+        val lessonPositionGroup = ButtonGroup()
+        lessonPositionGroup.add(lessonPositionRelative)
+        lessonPositionGroup.add(lessonPositionSaved)
         addComponent(
             TitledPanel("Library").apply {
                 addComponent(dirInput, DEFAULT_SIZE, PREFERRED_SIZE, INFINITY)
@@ -150,6 +160,10 @@ private class GeneralTab(tabs: JTabbedPane) : SettingsTab(tabs, "General") {
         fontSize.value = font.size
         fontBold.isSelected = font.isBold
         fontItalic.isSelected = font.isItalic
+        when (getLessonFramePosition()) {
+            LessonFramePosition.RELATIVE -> lessonPositionRelative.isSelected = true
+            LessonFramePosition.SAVED -> lessonPositionSaved.isSelected = true
+        }
         addComponent(
             TitledPanel("Font").apply {
                 addComponent(fontName)
@@ -159,6 +173,12 @@ private class GeneralTab(tabs: JTabbedPane) : SettingsTab(tabs, "General") {
                 addComponent(fontBold)
                 addRelatedGap()
                 addComponent(fontItalic)
+            }.build()
+        )
+        addComponent(
+            TitledPanel("Lesson window position", orientation = Orientation.VERTICAL).apply {
+                addComponent(lessonPositionRelative)
+                addComponent(lessonPositionSaved)
             }.build()
         )
 
@@ -210,6 +230,12 @@ private class GeneralTab(tabs: JTabbedPane) : SettingsTab(tabs, "General") {
             fontStyle = fontStyle or Font.ITALIC
         }
         setAppFont(Font(fontName.selectedItem?.toString(),fontStyle, fontSize.value as Int))
+        if (lessonPositionRelative.isSelected) {
+            setLessonFramePosition(LessonFramePosition.RELATIVE)
+        }
+        if (lessonPositionSaved.isSelected) {
+            setLessonFramePosition(LessonFramePosition.SAVED)
+        }
     }
 }
 
@@ -398,7 +424,7 @@ private open class SettingsPanel(private val orientation: Orientation) {
 
 }
 
-private class TitledPanel(private val name: String) : SettingsPanel(Orientation.HORIZONTAL) {
+private class TitledPanel(private val name: String, orientation: Orientation = Orientation.HORIZONTAL) : SettingsPanel(orientation) {
     override fun afterBuild(result: JPanel) {
         result.border = BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), name)
     }
