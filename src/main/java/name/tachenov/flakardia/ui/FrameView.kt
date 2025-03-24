@@ -6,12 +6,9 @@ import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.presenter.Presenter
 import name.tachenov.flakardia.presenter.PresenterState
 import name.tachenov.flakardia.presenter.View
-import java.awt.Point
-import java.awt.Window
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import javax.swing.JOptionPane
-import kotlin.math.abs
 
 abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
     protected val presenter: P,
@@ -65,55 +62,4 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
             JOptionPane.ERROR_MESSAGE,
         )
     }
-
-    fun findLocationNearby(width: Int, height: Int): Point? {
-        val ourLocation = this.locationOnScreen
-        val ourSize = this.size
-        val screen = this.graphicsConfiguration.bounds
-        val yBelow = ourLocation.y + ourSize.height + GAP_BETWEEN_WINDOWS
-        val yAbove = ourLocation.y - GAP_BETWEEN_WINDOWS - height
-        val yBelowFits = yBelow + height <= screen.y + screen.height
-        val yAboveFits = yAbove >= screen.y
-        val yScreenCenter = screen.y + screen.height / 2
-        val y = when {
-            yBelowFits && yAboveFits -> {
-                val yAboveCenter = yAbove + height / 2
-                val yBelowCenter = yBelow + height / 2
-                if (abs(yAboveCenter - yScreenCenter) < abs(yBelowCenter - yScreenCenter)) {
-                    yAbove
-                }
-                else {
-                    yBelow
-                }
-            }
-            yAboveFits -> yAbove
-            yBelowFits -> yBelow
-            else -> null
-        }
-        val xRange = screen.x until screen.x + screen.width - width
-        val x = if (xRange.isEmpty()) { // unlikely case, the screen is too small to fit the new window
-            screen.x
-        }
-        else {
-            (this.x - (width - this.width) / 2).coerceIn(xRange)
-        }
-        return if (y == null) {
-            null
-        }
-        else {
-            Point(x, y)
-        }
-    }
 }
-
-fun Window.setLocationRelativeTo(owner: Presenter<*, *>) {
-    val location = (owner.view as? FrameView<*, *, *>)?.findLocationNearby(width, height)
-    if (location == null) {
-        setLocationRelativeTo(null)
-    }
-    else {
-        setLocation(location)
-    }
-}
-
-private const val GAP_BETWEEN_WINDOWS = 50

@@ -8,6 +8,7 @@ import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.presenter.Presenter
 import java.awt.BorderLayout
 import java.awt.Dimension
+import java.awt.Window
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import javax.swing.JDialog
@@ -47,7 +48,7 @@ fun dialogIndicator(owner: Presenter<*, *>, job: Job): ProgressIndicator {
             }
             if (System.currentTimeMillis() - dialog.created >= 300L) {
                 dialog.pack()
-                dialog.setLocationRelativeTo(owner)
+                dialog.setLocationAboveOrBelowOf(owner.view as? Window)
                 dialog.isVisible = true
             }
             return dialog

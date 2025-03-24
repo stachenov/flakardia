@@ -1,6 +1,7 @@
 package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.presenter.*
+import java.awt.Window
 import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
@@ -10,7 +11,7 @@ import javax.swing.JPanel
 import javax.swing.LayoutStyle
 
 class LessonFrame(
-    private val owner: CardSetManagerPresenter,
+    private val owner: Window,
     presenter: LessonPresenter,
 ) : FrameView<LessonPresenterState, LessonPresenterView, LessonPresenter>(presenter), LessonPresenterView {
 
@@ -54,7 +55,7 @@ class LessonFrame(
     }
 
     override fun applyInitialLocation() {
-        setLocationRelativeTo(owner)
+        setLocationAboveOrBelowOf(owner)
     }
 
     override fun saveLocation() {

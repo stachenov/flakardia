@@ -10,5 +10,10 @@ const val INFINITY = 100_000
  */
 const val FRAME_EXTRA_WIDTH = 50
 
+/**
+ * The space to leave between two windows when showing one above/below the other.
+ */
+const val GAP_BETWEEN_WINDOWS = 50
+
 val CORRECT_COLOR = Color(33, 169, 10)
 val INCORRECT_COLOR = Color(222, 15, 15)
