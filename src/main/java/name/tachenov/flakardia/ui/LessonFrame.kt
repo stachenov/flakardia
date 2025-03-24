@@ -1,6 +1,7 @@
 package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.presenter.*
+import java.awt.Point
 import java.awt.Window
 import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment.LEADING
@@ -58,7 +59,7 @@ class LessonFrame(
         setLocationAboveOrBelowOf(owner)
     }
 
-    override fun saveLocation() {
+    override fun saveLocation(location: Point) {
     }
 
     override fun applyState(state: LessonPresenterState) {

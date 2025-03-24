@@ -3,6 +3,7 @@ package name.tachenov.flakardia.ui
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.presenter.*
 import java.awt.Dimension
+import java.awt.Point
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.text.Collator
@@ -97,7 +98,7 @@ class FlashcardSetViewFrame(
         setLocationRelativeTo(parent)
     }
 
-    override fun saveLocation() {
+    override fun saveLocation(location: Point) {
     }
 
     override fun applyState(state: FlashcardSetViewPresenterState) {

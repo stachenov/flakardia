@@ -10,6 +10,7 @@ import name.tachenov.flakardia.presenter.*
 import name.tachenov.flakardia.setManagerFrameLocation
 import name.tachenov.flakardia.version
 import java.awt.Component
+import java.awt.Point
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
@@ -160,7 +161,7 @@ class CardSetManagerFrame(
         updateWidth()
     }
 
-    override fun saveLocation() {
+    override fun saveLocation(location: Point) {
         setManagerFrameLocation(location)
     }
 
