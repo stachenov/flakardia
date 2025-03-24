@@ -74,7 +74,7 @@ class SettingsDialog : JDialog(null as Frame?, "Flakardia settings", true) {
         ok.addActionListener { ok() }
         cancel.addActionListener { cancel() }
         rootPane.defaultButton = ok
-        rootPane.inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel")
+        rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel")
         rootPane.actionMap.put("Cancel", object : AbstractAction() {
             override fun actionPerformed(e: ActionEvent?) {
                 cancel()
