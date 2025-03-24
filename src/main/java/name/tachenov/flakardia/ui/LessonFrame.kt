@@ -24,7 +24,7 @@ enum class LessonFramePosition {
 class LessonFrame(
     private val owner: Window,
     presenter: LessonPresenter,
-) : FrameView<LessonPresenterState, LessonPresenterView, LessonPresenter>(presenter), LessonPresenterView {
+) : FrameView<LessonPresenterState, LessonPresenterView, LessonPresenter>(presenter, PackFrame.BEFORE_STATE_INIT), LessonPresenterView {
 
     private val lessonResultPanel = LessonResultPanel()
 

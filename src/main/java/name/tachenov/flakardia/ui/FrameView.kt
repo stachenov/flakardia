@@ -19,8 +19,14 @@ import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import javax.swing.JOptionPane
 
+enum class PackFrame {
+    BEFORE_STATE_INIT,
+    AFTER_STATE_INIT,
+}
+
 abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
     protected val presenter: P,
+    private val packFrame: PackFrame = PackFrame.AFTER_STATE_INIT,
 ) : FlakardiaFrame(), View {
 
     @OptIn(FlowPreview::class)
@@ -45,16 +51,27 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
         })
         var isFirstState = true
         presenter.state.collect { state ->
+            if (isFirstState) {
+                beforeFirstStateInit()
+            }
             applyState(state)
             if (isFirstState) {
-                onFirstStateInit()
+                afterFirstStateInit()
                 isFirstState = false
             }
         }
     }
 
-    private fun onFirstStateInit() {
-        pack()
+    private fun beforeFirstStateInit() {
+        if (packFrame == PackFrame.BEFORE_STATE_INIT) {
+            pack()
+        }
+    }
+
+    private fun afterFirstStateInit() {
+        if (packFrame == PackFrame.AFTER_STATE_INIT) {
+            pack()
+        }
         applyInitialLocation()
         isVisible = true
     }
