@@ -90,7 +90,13 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
             yBelowFits -> yBelow
             else -> null
         }
-        val x = (this.x - (width - this.width) / 2).coerceIn(screen.x until screen.x + screen.width)
+        val xRange = screen.x until screen.x + screen.width - width
+        val x = if (xRange.isEmpty()) { // unlikely case, the screen is too small to fit the new window
+            screen.x
+        }
+        else {
+            (this.x - (width - this.width) / 2).coerceIn(xRange)
+        }
         return if (y == null) {
             null
         }
