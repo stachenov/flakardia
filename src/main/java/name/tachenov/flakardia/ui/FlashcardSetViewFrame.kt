@@ -4,6 +4,7 @@ import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.presenter.*
 import java.awt.Component
 import java.awt.Dimension
+import java.awt.FontMetrics
 import java.awt.Point
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
@@ -68,7 +69,10 @@ class FlashcardSetViewFrame(
         model = MyTableModel()
         table.autoCreateColumnsFromModel = false
         table.model = model
-        table.addColumn("Path", RelativePath::class.java, valueForMaxWidth = RelativePath(listOf("some reasonable file path.txt")))
+        table.addColumn("Path", RelativePath::class.java,
+            valueForMaxWidth = RelativePath(listOf("some reasonable file path.txt")),
+            valueCutStrategy = PathCutStrategy
+        )
         table.addColumn("Question", String::class.java, valueForMaxWidth = "supercalifragilisticexpialidocious")
         table.addColumn("Answer", String::class.java, valueForMaxWidth = "supercalifragilisticexpialidocious")
         table.addColumn("Last learned", LastLearnedViewModel::class.java)
@@ -131,12 +135,21 @@ private class MyTableModel : DefaultTableModel() {
     override fun isCellEditable(row: Int, column: Int): Boolean = false
 }
 
-private fun <T> JTable.addColumn(name: String, type: Class<T>, valueForMaxWidth: T? = null) {
+private interface ValueCutStrategy {
+    fun cut(value: Any?, maxWidth: Int, fontMetrics: FontMetrics): String
+}
+
+private fun <T> JTable.addColumn(
+    name: String,
+    type: Class<T>,
+    valueForMaxWidth: T? = null,
+    valueCutStrategy: ValueCutStrategy? = null,
+) {
     val column = TableColumn(model.columnCount)
     val model = this.model as MyTableModel
     model.addColumn(name, type)
     addColumn(column)
-    val cellRenderer = MyTableCellRenderer(this, valueForMaxWidth)
+    val cellRenderer = MyTableCellRenderer(this, valueForMaxWidth, valueCutStrategy)
     column.cellRenderer = cellRenderer
     val maxWidth = cellRenderer.maxWidth
     if (maxWidth != null) {
@@ -144,13 +157,19 @@ private fun <T> JTable.addColumn(name: String, type: Class<T>, valueForMaxWidth:
     }
 }
 
-private class MyTableCellRenderer<T>(private val table: JTable, valueForMaxWidth: T?) : DefaultTableCellRenderer() {
+private class MyTableCellRenderer<T>(
+    private val table: JTable,
+    valueForMaxWidth: T?,
+    private val valueCutStrategy: ValueCutStrategy?,
+) : DefaultTableCellRenderer() {
     val maxWidth: Int? = valueForMaxWidth?.let {
         value ->  super.getTableCellRendererComponent(table, value, false, false, 0, 0).preferredSize.width
     }
 
+    fun preferredWidth(value: Any?): Int = super.getTableCellRendererComponent(table, value, false, false, 0, 0).preferredSize.width
+
     override fun getTableCellRendererComponent(
-        table: JTable?,
+        table: JTable,
         value: Any?,
         isSelected: Boolean,
         hasFocus: Boolean,
@@ -158,13 +177,35 @@ private class MyTableCellRenderer<T>(private val table: JTable, valueForMaxWidth
         column: Int
     ): Component? {
         val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column) as MyTableCellRenderer<T>
-        component.toolTipText = if (maxWidth != null && component.preferredSize.width > maxWidth) {
+        val columnWidth = table.getColumn(table.getColumnName(column)).width - 2 * MARGIN
+        val cutoff = component.preferredSize.width > columnWidth
+        component.toolTipText = if (cutoff) {
             value.toString()
         }
         else {
             null
         }
+        if (cutoff && valueCutStrategy != null) {
+            val maxStringWidth = columnWidth - component.insets.let { it.left + it.right }
+            setValue(valueCutStrategy.cut(value, maxStringWidth, component.getFontMetrics(component.font)))
+        }
         return component
+    }
+}
+
+object PathCutStrategy : ValueCutStrategy {
+    override fun cut(value: Any?, maxWidth: Int, fontMetrics: FontMetrics): String {
+        val fullString = value.toString()
+        val cutoffLength = -1 - (0..fullString.length).toList().binarySearch { length ->
+            val cutString = "..." + fullString.substring(fullString.length - length)
+            val cutWidth = fontMetrics.stringWidth(cutString)
+            if (cutWidth <= maxWidth) -1 else +1
+        } - 1
+        return if (cutoffLength > 0) {
+            "..." + fullString.substring(fullString.length - cutoffLength)
+        } else {
+            ""
+        }
     }
 }
 
@@ -203,17 +244,13 @@ private fun packColumn(table: JTable, vColIndex: Int) {
     if (renderer == null) {
         renderer = table.tableHeader.defaultRenderer
     }
-    var comp = renderer!!.getTableCellRendererComponent(table, col.headerValue, false, false, 0, 0)
+    val comp = renderer!!.getTableCellRendererComponent(table, col.headerValue, false, false, 0, 0)
     var width = comp.preferredSize.width
 
     // Get maximum width of column data
     for (r in 0 until table.rowCount) {
-        renderer = table.getCellRenderer(r, vColIndex)
-        comp = renderer.getTableCellRendererComponent(
-            table, table.getValueAt(r, vColIndex), false, false, r,
-            vColIndex
-        )
-        width = max(width.toDouble(), comp.preferredSize.width.toDouble()).toInt()
+        val cellRenderer = table.getCellRenderer(r, vColIndex) as MyTableCellRenderer<*>
+        width = max(width.toDouble(), cellRenderer.preferredWidth(table.getValueAt(r, vColIndex)).toDouble()).toInt()
     }
 
     // Add margin
