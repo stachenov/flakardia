@@ -25,7 +25,7 @@ abstract class Presenter<S : PresenterState, V : View> {
     private var currentRunScope: CoroutineScope? = null
     private val currentlyRunningTasks = AtomicInteger()
 
-    protected abstract fun initializeState()
+    protected abstract suspend fun initializeState()
 
     suspend fun run(view: V) = coroutineScope {
         assertEDT()

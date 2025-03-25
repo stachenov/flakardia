@@ -54,5 +54,5 @@ class FlashcardSetViewPresenter(
         }
     ))
 
-    override fun initializeState() { }
+    override suspend fun initializeState() { }
 }

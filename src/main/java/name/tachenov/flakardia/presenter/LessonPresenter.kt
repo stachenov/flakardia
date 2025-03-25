@@ -31,7 +31,7 @@ class LessonPresenter(
     override val state: Flow<LessonPresenterState>
         get() = mutableState.asStateFlow().filterNotNull()
 
-    override fun initializeState() {
+    override suspend fun initializeState() {
         val nextQuestion = lesson.nextQuestion()
         mutableState.value = LessonPresenterState(
             title = lesson.name,

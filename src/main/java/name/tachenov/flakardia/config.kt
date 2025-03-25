@@ -2,16 +2,14 @@ package name.tachenov.flakardia
 
 import com.github.weisj.darklaf.LafManager
 import name.tachenov.flakardia.app.*
+import name.tachenov.flakardia.data.parseRelativePath
+import name.tachenov.flakardia.presenter.CardSetManagerPresenterSavedState
 import name.tachenov.flakardia.storage.FlashcardStorageImpl
 import name.tachenov.flakardia.ui.FlashcardSetViewColumn
 import name.tachenov.flakardia.ui.InitFrame
 import name.tachenov.flakardia.ui.LessonFramePosition
 import name.tachenov.flakardia.ui.SettingsDialog
-import java.awt.Dimension
-import java.awt.Font
-import java.awt.GraphicsEnvironment
-import java.awt.Point
-import java.awt.Rectangle
+import java.awt.*
 import java.nio.file.Path
 import java.time.Duration
 import java.util.prefs.Preferences
@@ -277,6 +275,26 @@ fun setFlashcardSetViewFrameState(state: FlashcardSetViewFrameState) {
     if (state.sortKey != null) {
         preferences.put("sort_column", FlashcardSetViewColumn.entries[state.sortKey.column].name.lowercase())
         preferences.put("sort_order", state.sortKey.sortOrder.name.lowercase())
+    }
+}
+
+fun getCardSetManagerPresenterSavedState(): CardSetManagerPresenterSavedState {
+    val lastPath = preferences.get("last_path", null)
+    val selectedPath = preferences.get("selected_path", null)
+    return CardSetManagerPresenterSavedState(
+        currentPath = lastPath?.parseRelativePath(),
+        selectedEntry = selectedPath?.parseRelativePath(),
+    )
+}
+
+fun setCardSetManagerPresenterSavedState(state: CardSetManagerPresenterSavedState) {
+    val lastPath = state.currentPath?.toString()
+    val selectedPath = state.selectedEntry?.toString()
+    if (lastPath != null) {
+        preferences.put("last_path", lastPath)
+    }
+    if (selectedPath != null) {
+        preferences.put("selected_path", selectedPath)
     }
 }
 

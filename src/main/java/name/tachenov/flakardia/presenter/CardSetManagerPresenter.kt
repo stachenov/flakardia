@@ -35,6 +35,11 @@ data class CardListEntryPresenter(
     override fun toString(): String = entry.name
 }
 
+data class CardSetManagerPresenterSavedState(
+    val currentPath: RelativePath?,
+    val selectedEntry: RelativePath?,
+)
+
 class CardSetManagerPresenter(
     private val manager: CardManager,
 ): Presenter<CardSetManagerPresenterState, CardSetManagerView>() {
@@ -44,8 +49,21 @@ class CardSetManagerPresenter(
     override val state: Flow<CardSetManagerPresenterState>
         get() = mutableState.asStateFlow().filterNotNull()
 
-    override fun initializeState() {
-        updateEntries()
+    override suspend fun initializeState() {
+        val state = getCardSetManagerPresenterSavedState()
+        var restoredPath = false
+        if (state.currentPath != null) {
+            val enterAttemptResult = backgroundWithProgress(this) {
+                manager.enter(state.currentPath)
+            }
+            restoredPath = enterAttemptResult is DirEnterSuccess
+        }
+        if (restoredPath && state.selectedEntry != null) {
+            updateEntries(selectDir = state.selectedEntry)
+        }
+        else {
+            updateEntries()
+        }
     }
 
     fun configure() {
@@ -69,6 +87,7 @@ class CardSetManagerPresenter(
 
     fun selectItem(item: CardListEntryPresenter?) {
         mutableState.value = mutableState.value?.copy(selectedEntry = item)
+        saveState()
     }
 
     fun scrollRequestCompleted() {
@@ -114,16 +133,32 @@ class CardSetManagerPresenter(
 
     private fun updateEntries(selectDir: RelativePath? = null) {
         val newList = manager.entries.map { CardListEntryPresenter(it) }
-        val newSelection: CardListEntryPresenter? = if (selectDir == null) {
-            newList.firstOrNull()
-        } else {
-            CardListEntryPresenter(FlashcardSetDirEntry(selectDir))
+        val newSelection: CardListEntryPresenter? = when (selectDir) {
+            null -> {
+                newList.firstOrNull()
+            }
+            manager.path?.relativePath?.parent -> {
+                CardListEntryPresenter(FlashcardSetUpEntry(selectDir))
+            }
+            else -> {
+                CardListEntryPresenter(FlashcardSetDirEntry(selectDir))
+            }
         }
         mutableState.value = CardSetManagerPresenterState(
             currentPath = manager.path?.toString(),
             entries = newList,
             selectedEntry = newSelection,
             isScrollToSelectionRequested = newSelection != null,
+        )
+        saveState()
+    }
+
+    private fun saveState() {
+        setCardSetManagerPresenterSavedState(
+            CardSetManagerPresenterSavedState(
+                currentPath = manager.path?.relativePath,
+                selectedEntry = mutableState.value?.selectedEntry?.entry?.path,
+            )
         )
     }
 

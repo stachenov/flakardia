@@ -118,6 +118,11 @@ data class RelativePath(
     override fun toString(): String = elements.joinToString("/")
 }
 
+fun String.parseRelativePath(): RelativePath {
+    if (isEmpty()) return RelativePath(emptyList())
+    return RelativePath(split('/'))
+}
+
 data class FullPath(
     val library: Library,
     val relativePath: RelativePath,
