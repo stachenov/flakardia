@@ -220,14 +220,10 @@ fun getLessonFrameLocation(): Point? =
     }
 
 fun getLessonFramePosition(): LessonFramePosition =
-    try {
-        LessonFramePosition.valueOf(preferences.get("lesson_frame_position", LessonFramePosition.default().name).uppercase())
-    } catch (e: Exception) {
-        LessonFramePosition.default()
-    }
+    preferences.getEnum("lesson_frame_position", LessonFramePosition.default())
 
 fun setLessonFramePosition(position: LessonFramePosition) {
-    preferences.put("lesson_frame_position", position.name)
+    preferences.putEnum("lesson_frame_position", position)
 }
 
 fun setLessonFrameLocation(point: Point) {
@@ -248,19 +244,9 @@ fun getFlashcardSetViewFrameState(): FlashcardSetViewFrameState {
         .map { column -> column to screenPreferences.getInt("${column.name.lowercase()}_width", 0) }
         .filter { it.second > 0 }
         .toMap()
-    val sortColumn = try {
-        FlashcardSetViewColumn.valueOf(preferences.get("sort_column", FlashcardSetViewColumn.defaultSort().name.lowercase()).uppercase())
-    }
-    catch (_: Exception) {
-        FlashcardSetViewColumn.defaultSort()
-    }
+    val sortColumn = preferences.getEnum("sort_column", FlashcardSetViewColumn.defaultSort())
     val defaultSort = SortOrder.ASCENDING
-    val sortOrder = try {
-        SortOrder.valueOf(preferences.get("sort_order", defaultSort.name.lowercase()).uppercase())
-    }
-    catch (_: Exception) {
-        defaultSort
-    }
+    val sortOrder = preferences.getEnum("sort_order", defaultSort)
     val bounds = if (location != null && size != null) Rectangle(location, size) else null
     return FlashcardSetViewFrameState(bounds, columnWidths, RowSorter.SortKey(sortColumn.ordinal, sortOrder))
 }
@@ -273,8 +259,8 @@ fun setFlashcardSetViewFrameState(state: FlashcardSetViewFrameState) {
         screenPreferences.putInt("${column.name.lowercase()}_width", width)
     }
     if (state.sortKey != null) {
-        preferences.put("sort_column", FlashcardSetViewColumn.entries[state.sortKey.column].name.lowercase())
-        preferences.put("sort_order", state.sortKey.sortOrder.name.lowercase())
+        preferences.putEnum("sort_column", FlashcardSetViewColumn.entries[state.sortKey.column])
+        preferences.putEnum("sort_order", state.sortKey.sortOrder)
     }
 }
 
@@ -296,6 +282,18 @@ fun setCardSetManagerPresenterSavedState(state: CardSetManagerPresenterSavedStat
     if (selectedPath != null) {
         preferences.put("selected_path", selectedPath)
     }
+}
+
+private inline fun <reified T : Enum<T>> Preferences.getEnum(name: String, defaultValue: T): T =
+    try {
+        enumValueOf<T>(get(name, defaultValue.name.lowercase()).uppercase())
+    }
+    catch (_: Exception) {
+        defaultValue
+    }
+
+private inline fun <reified T : Enum<T>> Preferences.putEnum(name: String, value: T) {
+    put(name, value.name.lowercase())
 }
 
 private fun getLocation(name: String): Point? {
