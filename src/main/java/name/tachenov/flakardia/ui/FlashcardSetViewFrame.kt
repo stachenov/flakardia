@@ -1,11 +1,13 @@
 package name.tachenov.flakardia.ui
 
+import name.tachenov.flakardia.FlashcardSetViewFrameState
 import name.tachenov.flakardia.data.RelativePath
+import name.tachenov.flakardia.getFlashcardSetViewFrameState
 import name.tachenov.flakardia.presenter.*
+import name.tachenov.flakardia.setFlashcardSetViewFrameState
 import java.awt.Component
 import java.awt.Dimension
 import java.awt.FontMetrics
-import java.awt.Point
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.text.Collator
@@ -17,6 +19,17 @@ import javax.swing.LayoutStyle.ComponentPlacement.UNRELATED
 import javax.swing.table.*
 import kotlin.math.max
 
+enum class FlashcardSetViewColumn(val title: String) {
+    PATH("Path"),
+    QUESTION("Question"),
+    ANSWER("Answer"),
+    LAST_LEARNED("Last learned"),
+    MISTAKES_MADE("Mistakes made"),
+    LEARN_INTERVAL("Learn interval (days)");
+    companion object {
+        fun defaultSort(): FlashcardSetViewColumn = PATH
+    }
+}
 
 class FlashcardSetViewFrame(
     private val parent: JFrame,
@@ -69,15 +82,15 @@ class FlashcardSetViewFrame(
         model = MyTableModel()
         table.autoCreateColumnsFromModel = false
         table.model = model
-        table.addColumn("Path", RelativePath::class.java,
+        table.addColumn(FlashcardSetViewColumn.PATH, RelativePath::class.java,
             valueForMaxWidth = RelativePath(listOf("some reasonable file path.txt")),
             valueCutStrategy = PathCutStrategy
         )
-        table.addColumn("Question", String::class.java, valueForMaxWidth = "supercalifragilisticexpialidocious")
-        table.addColumn("Answer", String::class.java, valueForMaxWidth = "supercalifragilisticexpialidocious")
-        table.addColumn("Last learned", LastLearnedViewModel::class.java)
-        table.addColumn("Mistakes made", Int::class.javaObjectType)
-        table.addColumn("Learn interval (days)", IntervalViewModel::class.java)
+        table.addColumn(FlashcardSetViewColumn.QUESTION, String::class.java, valueForMaxWidth = "supercalifragilisticexpialidocious")
+        table.addColumn(FlashcardSetViewColumn.ANSWER, String::class.java, valueForMaxWidth = "supercalifragilisticexpialidocious")
+        table.addColumn(FlashcardSetViewColumn.LAST_LEARNED, LastLearnedViewModel::class.java)
+        table.addColumn(FlashcardSetViewColumn.MISTAKES_MADE, Int::class.javaObjectType)
+        table.addColumn(FlashcardSetViewColumn.LEARN_INTERVAL, IntervalViewModel::class.java)
         table.autoResizeMode = JTable.AUTO_RESIZE_OFF
         table.autoCreateRowSorter = true
         for (i in 0 until model.columnCount) {
@@ -87,6 +100,17 @@ class FlashcardSetViewFrame(
         }
         table.selectionModel.addListSelectionListener {
             count.text = table.selectionModel.selectedItemsCount.toString()
+        }
+        for (i in 0 until table.columnCount) {
+            val column = table.getColumn(table.getColumnName(i))
+            column.addPropertyChangeListener { e ->
+                if (e.propertyName == "width") {
+                    requestSaveViewState()
+                }
+            }
+        }
+        table.rowSorter.addRowSorterListener {
+            requestSaveViewState()
         }
         addComponentListener(object : ComponentAdapter() {
             override fun componentShown(e: ComponentEvent?) {
@@ -98,14 +122,34 @@ class FlashcardSetViewFrame(
         })
     }
 
-    override fun applyInitialLocation() {
-        setLocationRelativeTo(parent)
+    override fun restoreSavedViewState() {
+        val viewState = getFlashcardSetViewFrameState()
+        packColumns(table, viewState)
+        pack()
+        if (viewState.bounds == null) {
+            setLocationRelativeTo(parent)
+        }
+        else {
+            this.bounds = viewState.bounds
+        }
+        if (viewState.sortKey != null) {
+            table.rowSorter.sortKeys = listOf(viewState.sortKey)
+        }
     }
 
-    override fun saveLocation(location: Point) {
+    override fun saveViewState() {
+        val state = FlashcardSetViewFrameState(
+            bounds = this.bounds,
+            (0 until model.columnCount).associate { modelIndex ->
+                val column = FlashcardSetViewColumn.entries[modelIndex]
+                column to table.getColumn(column.title).width
+            },
+            table.rowSorter.sortKeys.firstOrNull(),
+        )
+        setFlashcardSetViewFrameState(state)
     }
 
-    override fun applyState(state: FlashcardSetViewPresenterState) {
+    override fun applyPresenterState(state: FlashcardSetViewPresenterState) {
         title = state.title
         for (card in state.cards) {
             model.addRow(arrayOf(
@@ -117,7 +161,6 @@ class FlashcardSetViewFrame(
                 card.intervalBeforeLastLearned,
             ))
         }
-        packColumns(table)
     }
 }
 
@@ -140,17 +183,17 @@ private interface ValueCutStrategy {
 }
 
 private fun <T> JTable.addColumn(
-    name: String,
+    column: FlashcardSetViewColumn,
     type: Class<T>,
     valueForMaxWidth: T? = null,
     valueCutStrategy: ValueCutStrategy? = null,
 ) {
-    val column = TableColumn(model.columnCount)
+    val tableColumn = TableColumn(model.columnCount)
     val model = this.model as MyTableModel
-    model.addColumn(name, type)
-    addColumn(column)
+    model.addColumn(column.title, type)
+    addColumn(tableColumn)
     val cellRenderer = MyTableCellRenderer(this, valueForMaxWidth, valueCutStrategy)
-    column.cellRenderer = cellRenderer
+    tableColumn.cellRenderer = cellRenderer
 }
 
 private class MyTableCellRenderer<T>(
@@ -220,9 +263,9 @@ private val COLLATOR = Collator.getInstance().apply {
  * the column headers and the widest cells in the columns
  * @param table Table for which the columns widths must be adjusted
  */
-fun packColumns(table: JTable) {
+fun packColumns(table: JTable, viewState: FlashcardSetViewFrameState) {
     for (columnIndex in 0 until table.columnCount) {
-        packColumn(table, columnIndex)
+        packColumn(table, columnIndex, viewState.columnWidths[FlashcardSetViewColumn.entries[columnIndex]])
     }
 }
 
@@ -233,9 +276,13 @@ fun packColumns(table: JTable) {
  * @param table Table for which the column width must be adjusted
  * @param vColIndex Column index
  */
-private fun packColumn(table: JTable, vColIndex: Int) {
+private fun packColumn(table: JTable, vColIndex: Int, savedWidth: Int?) {
     val colModel = table.columnModel as DefaultTableColumnModel
     val col = colModel.getColumn(vColIndex)
+    if (savedWidth != null) {
+        col.preferredWidth = savedWidth
+        return
+    }
 
     // Get width of column header
     var renderer = col.headerRenderer

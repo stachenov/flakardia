@@ -1,8 +1,9 @@
 package name.tachenov.flakardia.ui
 
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNotNull
@@ -12,7 +13,6 @@ import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.presenter.Presenter
 import name.tachenov.flakardia.presenter.PresenterState
 import name.tachenov.flakardia.presenter.View
-import java.awt.Point
 import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.awt.event.WindowAdapter
@@ -29,6 +29,8 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
     private val packFrame: PackFrame = PackFrame.AFTER_STATE_INIT,
 ) : FlakardiaFrame(), View {
 
+    private val saveViewStateRequests = MutableSharedFlow<Unit>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
     @OptIn(FlowPreview::class)
     override suspend fun run() = coroutineScope {
         assertEDT()
@@ -38,15 +40,18 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
                 job.cancel()
             }
         })
-        val locationFlow = MutableStateFlow<Point?>(null)
         launch {
-            locationFlow.filterNotNull().debounce(50).collectLatest { location ->
-                saveLocation(location)
+            saveViewStateRequests.filterNotNull().debounce(50).collectLatest { location ->
+                saveViewState()
             }
         }
         addComponentListener(object : ComponentAdapter() {
             override fun componentMoved(e: ComponentEvent?) {
-                locationFlow.value = location
+                requestSaveViewState()
+            }
+
+            override fun componentResized(e: ComponentEvent?) {
+                requestSaveViewState()
             }
         })
         var isFirstState = true
@@ -54,7 +59,7 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
             if (isFirstState) {
                 beforeFirstStateInit()
             }
-            applyState(state)
+            applyPresenterState(state)
             if (isFirstState) {
                 afterFirstStateInit()
                 isFirstState = false
@@ -72,15 +77,19 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
         if (packFrame == PackFrame.AFTER_STATE_INIT) {
             pack()
         }
-        applyInitialLocation()
+        restoreSavedViewState()
         isVisible = true
     }
 
-    protected abstract fun applyInitialLocation()
+    protected fun requestSaveViewState() {
+        check(saveViewStateRequests.tryEmit(Unit))
+    }
 
-    protected abstract fun saveLocation(location: Point)
+    protected abstract fun restoreSavedViewState()
 
-    protected abstract fun applyState(state: S)
+    protected abstract fun saveViewState()
+
+    protected abstract fun applyPresenterState(state: S)
 
     override fun adjustSize() {
         assertEDT()

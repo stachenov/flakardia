@@ -10,7 +10,6 @@ import name.tachenov.flakardia.presenter.*
 import name.tachenov.flakardia.setManagerFrameLocation
 import name.tachenov.flakardia.version
 import java.awt.Component
-import java.awt.Point
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
@@ -150,7 +149,7 @@ class CardSetManagerFrame(
         defaultCloseOperation = EXIT_ON_CLOSE
     }
 
-    override fun applyInitialLocation() {
+    override fun restoreSavedViewState() {
         val location = getManagerFrameLocation()
         if (location == null) {
             setLocationRelativeTo(null)
@@ -161,7 +160,7 @@ class CardSetManagerFrame(
         updateWidth()
     }
 
-    override fun saveLocation(location: Point) {
+    override fun saveViewState() {
         setManagerFrameLocation(location)
     }
 
@@ -170,7 +169,7 @@ class CardSetManagerFrame(
         updateWidth()
     }
 
-    override fun applyState(state: CardSetManagerPresenterState) {
+    override fun applyPresenterState(state: CardSetManagerPresenterState) {
         title = "Flakardia ${version()}"
         var updateWidth = false
         if (dir.text != state.currentPath) {

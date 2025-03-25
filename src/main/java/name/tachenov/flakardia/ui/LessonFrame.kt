@@ -3,7 +3,6 @@ package name.tachenov.flakardia.ui
 import name.tachenov.flakardia.getLessonFrameLocation
 import name.tachenov.flakardia.presenter.*
 import name.tachenov.flakardia.setLessonFrameLocation
-import java.awt.Point
 import java.awt.Window
 import javax.swing.GroupLayout
 import javax.swing.GroupLayout.Alignment.LEADING
@@ -65,7 +64,7 @@ class LessonFrame(
         this.contentPane = contentPane
     }
 
-    override fun applyInitialLocation() {
+    override fun restoreSavedViewState() {
         val saved = getLessonFrameLocation()
         if (saved == null) {
             setLocationAboveOrBelowOf(owner)
@@ -75,11 +74,11 @@ class LessonFrame(
         }
     }
 
-    override fun saveLocation(location: Point) {
+    override fun saveViewState() {
         setLessonFrameLocation(location)
     }
 
-    override fun applyState(state: LessonPresenterState) {
+    override fun applyPresenterState(state: LessonPresenterState) {
         title = state.title
         when (val lessonStatus = state.lessonStatus) {
             is QuestionState -> {

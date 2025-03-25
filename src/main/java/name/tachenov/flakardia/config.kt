@@ -3,9 +3,11 @@ package name.tachenov.flakardia
 import com.github.weisj.darklaf.LafManager
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.storage.FlashcardStorageImpl
+import name.tachenov.flakardia.ui.FlashcardSetViewColumn
 import name.tachenov.flakardia.ui.InitFrame
 import name.tachenov.flakardia.ui.LessonFramePosition
 import name.tachenov.flakardia.ui.SettingsDialog
+import java.awt.Dimension
 import java.awt.Font
 import java.awt.GraphicsEnvironment
 import java.awt.Point
@@ -14,6 +16,8 @@ import java.nio.file.Path
 import java.time.Duration
 import java.util.prefs.Preferences
 import javax.swing.JOptionPane
+import javax.swing.RowSorter
+import javax.swing.SortOrder
 import javax.swing.UIManager
 import javax.swing.plaf.FontUIResource
 import kotlin.system.exitProcess
@@ -232,6 +236,50 @@ fun setLessonFrameLocation(point: Point) {
     putLocation("lesson", point)
 }
 
+data class FlashcardSetViewFrameState(
+    val bounds: Rectangle?,
+    val columnWidths: Map<FlashcardSetViewColumn, Int>,
+    val sortKey: RowSorter.SortKey?,
+)
+
+fun getFlashcardSetViewFrameState(): FlashcardSetViewFrameState {
+    val location = getLocation("flashcards_view")
+    val size = getSize("flashcards_view")
+    val screenPreferences = screenConfigPreferences()
+    val columnWidths = FlashcardSetViewColumn.entries
+        .map { column -> column to screenPreferences.getInt("${column.name.lowercase()}_width", 0) }
+        .filter { it.second > 0 }
+        .toMap()
+    val sortColumn = try {
+        FlashcardSetViewColumn.valueOf(preferences.get("sort_column", FlashcardSetViewColumn.defaultSort().name.lowercase()).uppercase())
+    }
+    catch (_: Exception) {
+        FlashcardSetViewColumn.defaultSort()
+    }
+    val defaultSort = SortOrder.ASCENDING
+    val sortOrder = try {
+        SortOrder.valueOf(preferences.get("sort_order", defaultSort.name.lowercase()).uppercase())
+    }
+    catch (_: Exception) {
+        defaultSort
+    }
+    val bounds = if (location != null && size != null) Rectangle(location, size) else null
+    return FlashcardSetViewFrameState(bounds, columnWidths, RowSorter.SortKey(sortColumn.ordinal, sortOrder))
+}
+
+fun setFlashcardSetViewFrameState(state: FlashcardSetViewFrameState) {
+    putLocation("flashcards_view", state.bounds?.location)
+    putSize("flashcards_view", state.bounds?.size)
+    val screenPreferences = screenConfigPreferences()
+    for ((column, width) in state.columnWidths) {
+        screenPreferences.putInt("${column.name.lowercase()}_width", width)
+    }
+    if (state.sortKey != null) {
+        preferences.put("sort_column", FlashcardSetViewColumn.entries[state.sortKey.column].name.lowercase())
+        preferences.put("sort_order", state.sortKey.sortOrder.name.lowercase())
+    }
+}
+
 private fun getLocation(name: String): Point? {
     val node = screenConfigPreferences()
     val x = node.getInt("${name}_x", Int.MIN_VALUE)
@@ -239,10 +287,25 @@ private fun getLocation(name: String): Point? {
     return if (x != Int.MIN_VALUE && y != Int.MIN_VALUE) Point(x, y) else null
 }
 
-private fun putLocation(name: String, point: Point) {
+private fun putLocation(name: String, point: Point?) {
+    if (point == null) return
     val node = screenConfigPreferences()
     node.putInt("${name}_x", point.x)
     node.putInt("${name}_y", point.y)
+}
+
+private fun getSize(name: String): Dimension? {
+    val node = screenConfigPreferences()
+    val width = node.getInt("${name}_width", Int.MIN_VALUE)
+    val height = node.getInt("${name}_height", Int.MIN_VALUE)
+    return if (width != Int.MIN_VALUE && height != Int.MIN_VALUE) Dimension(width, height) else null
+}
+
+private fun putSize(name: String, size: Dimension?) {
+    if (size == null) return
+    val node = screenConfigPreferences()
+    node.putInt("${name}_width", size.width)
+    node.putInt("${name}_height", size.height)
 }
 
 private fun screenConfigPreferences(): Preferences = preferences.node(currentScreenConfig().toString())
