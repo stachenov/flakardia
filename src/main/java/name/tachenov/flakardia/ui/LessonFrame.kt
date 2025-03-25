@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.ui
 
+import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.getLessonFrameLocation
 import name.tachenov.flakardia.presenter.*
 import name.tachenov.flakardia.setLessonFrameLocation
@@ -65,6 +66,7 @@ class LessonFrame(
     }
 
     override fun restoreSavedViewState() {
+        assertEDT()
         val saved = getLessonFrameLocation()
         if (saved == null) {
             setLocationAboveOrBelowOf(owner)
@@ -75,10 +77,12 @@ class LessonFrame(
     }
 
     override fun saveViewState() {
+        assertEDT()
         setLessonFrameLocation(location)
     }
 
     override fun applyPresenterState(state: LessonPresenterState) {
+        assertEDT()
         title = state.title
         when (val lessonStatus = state.lessonStatus) {
             is QuestionState -> {

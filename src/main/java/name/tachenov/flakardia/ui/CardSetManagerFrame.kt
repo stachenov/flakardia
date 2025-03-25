@@ -150,6 +150,7 @@ class CardSetManagerFrame(
     }
 
     override fun restoreSavedViewState() {
+        assertEDT()
         val location = getManagerFrameLocation()
         if (location == null) {
             setLocationRelativeTo(null)
@@ -161,6 +162,7 @@ class CardSetManagerFrame(
     }
 
     override fun saveViewState() {
+        assertEDT()
         setManagerFrameLocation(location)
     }
 
@@ -170,6 +172,7 @@ class CardSetManagerFrame(
     }
 
     override fun applyPresenterState(state: CardSetManagerPresenterState) {
+        assertEDT()
         title = "Flakardia ${version()}"
         var updateWidth = false
         if (dir.text != state.currentPath) {
@@ -194,6 +197,7 @@ class CardSetManagerFrame(
     }
 
     private fun updateWidth() {
+        assertEDT()
         val listAndListAreaWidth = max(listScrollPane.width, dir.width)
         val listPreferredWidth = list.preferredScrollableViewportSize.width + FRAME_EXTRA_WIDTH
         val dirPreferredWidth = dir.preferredSize.width + FRAME_EXTRA_WIDTH
@@ -232,6 +236,7 @@ class CardSetManagerFrame(
     }
 
     override fun showError(error: String) {
+        assertEDT()
         showError("Error", error)
     }
 

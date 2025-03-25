@@ -41,7 +41,7 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
             }
         })
         launch {
-            saveViewStateRequests.filterNotNull().debounce(50).collectLatest { location ->
+            saveViewStateRequests.filterNotNull().debounce(50).collectLatest {
                 saveViewState()
             }
         }
@@ -68,12 +68,14 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
     }
 
     private fun beforeFirstStateInit() {
+        assertEDT()
         if (packFrame == PackFrame.BEFORE_STATE_INIT) {
             pack()
         }
     }
 
     private fun afterFirstStateInit() {
+        assertEDT()
         if (packFrame == PackFrame.AFTER_STATE_INIT) {
             pack()
         }

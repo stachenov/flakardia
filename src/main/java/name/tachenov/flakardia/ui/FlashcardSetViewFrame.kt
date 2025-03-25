@@ -1,6 +1,7 @@
 package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.FlashcardSetViewFrameState
+import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.getFlashcardSetViewFrameState
 import name.tachenov.flakardia.presenter.*
@@ -123,6 +124,7 @@ class FlashcardSetViewFrame(
     }
 
     override fun restoreSavedViewState() {
+        assertEDT()
         val viewState = getFlashcardSetViewFrameState()
         packColumns(table, viewState)
         pack()
@@ -138,6 +140,7 @@ class FlashcardSetViewFrame(
     }
 
     override fun saveViewState() {
+        assertEDT()
         val state = FlashcardSetViewFrameState(
             bounds = this.bounds,
             (0 until model.columnCount).associate { modelIndex ->
@@ -150,6 +153,7 @@ class FlashcardSetViewFrame(
     }
 
     override fun applyPresenterState(state: FlashcardSetViewPresenterState) {
+        assertEDT()
         title = state.title
         for (card in state.cards) {
             model.addRow(arrayOf(
