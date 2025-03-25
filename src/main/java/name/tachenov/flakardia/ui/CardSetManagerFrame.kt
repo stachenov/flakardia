@@ -165,6 +165,11 @@ class CardSetManagerFrame(
         setManagerFrameLocation(location)
     }
 
+    override fun adjustSize() {
+        super.adjustSize()
+        updateWidth()
+    }
+
     override fun applyState(state: CardSetManagerPresenterState) {
         title = "Flakardia ${version()}"
         var updateWidth = false
