@@ -119,7 +119,7 @@ Once you've gone through all the words, you'll start going through words you did
 
 MIT License
 
-Copyright (c) 2024 Sergei Tachenov
+Copyright (c) 2024-2025 Sergei Tachenov
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
