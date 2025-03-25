@@ -216,7 +216,8 @@ private class MyTableCellRenderer<T>(
         hasFocus: Boolean,
         row: Int,
         column: Int
-    ): Component? {
+    ): Component {
+        @Suppress("UNCHECKED_CAST")
         val component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column) as MyTableCellRenderer<T>
         val columnWidth = table.getColumn(table.getColumnName(column)).width - 2 * MARGIN
         val cutoff = component.preferredSize.width > columnWidth
