@@ -50,9 +50,12 @@ class CardSetManagerPresenter(
 
     fun configure() {
         launchUiTask {
+            val library = manager.library
             if (showSettingsDialog()) {
-                configureAndEnterLibrary(manager)
-                updateEntries()
+                val newLibrary = configureAndEnterLibrary(manager)
+                if (newLibrary != library) {
+                    updateEntries()
+                }
                 view.adjustSize()
             }
         }

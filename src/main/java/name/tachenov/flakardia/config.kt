@@ -114,9 +114,8 @@ fun setLessonSettings(settings: LessonSettings) {
     preferences.putDouble(RANDOMNESS_KEY, settings.randomness.value)
 }
 
-suspend fun configureAndEnterLibrary(manager: CardManager) {
-    var dirEnterResult: DirEnterResult? = null
-    while (dirEnterResult !is DirEnterSuccess) {
+suspend fun configureAndEnterLibrary(manager: CardManager): Library {
+    while (true) {
         val libraryPath = getLibraryPath()
         if (libraryPath == null) {
             if (!showSettingsDialog()) {
@@ -124,20 +123,22 @@ suspend fun configureAndEnterLibrary(manager: CardManager) {
             }
         }
         else {
-            val dirEnterAttemptResult = background {
-                manager.enterLibrary(Library(FlashcardStorageImpl(libraryPath)))
-            }
-            dirEnterResult = dirEnterAttemptResult
-            if (dirEnterAttemptResult is DirEnterError) {
-                JOptionPane.showMessageDialog(
-                    null,
-                    "The following error occurred during an attempt to read the library:\n" +
-                        dirEnterAttemptResult.message,
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE,
-                )
-                if (!showSettingsDialog()) {
-                    exitProcess(0)
+            val library = Library(FlashcardStorageImpl(libraryPath))
+            when (val result = background { manager.enterLibrary(library) }) {
+                is DirEnterError -> {
+                    JOptionPane.showMessageDialog(
+                        null,
+                        "The following error occurred during an attempt to read the library:\n" +
+                            result.message,
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE,
+                    )
+                    if (!showSettingsDialog()) {
+                        exitProcess(0)
+                    }
+                }
+                DirEnterSuccess -> {
+                    return library
                 }
             }
         }

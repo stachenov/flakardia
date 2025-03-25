@@ -15,6 +15,7 @@ class CardManager {
         private set
 
     fun enterLibrary(library: Library): DirEnterResult {
+        if (library == this.library) return DirEnterSuccess
         this.library = library
         return enter(RelativePath())
     }
