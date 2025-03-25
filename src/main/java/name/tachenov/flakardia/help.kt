@@ -35,7 +35,7 @@ suspend fun showHelp() {
     frame.setSize(800, 600)
     frame.setLocationRelativeTo(getManagerFrame())
     frame.isVisible = true
-    suspendCancellableCoroutine { continuation ->
+    suspendCancellableCoroutine<Unit> { continuation ->
         val listener = object : WindowAdapter() {
             override fun windowClosed(e: WindowEvent?) {
                 continuation.resume(Unit) { _, _, _ -> }
