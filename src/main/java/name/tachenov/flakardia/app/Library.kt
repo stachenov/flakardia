@@ -157,6 +157,7 @@ fun prepareLessonData(
     stats: LibraryStats,
     settings: LessonSettings,
 ): LessonData {
+    assertBGT()
     // Take all flashcards and calculate for every flashcard, when it should be ideally learned next.
     // This is calculated as the last learned time plus the interval, which is the interval between two
     // previous learn times, multiplied by a factor that depends on how many mistakes were there the last time.

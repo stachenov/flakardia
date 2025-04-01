@@ -13,8 +13,14 @@ interface LessonPresenterView : View
 
 sealed class LessonStatusState
 data class QuestionState(val nextQuestion: Question) : LessonStatusState()
-data class AnswerState(val answerResult: AnswerResult) : LessonStatusState()
+data class AnswerState(val answerResult: AnswerResultPresenter) : LessonStatusState()
 data object DoneState : LessonStatusState()
+
+data class AnswerResultPresenter(
+    val yourAnswer: String?,
+    val correctAnswer: String,
+    val isCorrect: Boolean,
+)
 
 data class LessonPresenterState(
     val title: String,
@@ -32,29 +38,43 @@ class LessonPresenter(
         get() = mutableState.asStateFlow().filterNotNull()
 
     override suspend fun initializeState() {
-        val nextQuestion = lesson.nextQuestion()
-        mutableState.value = LessonPresenterState(
-            title = lesson.name,
-            lessonResult = lesson.result,
-            lessonStatus = nextQuestion?.let { question -> QuestionState(question) } ?: DoneState,
-        )
+        mutableState.value = background {
+            val nextQuestion = lesson.nextQuestion()
+            LessonPresenterState(
+                title = lesson.name,
+                lessonResult = lesson.result,
+                lessonStatus = nextQuestion?.let { question -> QuestionState(question) } ?: DoneState,
+            )
+        }
     }
 
     fun nextQuestion() {
-        val nextQuestion = lesson.nextQuestion()
-        mutableState.value = mutableState.value?.copy(
-            lessonResult = lesson.result,
-            lessonStatus = nextQuestion?.let { question -> QuestionState(question) } ?: DoneState,
-        )
+        launchUiTask {
+            mutableState.value = background {
+                val nextQuestion = lesson.nextQuestion()
+                mutableState.value?.copy(
+                    lessonResult = lesson.result,
+                    lessonStatus = nextQuestion?.let { question -> QuestionState(question) } ?: DoneState,
+                )
+            }
+        }
     }
 
     fun answered(answer: Answer?) {
         launchUiTask {
-            val answerResult = lesson.answer(answer)
-            mutableState.value = mutableState.value?.copy(
-                lessonResult = lesson.result,
-                lessonStatus = AnswerState(answerResult),
-            )
+            mutableState.value = background {
+                val answerResult = lesson.answer(answer).let {
+                    AnswerResultPresenter(
+                        yourAnswer = it.yourAnswer?.word?.value,
+                        correctAnswer = it.correctAnswer.word.value,
+                        isCorrect = it.isCorrect,
+                    )
+                }
+                mutableState.value?.copy(
+                    lessonResult = lesson.result,
+                    lessonStatus = AnswerState(answerResult),
+                )
+            }
             val result = background {
                 library.saveUpdatedStats(lesson.stats)
             }

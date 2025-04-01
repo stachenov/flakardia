@@ -175,9 +175,9 @@ class CardSetManagerFrame(
         assertEDT()
         title = "Flakardia ${version()}"
         var updateWidth = false
-        if (dir.text != state.currentPath) {
+        if (dir.text != state.currentPresentablePath) {
             updateWidth = true
-            dir.text = state.currentPath
+            dir.text = state.currentPresentablePath
         }
         if (model.elements().toList() != state.entries) {
             model.clear()

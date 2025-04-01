@@ -1,9 +1,9 @@
 package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.app.Answer
-import name.tachenov.flakardia.app.AnswerResult
 import name.tachenov.flakardia.app.Question
 import name.tachenov.flakardia.data.Word
+import name.tachenov.flakardia.presenter.AnswerResultPresenter
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import javax.swing.GroupLayout
@@ -35,8 +35,8 @@ class QuestionAnswerPanel(
         question.toolTipText = nextQuestion.flashcardSetPath.toString()
     }
 
-    fun displayAnswerResult(answerResult: AnswerResult) {
-        answerInput.text = answerResult.yourAnswer?.word?.value
+    fun displayAnswerResult(answerResult: AnswerResultPresenter) {
+        answerInput.text = answerResult.yourAnswer
         answerInput.isEditable = false
         answerInput.caret.blinkRate = 0
         answerInput.caret.isVisible = true
@@ -48,7 +48,7 @@ class QuestionAnswerPanel(
         else {
             answerInput.foreground = INCORRECT_COLOR
             correctAnswer.isVisible = true
-            correctAnswer.text = answerResult.correctAnswer.word.value
+            correctAnswer.text = answerResult.correctAnswer
         }
     }
 

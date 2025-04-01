@@ -1,26 +1,41 @@
 package name.tachenov.flakardia.app
 
+import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.data.FullPath
 import name.tachenov.flakardia.data.RelativePath
 
 class CardManager {
 
     var library: Library? = null
+        get() {
+            assertBGT()
+            return field
+        }
         private set
 
     var path: FullPath? = null
+        get() {
+            assertBGT()
+            return field
+        }
         private set
 
     var entries: List<FlashcardSetListEntry> = emptyList()
+        get() {
+            assertBGT()
+            return field
+        }
         private set
 
     fun enterLibrary(library: Library): DirEnterResult {
+        assertBGT()
         if (library == this.library) return DirEnterSuccess
         this.library = library
         return enter(RelativePath())
     }
 
     fun enter(path: RelativePath): DirEnterResult {
+        assertBGT()
         try {
             val library = this.library ?: return DirEnterError("No library selected")
             entries = library.listEntries(path)

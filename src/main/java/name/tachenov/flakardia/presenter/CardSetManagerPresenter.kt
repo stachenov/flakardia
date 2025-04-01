@@ -16,7 +16,8 @@ interface CardSetManagerView : View {
 }
 
 data class CardSetManagerPresenterState(
-    val currentPath: String?,
+    val currentPresentablePath: String?,
+    val currentRelativePath: RelativePath?,
     val entries: List<CardListEntryPresenter>,
     val selectedEntry: CardListEntryPresenter?,
     val isScrollToSelectionRequested: Boolean,
@@ -68,7 +69,9 @@ class CardSetManagerPresenter(
 
     fun configure() {
         launchUiTask {
-            val library = manager.library
+            val library = background {
+                manager.library
+            }
             if (showSettingsDialog()) {
                 val newLibrary = configureAndEnterLibrary(manager)
                 if (newLibrary != library) {
@@ -103,7 +106,7 @@ class CardSetManagerPresenter(
         if (firstEntry !is FlashcardSetUpEntry) {
             return
         }
-        enterDir(firstEntry.path, selectDir = manager.path?.relativePath)
+        enterDir(firstEntry.path, selectDir = mutableState.value?.currentRelativePath)
     }
 
     fun openElement() {
@@ -131,43 +134,45 @@ class CardSetManagerPresenter(
         }
     }
 
-    private fun updateEntries(selectDir: RelativePath? = null) {
-        val newList = manager.entries.map { CardListEntryPresenter(it) }
-        val newSelection: CardListEntryPresenter? = when (selectDir) {
-            null -> {
-                newList.firstOrNull()
+    private suspend fun updateEntries(selectDir: RelativePath? = null) {
+        mutableState.value = background {
+            val newList = manager.entries.map { CardListEntryPresenter(it) }
+            val newSelection: CardListEntryPresenter? = when (selectDir) {
+                null -> {
+                    newList.firstOrNull()
+                }
+                manager.path?.relativePath?.parent -> {
+                    CardListEntryPresenter(FlashcardSetUpEntry(selectDir))
+                }
+                else -> {
+                    CardListEntryPresenter(FlashcardSetDirEntry(selectDir))
+                }
             }
-            manager.path?.relativePath?.parent -> {
-                CardListEntryPresenter(FlashcardSetUpEntry(selectDir))
-            }
-            else -> {
-                CardListEntryPresenter(FlashcardSetDirEntry(selectDir))
-            }
+            CardSetManagerPresenterState(
+                currentPresentablePath = manager.path?.toString(),
+                currentRelativePath = manager.path?.relativePath,
+                entries = newList,
+                selectedEntry = newSelection,
+                isScrollToSelectionRequested = newSelection != null,
+            )
         }
-        mutableState.value = CardSetManagerPresenterState(
-            currentPath = manager.path?.toString(),
-            entries = newList,
-            selectedEntry = newSelection,
-            isScrollToSelectionRequested = newSelection != null,
-        )
         saveState()
     }
 
     private fun saveState() {
         setCardSetManagerPresenterSavedState(
             CardSetManagerPresenterSavedState(
-                currentPath = manager.path?.relativePath,
+                currentPath = mutableState.value?.currentRelativePath,
                 selectedEntry = mutableState.value?.selectedEntry?.entry?.path,
             )
         )
     }
 
     fun viewFlashcards(entry: FlashcardSetListEntry) {
-        val library = manager.library ?: return
         launchUiTask {
             val result = backgroundWithProgress(this) {
-                library.getAllFlashcards(entry)
-            }
+                manager.library?.getAllFlashcards(entry)
+            } ?: return@launchUiTask
             processResult(result) { lessonData ->
                 view.viewFlashcards(lessonData)
             }
@@ -175,13 +180,12 @@ class CardSetManagerPresenter(
     }
 
     fun startLesson(entry: FlashcardSetListEntry) {
-        val library = manager.library ?: return
         launchUiTask {
             val result = backgroundWithProgress(this) {
-                library.prepareLessonData(entry)
-            }
-            processResult(result) { lessonData ->
-                view.startLesson(library, lessonData)
+                manager.library?.let { library -> library to library.prepareLessonData(entry) }
+            } ?: return@launchUiTask
+            processResult(result.second) { lessonData ->
+                view.startLesson(result.first, lessonData)
             }
         }
     }

@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.app
 
+import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.data.*
 import java.time.Duration
 import java.time.Instant
@@ -21,7 +22,10 @@ data class Question(
 data class Answer(val word: Word)
 
 data class AnswerResult(val yourAnswer: Answer?, val correctAnswer: Answer) {
-    val isCorrect: Boolean get() = yourAnswer?.word == correctAnswer.word
+    val isCorrect: Boolean get() {
+        assertBGT()
+        return yourAnswer?.word == correctAnswer.word
+    }
 }
 
 class Lesson(
@@ -48,29 +52,36 @@ class Lesson(
     val name: String = lessonData.name
 
     val result: LessonResult
-        get() = LessonResult(round, correctingMistakes, total, correct, incorrect.size, remaining.size)
+        get() {
+            assertBGT()
+            return LessonResult(round, correctingMistakes, total, correct, incorrect.size, remaining.size)
+        }
 
     val stats: LibraryStats
-        get() = LibraryStats(
-            mistakes.keys.asSequence()
-                .associateWith { word ->
-                    val lastLearnedInPreviousLesson = lessonData.stats.wordStats[word]?.lastLearned
-                    WordStats(
-                        lessonTime,
-                        if (lastLearnedInPreviousLesson == null) {
-                            previousIntervalFallback
-                        }
-                        else {
-                            Duration.between(lastLearnedInPreviousLesson, lessonTime)
-                        },
-                        mistakes[word] ?: 0,
-                    )
-                }
-        )
+        get() {
+            assertBGT()
+            return LibraryStats(
+                mistakes.keys.asSequence()
+                    .associateWith { word ->
+                        val lastLearnedInPreviousLesson = lessonData.stats.wordStats[word]?.lastLearned
+                        WordStats(
+                            lessonTime,
+                            if (lastLearnedInPreviousLesson == null) {
+                                previousIntervalFallback
+                            }
+                            else {
+                                Duration.between(lastLearnedInPreviousLesson, lessonTime)
+                            },
+                            mistakes[word] ?: 0,
+                        )
+                    }
+            )
+        }
 
     private var currentFlashcard: FlashcardData? = null
 
     fun nextQuestion(): Question? {
+        assertBGT()
         goToNextFlashcard()
         ++step
         return currentFlashcard?.let {
@@ -80,6 +91,7 @@ class Lesson(
     }
 
     fun answer(answer: Answer?): AnswerResult {
+        assertBGT()
         val currentFlashcard = currentFlashcard
         checkNotNull(currentFlashcard) { "Cannot answer when there is no question (active flashcard)" }
         val answerResult = AnswerResult(answer, Answer(currentFlashcard.flashcard.back))
