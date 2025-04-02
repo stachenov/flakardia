@@ -118,6 +118,8 @@ data class RelativePath(
     override fun toString(): String = elements.joinToString("/")
 }
 
+operator fun RelativePath.plus(name: String): RelativePath = RelativePath(elements + name)
+
 fun String.parseRelativePath(): RelativePath {
     if (isEmpty()) return RelativePath(emptyList())
     return RelativePath(split('/'))
@@ -129,6 +131,8 @@ data class FullPath(
 ) {
     override fun toString(): String = if (relativePath.isEmpty()) library.path else library.path + "/" + relativePath.toString()
 }
+
+operator fun FullPath.plus(name: String): FullPath = FullPath(library, relativePath + name)
 
 sealed class StatsSaveResult
 

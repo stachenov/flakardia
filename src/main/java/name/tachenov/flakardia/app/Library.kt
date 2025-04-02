@@ -51,6 +51,8 @@ interface FlashcardStorage {
     fun readFlashcards(path: RelativePath): FlashcardSetResult
     fun readLibraryStats(): LibraryStatsResult
     fun saveLibraryStats(stats: LibraryStats): StatsSaveResult
+    fun createDir(path: RelativePath)
+    fun createFile(path: RelativePath)
 }
 
 data class Library(private val storage: FlashcardStorage) {
@@ -148,6 +150,16 @@ data class Library(private val storage: FlashcardStorage) {
     }
 
     fun fullPath(path: RelativePath): FullPath = FullPath(this, path)
+
+    fun createDir(path: RelativePath) {
+        assertBGT()
+        storage.createDir(path)
+    }
+
+    fun createFile(path: RelativePath) {
+        assertBGT()
+        storage.createFile(path)
+    }
 }
 
 fun prepareLessonData(

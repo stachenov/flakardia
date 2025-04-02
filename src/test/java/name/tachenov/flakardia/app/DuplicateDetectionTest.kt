@@ -1,17 +1,6 @@
 package name.tachenov.flakardia.app
 
-import name.tachenov.flakardia.data.Flashcard
-import name.tachenov.flakardia.data.FlashcardData
-import name.tachenov.flakardia.data.FlashcardSet
-import name.tachenov.flakardia.data.FlashcardSetResult
-import name.tachenov.flakardia.data.LessonDataResult
-import name.tachenov.flakardia.data.LessonDataWarnings
-import name.tachenov.flakardia.data.LibraryStats
-import name.tachenov.flakardia.data.LibraryStatsResult
-import name.tachenov.flakardia.data.RelativePath
-import name.tachenov.flakardia.data.StatsSaveResult
-import name.tachenov.flakardia.data.StatsSaveSuccess
-import name.tachenov.flakardia.data.Word
+import name.tachenov.flakardia.data.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -104,5 +93,9 @@ class DuplicateDetectionTest {
         override fun readLibraryStats(): LibraryStatsResult = LibraryStats(emptyMap())
 
         override fun saveLibraryStats(stats: LibraryStats): StatsSaveResult = StatsSaveSuccess
+
+        override fun createDir(path: RelativePath) { }
+
+        override fun createFile(path: RelativePath) { }
     }
 }

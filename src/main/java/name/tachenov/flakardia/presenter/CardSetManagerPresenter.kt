@@ -206,4 +206,35 @@ class CardSetManagerPresenter(
             }
         }
     }
+
+    fun newDir(name: String) {
+        launchCreateAction(name) {
+            createDir(name)
+        }
+    }
+
+    fun newFile(name: String) {
+        val realName = if (name.endsWith(".txt", ignoreCase = true)) {
+            name
+        }
+        else {
+            "$name.txt"
+        }
+        launchCreateAction(realName) {
+            createFile(realName)
+        }
+    }
+
+    private fun launchCreateAction(name: String, createWhatever: CardManager.() -> CreateResult) {
+        launchUiTask {
+            when (val result = underModelLock { background { manager.createWhatever() } }) {
+                is CreateSuccess -> {
+                    updateEntries(mutableState.value?.currentRelativePath?.plus(name))
+                }
+                is CreateError -> {
+                    view.showError(result.message)
+                }
+            }
+        }
+    }
 }

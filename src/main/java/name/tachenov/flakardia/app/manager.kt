@@ -3,6 +3,7 @@ package name.tachenov.flakardia.app
 import name.tachenov.flakardia.assertBGT
 import name.tachenov.flakardia.data.FullPath
 import name.tachenov.flakardia.data.RelativePath
+import name.tachenov.flakardia.data.plus
 
 class CardManager {
 
@@ -47,6 +48,28 @@ class CardManager {
         }
     }
 
+    fun createDir(name: String): CreateResult = runCreateAction(name) { path ->
+        createDir(path)
+    }
+
+    fun createFile(name: String): CreateResult = runCreateAction(name) { path ->
+        createFile(path)
+    }
+
+    private fun runCreateAction(name: String, createWhatever: Library.(RelativePath) -> Unit): CreateResult {
+        assertBGT()
+        return try {
+            val library = this.library ?: return CreateError("No library selected")
+            val currentPath = this.path ?: return CreateError("No path selected")
+            val newElementPath = currentPath + name
+            library.createWhatever(newElementPath.relativePath)
+            entries = library.listEntries(currentPath.relativePath)
+            CreateSuccess
+        } catch (e: Exception) {
+            CreateError(e.toString())
+        }
+    }
+
 }
 
 sealed class DirEnterResult
@@ -74,3 +97,9 @@ data class FlashcardSetUpEntry(override val path: RelativePath) : FlashcardSetLi
     override val name: String
         get() = ".."
 }
+
+sealed class CreateResult
+
+data object CreateSuccess : CreateResult()
+
+data class CreateError(val message: String) : CreateResult()

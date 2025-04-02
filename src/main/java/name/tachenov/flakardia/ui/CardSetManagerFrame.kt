@@ -18,6 +18,7 @@ import javax.swing.*
 import javax.swing.GroupLayout.Alignment.LEADING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
+import javax.swing.LayoutStyle.ComponentPlacement.UNRELATED
 import kotlin.math.max
 
 class CardSetManagerFrame(
@@ -35,6 +36,14 @@ class CardSetManagerFrame(
     private val lessonButton = ListEntryActionButton("Start lesson").apply {
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_S
+    }
+    private val newDirButton = ListEntryActionButton("New dir").apply {
+        horizontalAlignment = SwingConstants.LEADING
+        mnemonic = KeyEvent.VK_D
+    }
+    private val newFileButton = ListEntryActionButton("New file").apply {
+        horizontalAlignment = SwingConstants.LEADING
+        mnemonic = KeyEvent.VK_F
     }
     private val settingsButton = JButton("Settings").apply {
         horizontalAlignment = SwingConstants.LEADING
@@ -66,6 +75,8 @@ class CardSetManagerFrame(
             addGroup(layout.createParallelGroup(LEADING).apply {
                 addComponent(viewButton)
                 addComponent(lessonButton)
+                addComponent(newDirButton)
+                addComponent(newFileButton)
                 addComponent(settingsButton)
                 addComponent(helpButton)
             })
@@ -83,7 +94,11 @@ class CardSetManagerFrame(
                     addComponent(viewButton)
                     addPreferredGap(RELATED)
                     addComponent(lessonButton)
-                    addPreferredGap(RELATED, DEFAULT_SIZE, INFINITY)
+                    addPreferredGap(UNRELATED)
+                    addComponent(newDirButton)
+                    addPreferredGap(RELATED)
+                    addComponent(newFileButton)
+                    addPreferredGap(UNRELATED, DEFAULT_SIZE, INFINITY)
                     addComponent(settingsButton)
                     addPreferredGap(RELATED)
                     addComponent(helpButton)
@@ -91,7 +106,7 @@ class CardSetManagerFrame(
             })
             addContainerGap()
         }
-        layout.linkSize(SwingConstants.HORIZONTAL, viewButton, lessonButton, settingsButton, helpButton)
+        layout.linkSize(SwingConstants.HORIZONTAL, viewButton, lessonButton, newDirButton, newFileButton, settingsButton, helpButton)
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
         contentPane.layout = layout
@@ -104,6 +119,14 @@ class CardSetManagerFrame(
         }
         lessonButton.addEntryActionListener {
             presenter.startLesson(it)
+        }
+        newDirButton.addEntryActionListener {
+            val name = askForDirName() ?: return@addEntryActionListener
+            presenter.newDir(name)
+        }
+        newFileButton.addEntryActionListener {
+            val name = askForFileName() ?: return@addEntryActionListener
+            presenter.newFile(name)
         }
         settingsButton.addActionListener {
             presenter.configure()
@@ -238,6 +261,20 @@ class CardSetManagerFrame(
     override fun showError(error: String) {
         assertEDT()
         showError("Error", error)
+    }
+
+    private fun askForDirName(): String? = showInputDialog(title = "New Dir", message = "Enter the new dir name")
+
+    private fun askForFileName(): String? = showInputDialog(title = "New File", message = "Enter the new file name")
+
+    private fun showInputDialog(title: String, message: String): String? {
+        val result = JOptionPane.showInputDialog(
+            this,
+            message,
+            title,
+            JOptionPane.QUESTION_MESSAGE,
+        )
+        return result?.trim()
     }
 
     private inner class ListEntryActionButton(text: String) : JButton(text) {

@@ -98,6 +98,16 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
             Files.createDirectories(flakardiaDir)
         }
     }
+
+    override fun createDir(path: RelativePath) {
+        assertBGT()
+        Files.createDirectories(path.toFilePath())
+    }
+
+    override fun createFile(path: RelativePath) {
+        assertBGT()
+        Files.createFile(path.toFilePath())
+    }
 }
 
 private fun parse(path: RelativePath, lines: List<String>): FlashcardSetResult {
