@@ -61,7 +61,7 @@ class CardSetManagerPresenter(
                 restoredPath = enterAttemptResult is DirEnterSuccess
             }
             if (restoredPath && state.selectedEntry != null) {
-                updateEntries(selectDir = state.selectedEntry)
+                updateEntries(selectEntry = state.selectedEntry)
             }
             else {
                 updateEntries()
@@ -140,21 +140,11 @@ class CardSetManagerPresenter(
         }
     }
 
-    private suspend fun updateEntries(selectDir: RelativePath? = null) {
+    private suspend fun updateEntries(selectEntry: RelativePath? = null) {
         mutableState.value = underModelLock {
             background {
                 val newList = manager.entries.map { CardListEntryPresenter(it) }
-                val newSelection: CardListEntryPresenter? = when (selectDir) {
-                    null -> {
-                        newList.firstOrNull()
-                    }
-                    manager.path?.relativePath?.parent -> {
-                        CardListEntryPresenter(FlashcardSetUpEntry(selectDir))
-                    }
-                    else -> {
-                        CardListEntryPresenter(FlashcardSetDirEntry(selectDir))
-                    }
-                }
+                val newSelection: CardListEntryPresenter? = newList.firstOrNull { it.entry.path == selectEntry } ?: newList.firstOrNull()
                 CardSetManagerPresenterState(
                     currentPresentablePath = manager.path?.toString(),
                     currentRelativePath = manager.path?.relativePath,
