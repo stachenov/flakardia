@@ -53,7 +53,7 @@ interface FlashcardStorage {
     fun saveLibraryStats(stats: LibraryStats): StatsSaveResult
 }
 
-data class Library(val storage: FlashcardStorage) {
+data class Library(private val storage: FlashcardStorage) {
 
     val path: String
         get() = storage.path
