@@ -137,7 +137,7 @@ private fun parseUsingEmptyLines(lines: List<String>): List<Flashcard> {
     val result = mutableListOf<Flashcard>()
     val words = mutableListOf<Word>()
     for (line in (lines + "").withIndex()) {
-        reportProgress(line.index * 100 / lines.size)
+        reportProgress(line.index * 100 / (lines.size + 1))
         if (line.value.isBlank()) {
             if (words.isNotEmpty()) {
                 result += Flashcard(words[0], words[1])
