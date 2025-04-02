@@ -2,9 +2,13 @@ package name.tachenov.flakardia
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import name.tachenov.flakardia.presenter.Presenter
 import name.tachenov.flakardia.ui.dialogIndicator
 import javax.swing.SwingUtilities
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
 
 abstract class ProgressIndicator {
     abstract val job: Job?
@@ -80,14 +84,23 @@ fun assertEDT() {
     }
 }
 
-suspend fun <T> background(code: () -> T): T =
-    withContext(Dispatchers.IO) {
+suspend fun assertUnderModelLock() {
+    if (currentCoroutineContext()[ModelLockKey] == null) {
+        throw AssertionError("Background operations are for mutable model access, so they must be under the model lock")
+    }
+}
+
+suspend fun <T> background(code: () -> T): T {
+    assertUnderModelLock()
+    return withContext(Dispatchers.IO) {
         code()
     }
+}
 
 suspend fun <T> backgroundWithProgress(owner: Presenter<*, *>, code: suspend () -> T): T =
     coroutineScope {
         assertEDT()
+        assertUnderModelLock()
         val indicator = dialogIndicator(owner, currentCoroutineContext().job)
         val indicatorJob = launch {
             indicator.run()
@@ -101,3 +114,23 @@ suspend fun <T> backgroundWithProgress(owner: Presenter<*, *>, code: suspend () 
             indicatorJob.cancel()
         }
     }
+
+suspend fun <T> underModelLock(code: suspend () -> T): T {
+    val context = currentCoroutineContext()
+    return if (context[ModelLockKey] != null) {
+        code()
+    }
+    else {
+        modelLock.withLock {
+            withContext(context + ModelLock) {
+                code()
+            }
+        }
+    }
+}
+
+private val modelLock = Mutex()
+
+private object ModelLock : AbstractCoroutineContextElement(ModelLockKey)
+
+private object ModelLockKey : CoroutineContext.Key<ModelLock>

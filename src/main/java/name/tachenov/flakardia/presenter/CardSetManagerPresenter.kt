@@ -51,26 +51,30 @@ class CardSetManagerPresenter(
         get() = mutableState.asStateFlow().filterNotNull()
 
     override suspend fun initializeState() {
-        val state = getCardSetManagerPresenterSavedState()
-        var restoredPath = false
-        if (state.currentPath != null) {
-            val enterAttemptResult = backgroundWithProgress(this) {
-                manager.enter(state.currentPath)
+        underModelLock {
+            val state = getCardSetManagerPresenterSavedState()
+            var restoredPath = false
+            if (state.currentPath != null) {
+                val enterAttemptResult = backgroundWithProgress(this) {
+                    manager.enter(state.currentPath)
+                }
+                restoredPath = enterAttemptResult is DirEnterSuccess
             }
-            restoredPath = enterAttemptResult is DirEnterSuccess
-        }
-        if (restoredPath && state.selectedEntry != null) {
-            updateEntries(selectDir = state.selectedEntry)
-        }
-        else {
-            updateEntries()
+            if (restoredPath && state.selectedEntry != null) {
+                updateEntries(selectDir = state.selectedEntry)
+            }
+            else {
+                updateEntries()
+            }
         }
     }
 
     fun configure() {
         launchUiTask {
-            val library = background {
-                manager.library
+            val library = underModelLock {
+                background {
+                    manager.library
+                }
             }
             if (showSettingsDialog()) {
                 val newLibrary = configureAndEnterLibrary(manager)
@@ -120,41 +124,45 @@ class CardSetManagerPresenter(
 
     private fun enterDir(dirPath: RelativePath, selectDir: RelativePath? = null) {
         launchUiTask {
-            val result = backgroundWithProgress(this) {
-                manager.enter(dirPath)
-            }
-            when (result) {
-                is DirEnterSuccess -> {
-                    updateEntries(selectDir)
+            underModelLock {
+                val result = backgroundWithProgress(this) {
+                    manager.enter(dirPath)
                 }
-                is DirEnterError -> {
-                    view.showError(result.message)
+                when (result) {
+                    is DirEnterSuccess -> {
+                        updateEntries(selectDir)
+                    }
+                    is DirEnterError -> {
+                        view.showError(result.message)
+                    }
                 }
             }
         }
     }
 
     private suspend fun updateEntries(selectDir: RelativePath? = null) {
-        mutableState.value = background {
-            val newList = manager.entries.map { CardListEntryPresenter(it) }
-            val newSelection: CardListEntryPresenter? = when (selectDir) {
-                null -> {
-                    newList.firstOrNull()
+        mutableState.value = underModelLock {
+            background {
+                val newList = manager.entries.map { CardListEntryPresenter(it) }
+                val newSelection: CardListEntryPresenter? = when (selectDir) {
+                    null -> {
+                        newList.firstOrNull()
+                    }
+                    manager.path?.relativePath?.parent -> {
+                        CardListEntryPresenter(FlashcardSetUpEntry(selectDir))
+                    }
+                    else -> {
+                        CardListEntryPresenter(FlashcardSetDirEntry(selectDir))
+                    }
                 }
-                manager.path?.relativePath?.parent -> {
-                    CardListEntryPresenter(FlashcardSetUpEntry(selectDir))
-                }
-                else -> {
-                    CardListEntryPresenter(FlashcardSetDirEntry(selectDir))
-                }
+                CardSetManagerPresenterState(
+                    currentPresentablePath = manager.path?.toString(),
+                    currentRelativePath = manager.path?.relativePath,
+                    entries = newList,
+                    selectedEntry = newSelection,
+                    isScrollToSelectionRequested = newSelection != null,
+                )
             }
-            CardSetManagerPresenterState(
-                currentPresentablePath = manager.path?.toString(),
-                currentRelativePath = manager.path?.relativePath,
-                entries = newList,
-                selectedEntry = newSelection,
-                isScrollToSelectionRequested = newSelection != null,
-            )
         }
         saveState()
     }
@@ -170,8 +178,10 @@ class CardSetManagerPresenter(
 
     fun viewFlashcards(entry: FlashcardSetListEntry) {
         launchUiTask {
-            val result = backgroundWithProgress(this) {
-                manager.library?.getAllFlashcards(entry)
+            val result = underModelLock {
+                backgroundWithProgress(this) {
+                    manager.library?.getAllFlashcards(entry)
+                }
             } ?: return@launchUiTask
             processResult(result) { lessonData ->
                 view.viewFlashcards(lessonData)
@@ -181,8 +191,10 @@ class CardSetManagerPresenter(
 
     fun startLesson(entry: FlashcardSetListEntry) {
         launchUiTask {
-            val result = backgroundWithProgress(this) {
-                manager.library?.let { library -> library to library.prepareLessonData(entry) }
+            val result = underModelLock {
+                backgroundWithProgress(this) {
+                    manager.library?.let { library -> library to library.prepareLessonData(entry) }
+                }
             } ?: return@launchUiTask
             processResult(result.second) { lessonData ->
                 view.startLesson(result.first, lessonData)
