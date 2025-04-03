@@ -114,8 +114,7 @@ class CardSetManagerFrame(
             })
             addContainerGap()
         }
-        layout.linkSize(
-            SwingConstants.HORIZONTAL,
+        val buttons = listOf(
             viewButton,
             lessonButton,
             newDirButton,
@@ -123,6 +122,10 @@ class CardSetManagerFrame(
             editFileButton,
             settingsButton,
             helpButton,
+        )
+        layout.linkSize(
+            SwingConstants.HORIZONTAL,
+            *buttons.toTypedArray(),
         )
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
@@ -183,7 +186,7 @@ class CardSetManagerFrame(
             presenter.selectItem(list.selectedValue)
         }
 
-        val focusableComponents = listOf(list, viewButton, lessonButton)
+        val focusableComponents = listOf(list) + buttons
         focusTraversalPolicy = object : SortingFocusTraversalPolicy(compareBy { c ->
             focusableComponents.indexOf(c)
         }) {
