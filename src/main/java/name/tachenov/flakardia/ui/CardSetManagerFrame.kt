@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.ui
 
+import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.FlashcardSetListEntry
 import name.tachenov.flakardia.app.Lesson
 import name.tachenov.flakardia.app.Library
@@ -45,6 +46,10 @@ class CardSetManagerFrame(
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_F
     }
+    private val editFileButton = ListEntryActionButton("Edit file").apply {
+        horizontalAlignment = SwingConstants.LEADING
+        mnemonic = KeyEvent.VK_E
+    }
     private val settingsButton = JButton("Settings").apply {
         horizontalAlignment = SwingConstants.LEADING
         mnemonic = KeyEvent.VK_T
@@ -77,6 +82,7 @@ class CardSetManagerFrame(
                 addComponent(lessonButton)
                 addComponent(newDirButton)
                 addComponent(newFileButton)
+                addComponent(editFileButton)
                 addComponent(settingsButton)
                 addComponent(helpButton)
             })
@@ -98,6 +104,8 @@ class CardSetManagerFrame(
                     addComponent(newDirButton)
                     addPreferredGap(RELATED)
                     addComponent(newFileButton)
+                    addPreferredGap(RELATED)
+                    addComponent(editFileButton)
                     addPreferredGap(UNRELATED, DEFAULT_SIZE, INFINITY)
                     addComponent(settingsButton)
                     addPreferredGap(RELATED)
@@ -106,7 +114,16 @@ class CardSetManagerFrame(
             })
             addContainerGap()
         }
-        layout.linkSize(SwingConstants.HORIZONTAL, viewButton, lessonButton, newDirButton, newFileButton, settingsButton, helpButton)
+        layout.linkSize(
+            SwingConstants.HORIZONTAL,
+            viewButton,
+            lessonButton,
+            newDirButton,
+            newFileButton,
+            editFileButton,
+            settingsButton,
+            helpButton,
+        )
         layout.setHorizontalGroup(hg)
         layout.setVerticalGroup(vg)
         contentPane.layout = layout
@@ -127,6 +144,9 @@ class CardSetManagerFrame(
         newFileButton.addEntryActionListener {
             val name = askForFileName() ?: return@addEntryActionListener
             presenter.newFile(name)
+        }
+        editFileButton.addEntryActionListener {
+            presenter.editFile(it)
         }
         settingsButton.addActionListener {
             presenter.configure()
@@ -245,6 +265,14 @@ class CardSetManagerFrame(
         showPresenterFrame(
             presenterFactory = { LessonPresenter(library, Lesson(result)) },
             viewFactory = { LessonFrame(this@CardSetManagerFrame, it) },
+        )
+    }
+
+    override suspend fun editFile(library: Library, fileEntry: FlashcardSetFileEntry) {
+        assertEDT()
+        showPresenterFrame(
+            presenterFactory = { CardSetFileEditorPresenter(library, fileEntry) },
+            viewFactory = { CardSetFileEditorFrame(it) },
         )
     }
 

@@ -88,7 +88,7 @@ data class Library(private val storage: FlashcardStorage) {
         prepare: (String, List<FlashcardData>, LibraryStats) -> LessonData,
     ): LessonDataResult {
         assertBGT()
-        return when (val flashcardSet = readFlashcards(entry.path, entry)) {
+        return when (val flashcardSet = readFlashcards(entry)) {
             is FlashcardSetError -> LessonDataError(flashcardSet.message)
             is FlashcardSet -> when (val stats = storage.readLibraryStats()) {
                 is LibraryStatsError -> LessonDataError(stats.message)
@@ -131,14 +131,14 @@ data class Library(private val storage: FlashcardStorage) {
         }
     }
 
-    private fun readFlashcards(path: RelativePath, entry: FlashcardSetListEntry): FlashcardSetResult {
+    fun readFlashcards(entry: FlashcardSetListEntry): FlashcardSetResult {
         return when (entry) {
             is FlashcardSetFileEntry -> storage.readFlashcards(entry.path)
             is FlashcardSetDirEntry -> {
                 val result = mutableListOf<FlashcardData>()
                 val subEntries = listEntries(entry.path)
                 for (subEntry in subEntries) {
-                    when (val subResult = readFlashcards(path, subEntry)) {
+                    when (val subResult = readFlashcards(subEntry)) {
                         is FlashcardSet -> result += subResult.cards
                         is FlashcardSetError -> return subResult
                     }

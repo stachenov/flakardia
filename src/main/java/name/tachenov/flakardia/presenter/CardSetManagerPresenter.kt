@@ -11,6 +11,7 @@ import name.tachenov.flakardia.data.*
 interface CardSetManagerView : View {
     suspend fun viewFlashcards(result: LessonData)
     suspend fun startLesson(library: Library, result: LessonData)
+    suspend fun editFile(library: Library, fileEntry: FlashcardSetFileEntry)
     fun showWarnings(warnings: List<String>)
     fun showError(error: String)
 }
@@ -235,6 +236,18 @@ class CardSetManagerPresenter(
                     view.showError(result.message)
                 }
             }
+        }
+    }
+
+    fun editFile(entry: FlashcardSetListEntry) {
+        if (entry !is FlashcardSetFileEntry) return
+        launchUiTask {
+            val library = underModelLock {
+                background {
+                    manager.library
+                }
+            } ?: return@launchUiTask
+            view.editFile(library, entry)
         }
     }
 }
