@@ -5,6 +5,7 @@ import name.tachenov.flakardia.app.FlashcardSetListEntry
 import name.tachenov.flakardia.app.Lesson
 import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.assertEDT
+import name.tachenov.flakardia.data.Flashcard
 import name.tachenov.flakardia.data.LessonData
 import name.tachenov.flakardia.getManagerFrameLocation
 import name.tachenov.flakardia.presenter.*
@@ -271,10 +272,10 @@ class CardSetManagerFrame(
         )
     }
 
-    override suspend fun editFile(library: Library, fileEntry: FlashcardSetFileEntry) {
+    override suspend fun editFile(library: Library, fileEntry: FlashcardSetFileEntry, cards: List<Flashcard>) {
         assertEDT()
         showPresenterFrame(
-            presenterFactory = { CardSetFileEditorPresenter(library, fileEntry) },
+            presenterFactory = { CardSetFileEditorPresenter(library, fileEntry, cards) },
             viewFactory = { CardSetFileEditorFrame(it) },
         )
     }

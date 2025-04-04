@@ -8,13 +8,15 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.JTextField
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
+import javax.swing.text.Document
 import kotlin.math.max
 
 class CardSetFileEditorFrame(
     presenter: CardSetFileEditorPresenter
-) : FrameView<CardSetFileEditorStateUpdate, CardSetFileEditorView, CardSetFileEditorPresenter>(presenter), CardSetFileEditorView
+) : FrameView<CardSetFileEditorState, CardSetFileEditorView, CardSetFileEditorPresenter>(presenter), CardSetFileEditorView
 {
-
     private val editor = CardSetEditor()
     private val scrollPane = JScrollPane(editor)
 
@@ -27,50 +29,54 @@ class CardSetFileEditorFrame(
 
     override fun saveViewState() { }
 
-    override fun applyPresenterState(state: CardSetFileEditorStateUpdate) {
-        when (state) {
-            is CardSetFileEditorFullState -> {
-                editor.cards = state.cards
-            }
-            is CardSetFileEditorErrorState -> {
-
-            }
-            else -> {
-
-            }
-        }
+    override fun applyPresenterState(state: CardSetFileEditorState) {
+        editor.updateState(state)
     }
-
 }
 
 class CardSetEditor : JPanel() {
-    private val editorComponents = mutableListOf<CardEditor>()
+    private val editors = mutableListOf<CardEditor>()
 
-    private class CardEditor(val card: CardPresenter, val questionEditor: JTextField, val answerEditor: JTextField) {
-        override fun toString(): String = "($questionEditor, $answerEditor)"
-    }
-
-    var cards: List<CardPresenter>
-        get() = editorComponents.map { it.card }
-        set(value) {
-            for (editorComponent in editorComponents) {
-                remove(editorComponent.questionEditor)
-                remove(editorComponent.answerEditor)
+    fun updateState(update: CardSetFileEditorState) {
+        var updated = true
+        when (val change = update.changeFromPrevious) {
+            null -> {
+                for (editorComponent in editors) {
+                    remove(editorComponent.questionEditor)
+                    remove(editorComponent.answerEditor)
+                }
+                editors.clear()
+                for (card in update.fullState.cards) {
+                    insertCardEditor(editors.size, card)
+                }
             }
-            editorComponents.clear()
-            for (card in value) {
-                insertCardWithoutValidation(editorComponents.size, card)
+            is CardAdded -> {
+                insertCardEditor(change.index, change.card)
             }
+            is CardChanged -> {
+                updated = false
+            }
+            is CardRemoved -> {
+                removeCardEditor(change.index)
+            }
+        }
+        if (updated) {
             revalidate()
             repaint()
         }
+    }
 
-    private fun insertCardWithoutValidation(index: Int, card: CardPresenter) {
-        val questionEditor = JTextField(card.question)
-        val answerEditor = JTextField(card.answer)
-        editorComponents.add(index, CardEditor(card, questionEditor, answerEditor))
-        add(questionEditor, index * 2)
-        add(answerEditor, index * 2 + 1)
+    private fun insertCardEditor(index: Int, card: CardPresenterState) {
+        val editor = CardEditor(card)
+        editors.add(index, editor)
+        add(editor.questionEditor, index * 2)
+        add(editor.answerEditor, index * 2 + 1)
+    }
+
+    private fun removeCardEditor(index: Int) {
+        val removed = editors.removeAt(index)
+        remove(removed.questionEditor)
+        remove(removed.answerEditor)
     }
 
     override fun getMinimumSize(): Dimension = computeSize { it.minimumSize }
@@ -82,7 +88,7 @@ class CardSetEditor : JPanel() {
     private fun computeSize(sizeFunction: (JComponent) -> Dimension): Dimension {
         var width = 100
         var height = 0
-        for (editorComponent in editorComponents) {
+        for (editorComponent in editors) {
             val size1 = sizeFunction(editorComponent.questionEditor)
             val size2 = sizeFunction(editorComponent.answerEditor)
             width = max(width, max(size1.width, size2.width))
@@ -97,7 +103,7 @@ class CardSetEditor : JPanel() {
         val width = this.width
         val x = 0
         var y = 0
-        for (editorComponent in editorComponents) {
+        for (editorComponent in editors) {
             val h1 = editorComponent.questionEditor.preferredSize.height
             editorComponent.questionEditor.bounds = Rectangle(x, y, width, h1)
             y += h1
@@ -107,6 +113,41 @@ class CardSetEditor : JPanel() {
             y += GAP_BETWEEN_CARDS
         }
     }
+}
+
+private class CardEditor(
+    initialState: CardPresenterState,
+) {
+    private val presenter = initialState.presenter
+    val questionEditor = JTextField(initialState.question)
+    val answerEditor = JTextField(initialState.answer)
+
+    init {
+        questionEditor.document.addDocumentChangeListener {
+            presenter.updateQuestion(questionEditor.text)
+        }
+        answerEditor.document.addDocumentChangeListener {
+            presenter.updateAnswer(answerEditor.text)
+        }
+    }
+
+    override fun toString(): String = "($questionEditor, $answerEditor)"
+}
+
+private fun Document.addDocumentChangeListener(block: () -> Unit) {
+    addDocumentListener(object : DocumentListener {
+        override fun insertUpdate(e: DocumentEvent?) {
+            block()
+        }
+
+        override fun removeUpdate(e: DocumentEvent?) {
+            block()
+        }
+
+        override fun changedUpdate(e: DocumentEvent?) {
+            block()
+        }
+    })
 }
 
 private const val GAP_BETWEEN_CARDS = 5

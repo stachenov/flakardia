@@ -11,7 +11,7 @@ import name.tachenov.flakardia.data.*
 interface CardSetManagerView : View {
     suspend fun viewFlashcards(result: LessonData)
     suspend fun startLesson(library: Library, result: LessonData)
-    suspend fun editFile(library: Library, fileEntry: FlashcardSetFileEntry)
+    suspend fun editFile(library: Library, fileEntry: FlashcardSetFileEntry, cards: List<Flashcard>)
     fun showWarnings(warnings: List<String>)
     fun showError(error: String)
 }
@@ -51,7 +51,7 @@ class CardSetManagerPresenter(
     override val state: Flow<CardSetManagerPresenterState>
         get() = mutableState.asStateFlow().filterNotNull()
 
-    override suspend fun initializeState() {
+    override suspend fun runStateUpdates() {
         underModelLock {
             val state = getCardSetManagerPresenterSavedState()
             var restoredPath = false
@@ -242,12 +242,20 @@ class CardSetManagerPresenter(
     fun editFile(entry: FlashcardSetListEntry) {
         if (entry !is FlashcardSetFileEntry) return
         launchUiTask {
-            val library = underModelLock {
-                background {
-                    manager.library
+            val data = underModelLock {
+                backgroundWithProgress(this@CardSetManagerPresenter) {
+                    manager.library?.let { library -> library to library.readFlashcards(entry) }
                 }
             } ?: return@launchUiTask
-            view.editFile(library, entry)
+            val library = data.first
+            val cards = when (val cardsResult = data.second) {
+                is FlashcardSet -> cardsResult.cards.map { it.flashcard }
+                is FlashcardSetError -> {
+                    view.showError("Error opening the file", cardsResult.message)
+                    return@launchUiTask
+                }
+            }
+            view.editFile(library, entry, cards)
         }
     }
 }

@@ -1,108 +1,125 @@
 package name.tachenov.flakardia.presenter
 
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.Library
-import name.tachenov.flakardia.background
 import name.tachenov.flakardia.data.Flashcard
-import name.tachenov.flakardia.data.FlashcardSet
-import name.tachenov.flakardia.data.FlashcardSetError
-import name.tachenov.flakardia.underModelLock
 import java.util.concurrent.atomic.AtomicLong
 
-interface CardSetFileEditorView : View {
+interface CardSetFileEditorView : View
 
-}
+data class CardSetFileEditorState(
+    val epoch: Long,
+    val fullState: CardSetFileEditorFullState,
+    val changeFromPrevious: CardSetFileEditorIncrementalStateUpdate?,
+) : PresenterState
 
-sealed class CardSetFileEditorStateUpdate : PresenterState {
-    abstract val epoch: Long
-}
+data class CardSetFileEditorFullState(val cards: List<CardPresenterState>)
 
-sealed class CardSetFileEditorFullStateUpdate : CardSetFileEditorStateUpdate()
+sealed class CardSetFileEditorIncrementalStateUpdate
 
-data class CardSetFileEditorFullState(
-    override val epoch: Long,
-    val cards: List<CardPresenter>,
-) : CardSetFileEditorFullStateUpdate()
-
-data class CardSetFileEditorErrorState(
-    override val epoch: Long,
-    val message: String,
-) : CardSetFileEditorFullStateUpdate()
-
-sealed class CardSetFileEditorIncrementalStateUpdate : CardSetFileEditorStateUpdate()
-
-data class CardAdded(
-    override val epoch: Long,
-    private val index: Int,
-    private val card: CardPresenter,
+class CardAdded(
+    val index: Int,
+    val card: CardPresenterState,
 ) : CardSetFileEditorIncrementalStateUpdate()
 
 data class CardChanged(
-    override val epoch: Long,
-    private val index: Int,
-    private val card: CardPresenter,
+    val index: Int,
+    val updatedQuestion: String? = null,
+    val updatedAnswer: String? = null,
 ) : CardSetFileEditorIncrementalStateUpdate()
 
 data class CardRemoved(
-    override val epoch: Long,
-    private val index: Int,
+    val index: Int,
 ) : CardSetFileEditorIncrementalStateUpdate()
 
-data class CardPresenter(private val card: Flashcard) {
-    val question: String get() = card.front.value
-    val answer: String get() = card.back.value
+interface CardPresenterState {
+    val presenter: CardPresenter
+    val question: String
+    val answer: String
 }
+
+sealed interface CardPresenter {
+    fun updateQuestion(newQuestionText: String)
+    fun updateAnswer(newAnswerText: String)
+}
+
+private data class CardPresenterStateImpl(
+    override val presenter: CardPresenter,
+    override val question: String,
+    override val answer: String,
+) : CardPresenterState
 
 class CardSetFileEditorPresenter(
     private val library: Library,
     private val fileEntry: FlashcardSetFileEntry,
-) : Presenter<CardSetFileEditorStateUpdate, CardSetFileEditorView>() {
-    private val fullState: MutableStateFlow<CardSetFileEditorStateUpdate?> = MutableStateFlow(null)
-    private val allStateUpdates: MutableStateFlow<CardSetFileEditorStateUpdate?> = MutableStateFlow(null)
+    initialContent: List<Flashcard>,
+) : Presenter<CardSetFileEditorState, CardSetFileEditorView>() {
     private val epoch = AtomicLong()
+    private val stateUpdatesFlow = MutableSharedFlow<CardSetFileEditorState>(replay = 1)
+    private val stateUpdatesChannel = Channel<CardSetFileEditorState>(Channel.UNLIMITED)
+    private val cardPresenters = initialContent.map { CardPresenterImpl(it) }.toMutableList()
+    private var mutableState = CardSetFileEditorFullState(cardPresenters.map { it.state })
 
-    override val state: Flow<CardSetFileEditorStateUpdate>
-        get() = flow {
-            val thisFlow = this
-            var isFirstUpdate = true
-            allStateUpdates.collect { update ->
-                val shouldEmit = when (update) {
-                    null -> false
-                    is CardSetFileEditorFullState -> isFirstUpdate
-                    is CardSetFileEditorErrorState -> true
-                    is CardSetFileEditorIncrementalStateUpdate -> !isFirstUpdate
-                }
-                if (shouldEmit && update != null) {
-                    isFirstUpdate = false
-                    thisFlow.emit(update)
-                }
-            }
+    override val state: Flow<CardSetFileEditorState>
+        get() = stateUpdatesFlow.asSharedFlow()
+
+    override suspend fun runStateUpdates() {
+        check(stateUpdatesChannel.trySend(CardSetFileEditorState(
+            epoch = nextEpoch(),
+            fullState = mutableState,
+            changeFromPrevious = null,
+        )).isSuccess)
+        for (stateUpdate in stateUpdatesChannel) {
+            stateUpdatesFlow.emit(stateUpdate)
         }
-
-    override suspend fun initializeState() {
-        updateState(
-            fullUpdate = underModelLock {
-                when (val cardsResult = background { library.readFlashcards(fileEntry) }) {
-                    is FlashcardSet -> CardSetFileEditorFullState(
-                        nextEpoch(),
-                        cardsResult.cards.map { CardPresenter(it.flashcard) },
-                    )
-                    is FlashcardSetError -> CardSetFileEditorErrorState(nextEpoch(), cardsResult.message)
-                }
-            }
-        )
-    }
-
-    private fun updateState(fullUpdate: CardSetFileEditorFullStateUpdate, incrementalUpdate: CardSetFileEditorIncrementalStateUpdate? = null) {
-        if (incrementalUpdate != null) {
-            allStateUpdates.value = incrementalUpdate
-        }
-        fullState.value = fullUpdate
-        allStateUpdates.value = fullUpdate
     }
 
     private fun nextEpoch(): Long = epoch.incrementAndGet()
+
+    private inner class CardPresenterImpl(card: Flashcard) : CardPresenter {
+        private var question: String = card.front.value
+        private var answer: String = card.back.value
+
+        val state: CardPresenterState get() = CardPresenterStateImpl(this, question, answer)
+
+        override fun updateQuestion(newQuestionText: String) {
+            updatePresenter(newQuestionText, null)
+        }
+
+        override fun updateAnswer(newAnswerText: String) {
+            updatePresenter(null, newAnswerText)
+        }
+
+        private fun updatePresenter(newQuestionText: String?, newAnswerText: String?) {
+            val index = cardPresenters.indexOf(this)
+            if (index == -1) return
+            if (newQuestionText != null) {
+                this.question = newQuestionText
+            }
+            if (newAnswerText != null) {
+                this.answer = newAnswerText
+            }
+            val updatedPresenterStates = mutableState.cards.withIndex().map {
+                if (it.index == index) {
+                    state
+                }
+                else {
+                    it.value
+                }
+            }
+            check(stateUpdatesChannel.trySend(
+                CardSetFileEditorState(
+                    epoch = nextEpoch(),
+                    fullState = mutableState.copy(cards = updatedPresenterStates),
+                    changeFromPrevious = CardChanged(index, updatedQuestion = newQuestionText, updatedAnswer = newAnswerText),
+                )
+            ).isSuccess)
+        }
+
+        override fun toString(): String = "CardPresenterImpl(question='$question', answer='$answer')"
+    }
 }

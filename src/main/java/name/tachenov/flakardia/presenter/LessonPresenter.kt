@@ -38,7 +38,7 @@ class LessonPresenter(
     override val state: Flow<LessonPresenterState>
         get() = mutableState.asStateFlow().filterNotNull()
 
-    override suspend fun initializeState() {
+    override suspend fun runStateUpdates() {
         mutableState.value = underModelLock {
             background {
                 val nextQuestion = lesson.nextQuestion()

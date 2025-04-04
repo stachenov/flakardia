@@ -1,6 +1,7 @@
 package name.tachenov.flakardia.presenter
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -25,19 +26,20 @@ abstract class Presenter<S : PresenterState, V : View> {
     private var currentRunScope: CoroutineScope? = null
     private val currentlyRunningTasks = AtomicInteger()
 
-    protected abstract suspend fun initializeState()
+    protected abstract suspend fun runStateUpdates()
 
     suspend fun run(view: V) = coroutineScope {
         assertEDT()
         this@Presenter.view = view
         launch {
-            initializeState()
+            runStateUpdates()
         }
         currentRunScope = this@coroutineScope
         try {
             view.run()
         }
         finally {
+            cancel()
             currentRunScope = null
         }
     }
