@@ -4,6 +4,8 @@ import name.tachenov.flakardia.presenter.*
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.Rectangle
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JScrollPane
@@ -11,6 +13,7 @@ import javax.swing.JTextField
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import javax.swing.text.Document
+import javax.swing.text.JTextComponent
 import kotlin.math.max
 
 class CardSetFileEditorFrame(
@@ -52,6 +55,7 @@ class CardSetEditor : JPanel() {
             }
             is CardAdded -> {
                 insertCardEditor(change.index, change.card)
+                editors[change.index].questionEditor.requestFocusInWindow()
             }
             is CardChanged -> {
                 updated = false
@@ -126,8 +130,18 @@ private class CardEditor(
         questionEditor.document.addDocumentChangeListener {
             presenter.updateQuestion(questionEditor.text)
         }
+        questionEditor.addEnterKeyListener {
+            if (questionEditor.caretPosition == 0) {
+                presenter.insertCardBefore()
+            }
+        }
         answerEditor.document.addDocumentChangeListener {
             presenter.updateAnswer(answerEditor.text)
+        }
+        answerEditor.addEnterKeyListener {
+            if (answerEditor.caretPosition == answerEditor.text.length) {
+                presenter.insertCardAfter()
+            }
         }
     }
 
@@ -146,6 +160,16 @@ private fun Document.addDocumentChangeListener(block: () -> Unit) {
 
         override fun changedUpdate(e: DocumentEvent?) {
             block()
+        }
+    })
+}
+
+private fun JTextComponent.addEnterKeyListener(listener: () -> Unit) {
+    addKeyListener(object : KeyAdapter() {
+        override fun keyPressed(e: KeyEvent) {
+            if (e.keyCode == KeyEvent.VK_ENTER) {
+                listener()
+            }
         }
     })
 }

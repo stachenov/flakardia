@@ -45,6 +45,8 @@ interface CardPresenterState {
 sealed interface CardPresenter {
     fun updateQuestion(newQuestionText: String)
     fun updateAnswer(newAnswerText: String)
+    fun insertCardBefore()
+    fun insertCardAfter()
 }
 
 private data class CardPresenterStateImpl(
@@ -61,8 +63,7 @@ class CardSetFileEditorPresenter(
     private val epoch = AtomicLong()
     private val stateUpdatesFlow = MutableSharedFlow<CardSetFileEditorState>(replay = 1)
     private val stateUpdatesChannel = Channel<CardSetFileEditorState>(Channel.UNLIMITED)
-    private val cardPresenters = initialContent.map { CardPresenterImpl(it) }.toMutableList()
-    private var mutableState = CardSetFileEditorFullState(cardPresenters.map { it.state })
+    private var mutableState = CardSetFileEditorFullState(initialContent.map { CardPresenterImpl(it).state })
 
     override val state: Flow<CardSetFileEditorState>
         get() = stateUpdatesFlow.asSharedFlow()
@@ -80,9 +81,11 @@ class CardSetFileEditorPresenter(
 
     private fun nextEpoch(): Long = epoch.incrementAndGet()
 
-    private inner class CardPresenterImpl(card: Flashcard) : CardPresenter {
-        private var question: String = card.front.value
-        private var answer: String = card.back.value
+    private inner class CardPresenterImpl(
+        private var question: String,
+        private var answer: String,
+    ) : CardPresenter {
+        constructor(card: Flashcard) : this(card.front.value, card.back.value)
 
         val state: CardPresenterState get() = CardPresenterStateImpl(this, question, answer)
 
@@ -95,7 +98,7 @@ class CardSetFileEditorPresenter(
         }
 
         private fun updatePresenter(newQuestionText: String?, newAnswerText: String?) {
-            val index = cardPresenters.indexOf(this)
+            val index = mutableState.cards.indexOfFirst { it.presenter == this@CardPresenterImpl }
             if (index == -1) return
             if (newQuestionText != null) {
                 this.question = newQuestionText
@@ -111,11 +114,38 @@ class CardSetFileEditorPresenter(
                     it.value
                 }
             }
+            mutableState = mutableState.copy(cards = updatedPresenterStates)
             check(stateUpdatesChannel.trySend(
                 CardSetFileEditorState(
                     epoch = nextEpoch(),
-                    fullState = mutableState.copy(cards = updatedPresenterStates),
+                    fullState = mutableState,
                     changeFromPrevious = CardChanged(index, updatedQuestion = newQuestionText, updatedAnswer = newAnswerText),
+                )
+            ).isSuccess)
+        }
+
+        override fun insertCardBefore() {
+            val index = mutableState.cards.indexOfFirst { it.presenter == this@CardPresenterImpl }
+            if (index == -1) return
+            insertNewCardAt(index)
+        }
+
+        override fun insertCardAfter() {
+            val index = mutableState.cards.indexOfFirst { it.presenter == this@CardPresenterImpl }
+            if (index == -1) return
+            insertNewCardAt(index + 1)
+        }
+
+        private fun insertNewCardAt(index: Int) {
+            val newCard = CardPresenterImpl("", "").state
+            val cards = mutableState.cards
+            val newCards = cards.subList(0, index) + newCard + cards.subList(index, cards.size)
+            mutableState = mutableState.copy(cards = newCards)
+            check(stateUpdatesChannel.trySend(
+                CardSetFileEditorState(
+                    epoch = nextEpoch(),
+                    fullState = mutableState,
+                    changeFromPrevious = CardAdded(index, newCard),
                 )
             ).isSuccess)
         }
