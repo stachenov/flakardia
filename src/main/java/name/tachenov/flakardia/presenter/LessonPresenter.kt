@@ -1,9 +1,5 @@
 package name.tachenov.flakardia.presenter
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.background
 import name.tachenov.flakardia.data.StatsSaveError
@@ -33,30 +29,24 @@ class LessonPresenter(
     private val library: Library,
     private val lesson: Lesson,
 ) : Presenter<LessonPresenterState, LessonPresenterView>() {
-    private val mutableState = MutableStateFlow<LessonPresenterState?>(null)
 
-    override val state: Flow<LessonPresenterState>
-        get() = mutableState.asStateFlow().filterNotNull()
-
-    override suspend fun runStateUpdates() {
-        mutableState.value = underModelLock {
-            background {
-                val nextQuestion = lesson.nextQuestion()
-                LessonPresenterState(
-                    title = lesson.name,
-                    lessonResult = lesson.result,
-                    lessonStatus = nextQuestion?.let { question -> QuestionState(question) } ?: DoneState,
-                )
-            }
+    override suspend fun computeInitialState(): LessonPresenterState  = underModelLock {
+        background {
+            val nextQuestion = lesson.nextQuestion()
+            LessonPresenterState(
+                title = lesson.name,
+                lessonResult = lesson.result,
+                lessonStatus = nextQuestion?.let { question -> QuestionState(question) } ?: DoneState,
+            )
         }
     }
 
     fun nextQuestion() {
-        launchUiTask {
+        updateState { state ->
             underModelLock {
-                mutableState.value = background {
+                background {
                     val nextQuestion = lesson.nextQuestion()
-                    mutableState.value?.copy(
+                    state.copy(
                         lessonResult = lesson.result,
                         lessonStatus = nextQuestion?.let { question -> QuestionState(question) } ?: DoneState,
                     )
@@ -66,9 +56,9 @@ class LessonPresenter(
     }
 
     fun answered(answer: Answer?) {
-        launchUiTask {
+        updateState { state ->
             underModelLock {
-                mutableState.value = background {
+                val newState = background {
                     val answerResult = lesson.answer(answer).let {
                         AnswerResultPresenter(
                             yourAnswer = it.yourAnswer?.word?.value,
@@ -76,18 +66,19 @@ class LessonPresenter(
                             isCorrect = it.isCorrect,
                         )
                     }
-                    mutableState.value?.copy(
+                    state.copy(
                         lessonResult = lesson.result,
                         lessonStatus = AnswerState(answerResult),
                     )
                 }
-                val result = background {
+                val saveResult = background {
                     library.saveUpdatedStats(lesson.stats)
                 }
-                when (result) {
-                    is StatsSaveError -> view.showError("An error occurred when trying to save word statistics", result.message)
+                when (saveResult) {
+                    is StatsSaveError -> view.showError("An error occurred when trying to save word statistics", saveResult.message)
                     is StatsSaveSuccess -> {}
                 }
+                newState
             }
         }
     }

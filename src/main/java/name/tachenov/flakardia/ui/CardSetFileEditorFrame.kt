@@ -20,7 +20,7 @@ class CardSetFileEditorFrame(
     presenter: CardSetFileEditorPresenter
 ) : FrameView<CardSetFileEditorState, CardSetFileEditorView, CardSetFileEditorPresenter>(presenter), CardSetFileEditorView
 {
-    private val editor = CardSetEditor()
+    private val editor = CardSetEditor(presenter)
     private val scrollPane = JScrollPane(editor)
 
     init {
@@ -37,7 +37,7 @@ class CardSetFileEditorFrame(
     }
 }
 
-class CardSetEditor : JPanel() {
+class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel() {
     private val editors = mutableListOf<CardEditor>()
 
     fun updateState(update: CardSetFileEditorState) {
@@ -71,7 +71,7 @@ class CardSetEditor : JPanel() {
     }
 
     private fun insertCardEditor(index: Int, card: CardPresenterState) {
-        val editor = CardEditor(card)
+        val editor = CardEditor(presenter, card)
         editors.add(index, editor)
         add(editor.questionEditor, index * 2)
         add(editor.answerEditor, index * 2 + 1)
@@ -120,27 +120,28 @@ class CardSetEditor : JPanel() {
 }
 
 private class CardEditor(
+    private val presenter: CardSetFileEditorPresenter,
     initialState: CardPresenterState,
 ) {
-    private val presenter = initialState.presenter
+    val id = initialState.id
     val questionEditor = JTextField(initialState.question)
     val answerEditor = JTextField(initialState.answer)
 
     init {
         questionEditor.document.addDocumentChangeListener {
-            presenter.updateQuestion(questionEditor.text)
+            presenter.updateQuestion(id, questionEditor.text)
         }
         questionEditor.addEnterKeyListener {
             if (questionEditor.caretPosition == 0) {
-                presenter.insertCardBefore()
+                presenter.insertCardBefore(id)
             }
         }
         answerEditor.document.addDocumentChangeListener {
-            presenter.updateAnswer(answerEditor.text)
+            presenter.updateAnswer(id, answerEditor.text)
         }
         answerEditor.addEnterKeyListener {
             if (answerEditor.caretPosition == answerEditor.text.length) {
-                presenter.insertCardAfter()
+                presenter.insertCardAfter(id)
             }
         }
     }

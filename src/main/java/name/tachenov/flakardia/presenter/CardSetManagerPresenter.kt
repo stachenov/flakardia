@@ -1,9 +1,5 @@
 package name.tachenov.flakardia.presenter
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import name.tachenov.flakardia.*
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.data.*
@@ -46,12 +42,7 @@ class CardSetManagerPresenter(
     private val manager: CardManager,
 ): Presenter<CardSetManagerPresenterState, CardSetManagerView>() {
 
-    private val mutableState: MutableStateFlow<CardSetManagerPresenterState?> = MutableStateFlow(null)
-
-    override val state: Flow<CardSetManagerPresenterState>
-        get() = mutableState.asStateFlow().filterNotNull()
-
-    override suspend fun runStateUpdates() {
+    override suspend fun computeInitialState(): CardSetManagerPresenterState =
         underModelLock {
             val state = getCardSetManagerPresenterSavedState()
             var restoredPath = false
@@ -62,13 +53,12 @@ class CardSetManagerPresenter(
                 restoredPath = enterAttemptResult is DirEnterSuccess
             }
             if (restoredPath && state.selectedEntry != null) {
-                updateEntries(selectEntry = state.selectedEntry)
+                captureManagerState(selectEntry = state.selectedEntry)
             }
             else {
-                updateEntries()
+                captureManagerState()
             }
         }
-    }
 
     fun configure() {
         launchUiTask {
@@ -80,69 +70,17 @@ class CardSetManagerPresenter(
             if (showSettingsDialog()) {
                 val newLibrary = configureAndEnterLibrary(manager)
                 if (newLibrary != library) {
-                    updateEntries()
+                    updateState {
+                        captureManagerState()
+                    }
                 }
                 view.adjustSize()
             }
         }
     }
 
-    fun showHelpFrame() {
-        launchUiTask {
-            showHelp()
-        }
-    }
-
-    fun selectItem(item: CardListEntryPresenter?) {
-        mutableState.value = mutableState.value?.copy(selectedEntry = item)
-        saveState()
-    }
-
-    fun scrollRequestCompleted() {
-        mutableState.value = mutableState.value?.copy(isScrollToSelectionRequested = false)
-    }
-
-    fun goUp() {
-        val list = mutableState.value?.entries
-        if (list.isNullOrEmpty()) {
-            return
-        }
-        val firstEntry = list.firstOrNull()?.entry ?: return
-        if (firstEntry !is FlashcardSetUpEntry) {
-            return
-        }
-        enterDir(firstEntry.path, selectDir = mutableState.value?.currentRelativePath)
-    }
-
-    fun openElement() {
-        val selectedEntry = mutableState.value?.selectedEntry?.entry ?: return
-        when (selectedEntry) {
-            is FlashcardSetFileEntry -> viewFlashcards(selectedEntry)
-            is FlashcardSetDirEntry -> enterDir(selectedEntry.path)
-            is FlashcardSetUpEntry -> goUp()
-        }
-    }
-
-    private fun enterDir(dirPath: RelativePath, selectDir: RelativePath? = null) {
-        launchUiTask {
-            underModelLock {
-                val result = backgroundWithProgress(this) {
-                    manager.enter(dirPath)
-                }
-                when (result) {
-                    is DirEnterSuccess -> {
-                        updateEntries(selectDir)
-                    }
-                    is DirEnterError -> {
-                        view.showError(result.message)
-                    }
-                }
-            }
-        }
-    }
-
-    private suspend fun updateEntries(selectEntry: RelativePath? = null) {
-        mutableState.value = underModelLock {
+    private suspend fun captureManagerState(selectEntry: RelativePath? = null): CardSetManagerPresenterState {
+        val result = underModelLock {
             background {
                 val newList = manager.entries.map { CardListEntryPresenter(it) }
                 val newSelection: CardListEntryPresenter? = newList.firstOrNull { it.entry.path == selectEntry } ?: newList.firstOrNull()
@@ -155,17 +93,81 @@ class CardSetManagerPresenter(
                 )
             }
         }
-        saveState()
+        saveState(result)
+        return result
     }
 
-    private fun saveState() {
+    private fun saveState(state: CardSetManagerPresenterState) {
         setCardSetManagerPresenterSavedState(
             CardSetManagerPresenterSavedState(
-                currentPath = mutableState.value?.currentRelativePath,
-                selectedEntry = mutableState.value?.selectedEntry?.entry?.path,
+                currentPath = state.currentRelativePath,
+                selectedEntry = state.selectedEntry?.entry?.path,
             )
         )
     }
+
+    fun showHelpFrame() {
+        launchUiTask {
+            showHelp()
+        }
+    }
+
+    fun selectItem(item: CardListEntryPresenter?) {
+        updateState { state ->
+            val result = state.copy(selectedEntry = item)
+            saveState(result)
+            result
+        }
+    }
+
+    fun scrollRequestCompleted() {
+        updateState { state -> state.copy(isScrollToSelectionRequested = false) }
+    }
+
+    fun goUp() {
+        updateState { state ->
+            val list = state.entries
+            if (list.isEmpty()) {
+                return@updateState null
+            }
+            val firstEntry = list.firstOrNull()?.entry ?: return@updateState null
+            if (firstEntry !is FlashcardSetUpEntry) {
+                return@updateState null
+            }
+            enterDir(firstEntry.path)
+        }
+    }
+
+    fun openElement() {
+        updateState { state ->
+            val selectedEntry = state.selectedEntry?.entry ?: return@updateState null
+            when (selectedEntry) {
+                is FlashcardSetFileEntry -> {
+                    viewFlashcards(selectedEntry)
+                    null
+                }
+                is FlashcardSetDirEntry, is FlashcardSetUpEntry -> {
+                    enterDir(selectedEntry.path)
+                }
+            }
+        }
+    }
+
+    private suspend fun enterDir(dirPath: RelativePath): CardSetManagerPresenterState? =
+        underModelLock {
+            val (oldPath, result) = backgroundWithProgress(this) {
+                manager.path?.relativePath to manager.enter(dirPath)
+            }
+            when (result) {
+                is DirEnterSuccess -> {
+                    captureManagerState(selectEntry = if (dirPath == oldPath?.parent) oldPath else null)
+                }
+                is DirEnterError -> {
+                    view.showError(result.message)
+                    null
+                }
+            }
+        }
 
     fun viewFlashcards(entry: FlashcardSetListEntry) {
         launchUiTask {
@@ -230,7 +232,9 @@ class CardSetManagerPresenter(
         launchUiTask {
             when (val result = underModelLock { background { manager.createWhatever() } }) {
                 is CreateSuccess -> {
-                    updateEntries(mutableState.value?.currentRelativePath?.plus(name))
+                    updateState { state ->
+                        captureManagerState(state.currentRelativePath?.plus(name))
+                    }
                 }
                 is CreateError -> {
                     view.showError(result.message)

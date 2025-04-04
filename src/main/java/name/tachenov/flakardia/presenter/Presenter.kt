@@ -2,8 +2,11 @@ package name.tachenov.flakardia.presenter
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.debugMode
@@ -21,18 +24,29 @@ abstract class Presenter<S : PresenterState, V : View> {
     lateinit var view: V
         private set
 
-    abstract val state: Flow<S>
+    private val stateUpdateChannel = Channel<suspend (S) -> S?>(Channel.UNLIMITED)
+    private val stateFlow = MutableSharedFlow<S>(replay = 1)
+
+    val state: Flow<S> get() = stateFlow.asSharedFlow()
 
     private var currentRunScope: CoroutineScope? = null
     private val currentlyRunningTasks = AtomicInteger()
 
-    protected abstract suspend fun runStateUpdates()
+    protected abstract suspend fun computeInitialState(): S
 
     suspend fun run(view: V) = coroutineScope {
         assertEDT()
         this@Presenter.view = view
         launch {
-            runStateUpdates()
+            var state = computeInitialState()
+            stateFlow.emit(state)
+            for (update in stateUpdateChannel) {
+                val newState = update(state)
+                if (newState != null) {
+                    state = newState
+                    stateFlow.emit(state)
+                }
+            }
         }
         currentRunScope = this@coroutineScope
         try {
@@ -42,6 +56,10 @@ abstract class Presenter<S : PresenterState, V : View> {
             cancel()
             currentRunScope = null
         }
+    }
+
+    protected fun updateState(update: suspend (S) -> S?) {
+        check(stateUpdateChannel.trySend(update).isSuccess)
     }
 
     protected fun launchUiTask(task: suspend () -> Unit) {
