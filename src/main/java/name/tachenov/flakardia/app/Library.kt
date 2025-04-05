@@ -50,7 +50,8 @@ interface FlashcardStorage {
     fun readEntries(path: RelativePath): List<FlashcardSetListEntry>
     fun readFlashcards(path: RelativePath): FlashcardSetResult
     fun readLibraryStats(): LibraryStatsResult
-    fun saveLibraryStats(stats: LibraryStats): StatsSaveResult
+    fun saveLibraryStats(stats: LibraryStats): SaveResult
+    fun saveFlashcardSetFile(path: RelativePath, flashcards: List<Flashcard>): SaveResult
     fun createDir(path: RelativePath)
     fun createFile(path: RelativePath)
 }
@@ -120,15 +121,20 @@ data class Library(private val storage: FlashcardStorage) {
         }
     }
 
-    fun saveUpdatedStats(stats: LibraryStats): StatsSaveResult {
+    fun saveUpdatedStats(stats: LibraryStats): SaveResult {
         assertBGT()
         return when (val allStats = storage.readLibraryStats()) {
             is LibraryStats -> {
                 val updatedStats = allStats.update(stats)
                 storage.saveLibraryStats(updatedStats)
             }
-            is LibraryStatsError -> StatsSaveError(allStats.message)
+            is LibraryStatsError -> SaveError(allStats.message)
         }
+    }
+
+    fun saveFlashcardSetFile(fileEntry: FlashcardSetFileEntry, flashcards: List<Flashcard>): SaveResult {
+        assertBGT()
+        return storage.saveFlashcardSetFile(fileEntry.path, flashcards)
     }
 
     fun readFlashcards(entry: FlashcardSetListEntry): FlashcardSetResult {

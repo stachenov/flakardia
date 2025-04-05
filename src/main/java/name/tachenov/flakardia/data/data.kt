@@ -134,9 +134,9 @@ data class FullPath(
 
 operator fun FullPath.plus(name: String): FullPath = FullPath(library, relativePath + name)
 
-sealed class StatsSaveResult
+sealed class SaveResult
 
-data object StatsSaveSuccess : StatsSaveResult()
+data object SaveSuccess : SaveResult()
 
-data class StatsSaveError(val message: String) : StatsSaveResult()
+data class SaveError(val message: String) : SaveResult()
 

@@ -92,7 +92,9 @@ class DuplicateDetectionTest {
 
         override fun readLibraryStats(): LibraryStatsResult = LibraryStats(emptyMap())
 
-        override fun saveLibraryStats(stats: LibraryStats): StatsSaveResult = StatsSaveSuccess
+        override fun saveLibraryStats(stats: LibraryStats): SaveResult = SaveSuccess
+
+        override fun saveFlashcardSetFile(path: RelativePath, flashcards: List<Flashcard>): SaveResult = SaveSuccess
 
         override fun createDir(path: RelativePath) { }
 

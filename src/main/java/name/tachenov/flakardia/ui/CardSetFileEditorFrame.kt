@@ -6,10 +6,7 @@ import java.awt.Dimension
 import java.awt.Rectangle
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
-import javax.swing.JComponent
-import javax.swing.JPanel
-import javax.swing.JScrollPane
-import javax.swing.JTextField
+import javax.swing.*
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import javax.swing.text.Document
@@ -22,10 +19,12 @@ class CardSetFileEditorFrame(
 {
     private val editor = CardSetEditor(presenter)
     private val scrollPane = JScrollPane(editor)
+    private val status = JLabel()
 
     init {
         layout = BorderLayout()
         add(scrollPane, BorderLayout.CENTER)
+        add(status, BorderLayout.SOUTH)
     }
 
     override fun restoreSavedViewState() { }
@@ -34,6 +33,11 @@ class CardSetFileEditorFrame(
 
     override fun applyPresenterState(state: CardSetFileEditorState) {
         editor.updateState(state)
+        status.text = when (val persistenceState = state.persistenceState) {
+            is CardSetFileEditorEditedState -> "Saving..."
+            is CardSetFileEditorSavedState -> "Saved"
+            is CardSetFileEditorSaveErrorState -> "Save error: ${persistenceState.message}"
+        }
     }
 }
 
@@ -43,17 +47,18 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
     fun updateState(update: CardSetFileEditorState) {
         var updated = true
         when (val change = update.changeFromPrevious) {
-            null -> {
+            CardSetFileEditorFirstState -> {
                 for (editorComponent in editors) {
                     remove(editorComponent.questionEditor)
                     remove(editorComponent.answerEditor)
                 }
                 editors.clear()
-                for (card in update.fullState.cards) {
+                for (card in update.editorFullState.cards) {
                     insertCardEditor(editors.size, card)
                 }
                 editors.firstOrNull()?.questionEditor?.requestFocusInWindow()
             }
+            is CardSetFileEditorNoChange -> { }
             is CardAdded -> {
                 insertCardEditor(change.index, change.card)
                 editors[change.index].questionEditor.requestFocusInWindow()

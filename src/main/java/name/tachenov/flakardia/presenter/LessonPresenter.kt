@@ -2,8 +2,8 @@ package name.tachenov.flakardia.presenter
 
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.background
-import name.tachenov.flakardia.data.StatsSaveError
-import name.tachenov.flakardia.data.StatsSaveSuccess
+import name.tachenov.flakardia.data.SaveError
+import name.tachenov.flakardia.data.SaveSuccess
 import name.tachenov.flakardia.underModelLock
 
 interface LessonPresenterView : View
@@ -75,8 +75,8 @@ class LessonPresenter(
                 }
             }
             when (saveResult) {
-                is StatsSaveError -> view.showError("An error occurred when trying to save word statistics", saveResult.message)
-                is StatsSaveSuccess -> {}
+                is SaveError -> view.showError("An error occurred when trying to save word statistics", saveResult.message)
+                is SaveSuccess -> {}
             }
             newState
         }

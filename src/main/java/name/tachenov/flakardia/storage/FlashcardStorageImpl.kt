@@ -80,16 +80,26 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
         }
     }
 
-    override fun saveLibraryStats(stats: LibraryStats): StatsSaveResult {
+    override fun saveLibraryStats(stats: LibraryStats): SaveResult =
+        saveTextFile(statsFile, "stats", ".json") {
+            SERIALIZER.encodeToString(stats)
+        }
+
+    override fun saveFlashcardSetFile(path: RelativePath, flashcards: List<Flashcard>): SaveResult =
+        saveTextFile(path.toFilePath(), "cards", ".txt") {
+            flashcards.joinToString("\n") { "${it.front.value}\n${it.back.value}\n" }
+        }
+
+    private fun saveTextFile(path: Path, tempPrefix: String, tempSuffix: String, content: () -> String): SaveResult {
         assertBGT()
         try {
             ensureFlakardiaDirExists()
-            val tempFile = Files.createTempFile(flakardiaDir, "stats", ".json")
-            Files.writeString(tempFile, SERIALIZER.encodeToString(stats))
-            Files.move(tempFile, statsFile, StandardCopyOption.REPLACE_EXISTING)
-            return StatsSaveSuccess
+            val tempFile = Files.createTempFile(path.parent, tempPrefix, tempSuffix)
+            Files.writeString(tempFile, content())
+            Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING)
+            return SaveSuccess
         } catch (e: Exception) {
-            return StatsSaveError(e.toString())
+            return SaveError(e.toString())
         }
     }
 
