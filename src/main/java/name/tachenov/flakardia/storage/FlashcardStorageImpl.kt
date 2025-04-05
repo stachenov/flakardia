@@ -92,14 +92,25 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
 
     private fun saveTextFile(path: Path, tempPrefix: String, tempSuffix: String, content: () -> String): SaveResult {
         assertBGT()
+        var tempFile: Path? = null
         try {
             ensureFlakardiaDirExists()
-            val tempFile = Files.createTempFile(path.parent, tempPrefix, tempSuffix)
+            tempFile = Files.createTempFile(path.parent, tempPrefix, tempSuffix)
+            checkNotNull(tempFile)
             Files.writeString(tempFile, content())
             Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING)
+            tempFile = null
             return SaveSuccess
         } catch (e: Exception) {
             return SaveError(e.toString())
+        } finally {
+            if (tempFile != null && Files.exists(tempFile)) {
+                try {
+                    Files.delete(tempFile)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 
