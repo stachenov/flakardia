@@ -112,4 +112,17 @@ class CardSetFileEditorPresenter(
             changeFromPrevious = CardAdded(index, newCard),
         )
     }
+
+    fun removeCard(id: CardId) {
+        updateState { state ->
+            val oldCardList = state.fullState.cards
+            val index = oldCardList.indexOfFirst { it.id == id }
+            if (index == -1) return@updateState null
+            val newCardList = oldCardList - oldCardList[index]
+            state.copy(
+                fullState = CardSetFileEditorFullState(newCardList),
+                changeFromPrevious = CardRemoved(index),
+            )
+        }
+    }
 }
