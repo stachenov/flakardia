@@ -153,21 +153,25 @@ class CardSetManagerPresenter(
         }
     }
 
-    private suspend fun enterDir(dirPath: RelativePath): CardSetManagerPresenterState? =
-        underModelLock {
-            val (oldPath, result) = backgroundWithProgress(this) {
+    private suspend fun enterDir(dirPath: RelativePath): CardSetManagerPresenterState? {
+        val (newState, error) = underModelLock {
+            val (oldPath, enterResult) = backgroundWithProgress(this) {
                 manager.path?.relativePath to manager.enter(dirPath)
             }
-            when (result) {
+            when (enterResult) {
                 is DirEnterSuccess -> {
-                    captureManagerState(selectEntry = if (dirPath == oldPath?.parent) oldPath else null)
+                    captureManagerState(selectEntry = if (dirPath == oldPath?.parent) oldPath else null) to null
                 }
                 is DirEnterError -> {
-                    view.showError(result.message)
-                    null
+                    null to enterResult
                 }
             }
         }
+        if (error != null) {
+            view.showError(error.message)
+        }
+        return newState
+    }
 
     fun viewFlashcards(entry: FlashcardSetListEntry) {
         launchUiTask {
@@ -229,17 +233,21 @@ class CardSetManagerPresenter(
     }
 
     private fun launchCreateAction(name: String, createWhatever: CardManager.() -> CreateResult) {
-        launchUiTask {
-            when (val result = underModelLock { background { manager.createWhatever() } }) {
-                is CreateSuccess -> {
-                    updateState { state ->
-                        captureManagerState(state.currentRelativePath?.plus(name))
+        updateState { state ->
+            val (newState, error) = underModelLock {
+                when (val result = background { manager.createWhatever() }) {
+                    is CreateSuccess -> {
+                        captureManagerState(selectEntry = state.currentRelativePath?.plus(name)) to null
+                    }
+                    is CreateError -> {
+                        null to result
                     }
                 }
-                is CreateError -> {
-                    view.showError(result.message)
-                }
             }
+            if (error != null) {
+                view.showError(error.message)
+            }
+            newState
         }
     }
 
