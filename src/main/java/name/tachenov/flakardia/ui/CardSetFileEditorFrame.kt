@@ -140,11 +140,19 @@ private class CardEditor(
         questionEditor.addKeyListener(KeyEvent.VK_ENTER) {
             if (questionEditor.caretPosition == 0) {
                 presenter.insertCardBefore(id)
+                true
+            }
+            else {
+                false
             }
         }
         questionEditor.addKeyListener(KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE) {
             if (questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty()) {
                 presenter.removeCard(id)
+                true
+            }
+            else {
+                false
             }
         }
         answerEditor.document.addDocumentChangeListener {
@@ -153,11 +161,19 @@ private class CardEditor(
         answerEditor.addKeyListener(KeyEvent.VK_ENTER) {
             if (answerEditor.caretPosition == answerEditor.text.length) {
                 presenter.insertCardAfter(id)
+                true
+            }
+            else {
+                false
             }
         }
         answerEditor.addKeyListener(KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE) {
             if (questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty()) {
                 presenter.removeCard(id)
+                true
+            }
+            else {
+                false
             }
         }
     }
@@ -181,12 +197,13 @@ private fun Document.addDocumentChangeListener(block: () -> Unit) {
     })
 }
 
-private fun JTextComponent.addKeyListener(vararg keyCodes: Int, listener: () -> Unit) {
+private fun JTextComponent.addKeyListener(vararg keyCodes: Int, listener: () -> Boolean) {
     addKeyListener(object : KeyAdapter() {
         override fun keyPressed(e: KeyEvent) {
             if (e.keyCode in keyCodes) {
-                e.consume()
-                listener()
+                if (listener()) {
+                    e.consume()
+                }
             }
         }
     })
