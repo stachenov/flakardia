@@ -131,7 +131,7 @@ private class CardEditor(
         questionEditor.document.addDocumentChangeListener {
             presenter.updateQuestion(id, questionEditor.text)
         }
-        questionEditor.addEnterKeyListener {
+        questionEditor.addKeyListener(KeyEvent.VK_ENTER) {
             if (questionEditor.caretPosition == 0) {
                 presenter.insertCardBefore(id)
             }
@@ -139,7 +139,7 @@ private class CardEditor(
         answerEditor.document.addDocumentChangeListener {
             presenter.updateAnswer(id, answerEditor.text)
         }
-        answerEditor.addEnterKeyListener {
+        answerEditor.addKeyListener(KeyEvent.VK_ENTER) {
             if (answerEditor.caretPosition == answerEditor.text.length) {
                 presenter.insertCardAfter(id)
             }
@@ -165,10 +165,11 @@ private fun Document.addDocumentChangeListener(block: () -> Unit) {
     })
 }
 
-private fun JTextComponent.addEnterKeyListener(listener: () -> Unit) {
+private fun JTextComponent.addKeyListener(keyCode: Int, listener: () -> Unit) {
     addKeyListener(object : KeyAdapter() {
         override fun keyPressed(e: KeyEvent) {
-            if (e.keyCode == KeyEvent.VK_ENTER) {
+            if (e.keyCode == keyCode) {
+                e.consume()
                 listener()
             }
         }
