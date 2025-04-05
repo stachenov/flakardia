@@ -57,8 +57,8 @@ class LessonPresenter(
 
     fun answered(answer: Answer?) {
         updateState { state ->
-            underModelLock {
-                val newState = background {
+            val (newState, saveResult) = underModelLock {
+                background {
                     val answerResult = lesson.answer(answer).let {
                         AnswerResultPresenter(
                             yourAnswer = it.yourAnswer?.word?.value,
@@ -66,20 +66,19 @@ class LessonPresenter(
                             isCorrect = it.isCorrect,
                         )
                     }
-                    state.copy(
+                    val newState = state.copy(
                         lessonResult = lesson.result,
                         lessonStatus = AnswerState(answerResult),
                     )
+                    val saveResult = library.saveUpdatedStats(lesson.stats)
+                    newState to saveResult
                 }
-                val saveResult = background {
-                    library.saveUpdatedStats(lesson.stats)
-                }
-                when (saveResult) {
-                    is StatsSaveError -> view.showError("An error occurred when trying to save word statistics", saveResult.message)
-                    is StatsSaveSuccess -> {}
-                }
-                newState
             }
+            when (saveResult) {
+                is StatsSaveError -> view.showError("An error occurred when trying to save word statistics", saveResult.message)
+                is StatsSaveSuccess -> {}
+            }
+            newState
         }
     }
 
