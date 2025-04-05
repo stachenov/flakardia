@@ -122,8 +122,10 @@ suspend fun <T> underModelLock(code: suspend () -> T): T {
     }
     else {
         modelLock.withLock {
-            withContext(context + ModelLock) {
-                code()
+            coroutineScope {
+                withContext(context + ModelLock) {
+                    code()
+                }
             }
         }
     }
