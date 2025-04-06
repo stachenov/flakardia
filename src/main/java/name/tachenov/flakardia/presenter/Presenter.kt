@@ -7,6 +7,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.debugMode
@@ -27,7 +28,7 @@ abstract class Presenter<S : PresenterState, V : View> {
     private val stateUpdateChannel = Channel<suspend (S) -> S?>(Channel.UNLIMITED)
     private val stateFlow = MutableSharedFlow<S>(replay = 1)
 
-    val state: Flow<S> get() = stateFlow.asSharedFlow()
+    val state: Flow<S> get() = stateFlow.asSharedFlow().distinctUntilChanged()
 
     private var currentRunScope: CoroutineScope? = null
     private val currentlyRunningTasks = AtomicInteger()
