@@ -64,7 +64,14 @@ class CardSetFileEditorPresenter(
     private val cardId = AtomicInteger()
 
     override suspend fun computeInitialState(): CardSetFileEditorState = CardSetFileEditorState(
-        editorFullState = CardSetFileEditorFullState(initialContent.map { CardPresenterState(allocateId(), it.front.value, it.back.value) }),
+        editorFullState = CardSetFileEditorFullState(
+            if (initialContent.isNotEmpty()) {
+                initialContent.map { CardPresenterState(allocateId(), it.front.value, it.back.value) }
+            }
+            else {
+                listOf(CardPresenterState(allocateId(), "", ""))
+            }
+        ),
         changeFromPrevious = CardSetFileEditorFirstState,
         persistenceState = CardSetFileEditorSavedState,
     ).also {
@@ -169,6 +176,7 @@ class CardSetFileEditorPresenter(
     fun removeCard(id: CardId) {
         updateState { state ->
             val oldCardList = state.editorFullState.cards
+            if (oldCardList.size == 1) return@updateState null // do not allow to remove the last card
             val index = oldCardList.indexOfFirst { it.id == id }
             if (index == -1) return@updateState null
             val newCardList = oldCardList - oldCardList[index]
