@@ -153,44 +153,24 @@ private class CardEditor(
         questionEditor.document.addDocumentChangeListener {
             presenter.updateQuestion(id, questionEditor.text)
         }
-        questionEditor.addKeyListener(KeyEvent.VK_ENTER) {
-            if (questionEditor.caretPosition == 0) {
-                presenter.insertCardBefore(id)
-                true
-            }
-            else {
-                false
-            }
+        questionEditor.addKeyListener(KeyEvent.VK_ENTER, condition = { caretPosition == 0 }) {
+            presenter.insertCardBefore(id)
         }
-        questionEditor.addKeyListener(KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE) {
-            if (questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty()) {
-                presenter.removeCard(id)
-                true
-            }
-            else {
-                false
-            }
+        questionEditor.addKeyListener(KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE,
+            condition = { questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty() }
+        ) {
+            presenter.removeCard(id)
         }
         answerEditor.document.addDocumentChangeListener {
             presenter.updateAnswer(id, answerEditor.text)
         }
-        answerEditor.addKeyListener(KeyEvent.VK_ENTER) {
-            if (answerEditor.caretPosition == answerEditor.text.length) {
-                presenter.insertCardAfter(id)
-                true
-            }
-            else {
-                false
-            }
+        answerEditor.addKeyListener(KeyEvent.VK_ENTER, condition = { caretPosition == text.length }) {
+            presenter.insertCardAfter(id)
         }
-        answerEditor.addKeyListener(KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE) {
-            if (questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty()) {
-                presenter.removeCard(id)
-                true
-            }
-            else {
-                false
-            }
+        answerEditor.addKeyListener(KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE,
+            condition = { questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty() }
+        ) {
+            presenter.removeCard(id)
         }
     }
 
@@ -213,13 +193,12 @@ private fun Document.addDocumentChangeListener(block: () -> Unit) {
     })
 }
 
-private fun JTextComponent.addKeyListener(vararg keyCodes: Int, listener: () -> Boolean) {
+private fun JTextComponent.addKeyListener(vararg keyCodes: Int, condition: JTextComponent.() -> Boolean, listener: () -> Unit) {
     addKeyListener(object : KeyAdapter() {
         override fun keyPressed(e: KeyEvent) {
-            if (e.keyCode in keyCodes) {
-                if (listener()) {
-                    e.consume()
-                }
+            if (e.keyCode in keyCodes && condition()) {
+                listener()
+                e.consume()
             }
         }
     })
