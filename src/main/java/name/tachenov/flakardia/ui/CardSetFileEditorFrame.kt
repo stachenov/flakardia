@@ -56,7 +56,17 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
                 for (card in update.editorFullState.cards) {
                     insertCardEditor(editors.size, card)
                 }
-                editors.firstOrNull()?.questionEditor?.requestFocusInWindow()
+                val lastEditor = editors.lastOrNull()
+                if (lastEditor != null) {
+                    SwingUtilities.invokeLater {
+                        if (lastEditor.questionEditor.text.isEmpty()) {
+                            lastEditor.questionEditor.requestFocusInWindow()
+                        }
+                        else {
+                            lastEditor.answerEditor.requestFocusInWindow()
+                        }
+                    }
+                }
             }
             is CardSetFileEditorNoChange -> { }
             is CardAdded -> {
