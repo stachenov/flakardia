@@ -97,6 +97,42 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         editors.add(index, editor)
         add(editor.questionEditor, index * 2)
         add(editor.answerEditor, index * 2 + 1)
+        val questionEditor = editor.questionEditor
+        val answerEditor = editor.answerEditor
+        questionEditor.addKeyListener(KeyEvent.VK_UP, condition = { true }) {
+            focusPreviousEditor(editor)
+        }
+        questionEditor.addKeyListener(KeyEvent.VK_DOWN, condition = { true }) {
+            answerEditor.requestFocusInWindow()
+        }
+        answerEditor.addKeyListener(KeyEvent.VK_UP, condition = { true }) {
+            questionEditor.requestFocusInWindow()
+        }
+        answerEditor.addKeyListener(KeyEvent.VK_DOWN, condition = { true }) {
+            focusNextEditor(editor)
+        }
+    }
+
+    private fun focusPreviousEditor(thisEditor: CardEditor) {
+        val index = editors.indexOf(thisEditor)
+        if (index == -1) return
+        if (index > 0) {
+            editors[index - 1].answerEditor.requestFocusInWindow()
+        }
+        else {
+            editors.last().answerEditor.requestFocusInWindow()
+        }
+    }
+
+    private fun focusNextEditor(thisEditor: CardEditor) {
+        val index = editors.indexOf(thisEditor)
+        if (index == -1) return
+        if (index + 1 < editors.size) {
+            editors[index + 1].questionEditor.requestFocusInWindow()
+        }
+        else {
+            editors.first().questionEditor.requestFocusInWindow()
+        }
     }
 
     private fun removeCardEditor(index: Int) {
