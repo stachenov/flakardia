@@ -244,6 +244,10 @@ class CardSetManagerPresenter(
                     }
                 }
             }
+            val newFileEntry = newState?.entries?.map { it.entry }?.find { it is FlashcardSetFileEntry && it.name == name }
+            if (newFileEntry != null) {
+                editFile(newFileEntry)
+            }
             if (error != null) {
                 view.showError(error.message)
             }
