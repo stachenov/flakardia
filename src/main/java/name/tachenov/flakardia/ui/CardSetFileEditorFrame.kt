@@ -211,6 +211,9 @@ private class CardEditor(
         questionEditor.addKeyListener(KeyEvent.VK_ENTER, condition = { caretPosition == 0 }) {
             presenter.insertCardBefore(id)
         }
+        questionEditor.addKeyListener(KeyEvent.VK_ENTER, condition = { caretPosition > 0 }) {
+            answerEditor.requestFocusInWindow()
+        }
         questionEditor.addKeyListener(KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE,
             condition = { questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty() }
         ) {
@@ -219,7 +222,7 @@ private class CardEditor(
         answerEditor.document.addDocumentChangeListener {
             presenter.updateAnswer(id, answerEditor.text)
         }
-        answerEditor.addKeyListener(KeyEvent.VK_ENTER, condition = { caretPosition == text.length }) {
+        answerEditor.addKeyListener(KeyEvent.VK_ENTER, condition = { true }) {
             presenter.insertCardAfter(id)
         }
         answerEditor.addKeyListener(KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE,
