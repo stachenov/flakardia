@@ -41,8 +41,27 @@ class CardSetFileEditorFrame(
     }
 }
 
-class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel() {
+class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(), Scrollable {
     private val editors = mutableListOf<CardEditor>()
+
+    override fun getPreferredScrollableViewportSize(): Dimension = preferredSize
+
+    override fun getScrollableUnitIncrement(visibleRect: Rectangle?, orientation: Int, direction: Int): Int =
+        editors.first().questionEditor.height
+
+    override fun getScrollableBlockIncrement(visibleRect: Rectangle?, orientation: Int, direction: Int): Int {
+        val parent = this.parent
+        return if (parent is JViewport) {
+            parent.extentSize.height
+        }
+        else {
+            height
+        }
+    }
+
+    override fun getScrollableTracksViewportWidth(): Boolean = true
+
+    override fun getScrollableTracksViewportHeight(): Boolean = false
 
     fun updateState(update: CardSetFileEditorState) {
         var updated = true
