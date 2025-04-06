@@ -1,10 +1,7 @@
 package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.presenter.*
-import java.awt.BorderLayout
-import java.awt.Component
-import java.awt.Dimension
-import java.awt.Rectangle
+import java.awt.*
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import javax.swing.*
@@ -12,7 +9,6 @@ import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import javax.swing.text.Document
 import javax.swing.text.JTextComponent
-import kotlin.math.max
 
 class CardSetFileEditorFrame(
     presenter: CardSetFileEditorPresenter
@@ -20,12 +16,17 @@ class CardSetFileEditorFrame(
 {
     private val editor = CardSetEditor(presenter)
     private val scrollPane = JScrollPane(editor)
-    private val status = JLabel()
+    private val statusPanel = JPanel().apply {
+        border = BorderFactory.createEmptyBorder(INSET_TOP, INSET_LEFT, INSET_BOTTOM, INSET_RIGHT)
+    }
+    private val statusLabel = JLabel()
 
     init {
         layout = BorderLayout()
         add(scrollPane, BorderLayout.CENTER)
-        add(status, BorderLayout.SOUTH)
+        statusPanel.layout = BorderLayout()
+        statusPanel.add(statusLabel, BorderLayout.WEST)
+        add(statusPanel, BorderLayout.SOUTH)
     }
 
     override fun restoreSavedViewState() { }
@@ -34,7 +35,7 @@ class CardSetFileEditorFrame(
 
     override fun applyPresenterState(state: CardSetFileEditorState) {
         editor.updateState(state)
-        status.text = when (val persistenceState = state.persistenceState) {
+        statusLabel.text = when (val persistenceState = state.persistenceState) {
             is CardSetFileEditorEditedState -> "Saving..."
             is CardSetFileEditorSavedState -> "Saved"
             is CardSetFileEditorSaveErrorState -> "Save error: ${persistenceState.message}"
@@ -159,39 +160,76 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         remove(removed.answerEditor)
     }
 
-    override fun getMinimumSize(): Dimension = computeSize { it.minimumSize }
+    override fun getMinimumSize(): Dimension = computeSize { minimumSize }
 
-    override fun getPreferredSize(): Dimension = computeSize { it.preferredSize }
+    override fun getPreferredSize(): Dimension = computeSize { preferredSize }
 
-    override fun getMaximumSize(): Dimension = computeSize { it.maximumSize }
+    override fun getMaximumSize(): Dimension = computeSize { maximumSize }
 
-    private fun computeSize(sizeFunction: (JComponent) -> Dimension): Dimension {
-        var width = 100
-        var height = 0
-        for (editorComponent in editors) {
-            val size1 = sizeFunction(editorComponent.questionEditor)
-            val size2 = sizeFunction(editorComponent.answerEditor)
-            width = max(width, max(size1.width, size2.width))
-            height += size1.height
-            height += size2.height
-            height += GAP_BETWEEN_CARDS
-        }
-        return Dimension(width, height)
+    private fun computeSize(sizeToUse: JComponent.() -> Dimension): Dimension {
+        val layout = computeLayout(MIN_WIDTH, sizeToUse)
+        return Dimension(layout.fullWidth, layout.fullHeight)
     }
 
     override fun doLayout() {
-        val width = this.width
-        val x = 0
-        var y = 0
-        for (editorComponent in editors) {
-            val h1 = editorComponent.questionEditor.preferredSize.height
-            editorComponent.questionEditor.bounds = Rectangle(x, y, width, h1)
-            y += h1
-            val h2 = editorComponent.answerEditor.preferredSize.height
-            editorComponent.answerEditor.bounds = Rectangle(x, y, width, h2)
-            y += h2
-            y += GAP_BETWEEN_CARDS
+        val forcedWidth = this.width - INSET_LEFT - INSET_RIGHT
+        val layout = computeLayout(minWidth = forcedWidth) { preferredSize.also { it.width = forcedWidth } }
+        for ((editorComponent, y) in editors.zip(layout.yCoordinates)) {
+            editorComponent.questionEditor.bounds = Rectangle(layout.x, y.questionY1, layout.componentWidth, y.questionHeight)
+            editorComponent.answerEditor.bounds = Rectangle(layout.x, y.answerY1, layout.componentWidth, y.answerHeight)
         }
+    }
+
+    private fun computeLayout(minWidth: Int, sizeToUse: JComponent.() -> Dimension): Layout {
+        var width = minWidth
+        var y = INSET_TOP
+        val yCoordinates = mutableListOf<CardEditorLayout>()
+        for (editorComponent in editors) {
+            val size1 = editorComponent.questionEditor.sizeToUse()
+            width = width.coerceAtLeast(size1.width)
+
+            val questionY1 = y
+            y += size1.height
+            val questionY2 = y
+
+            y += GAP_BETWEEN_QUESTION_AND_ANSWER
+
+            val size2 = editorComponent.answerEditor.sizeToUse()
+            width = width.coerceAtLeast(size2.width)
+
+            val answerY1 = y
+            y += size2.height
+            val answerY2 = y
+
+            y += GAP_BETWEEN_CARDS
+
+            yCoordinates += CardEditorLayout(questionY1, questionY2, answerY1, answerY2)
+        }
+        return Layout(
+            width,
+            yCoordinates,
+            Insets(INSET_TOP, INSET_LEFT, INSET_BOTTOM, INSET_RIGHT)
+        )
+    }
+
+    data class Layout(
+        val componentWidth: Int,
+        val yCoordinates: List<CardEditorLayout>,
+        val insets: Insets,
+    ) {
+        val x: Int get() = insets.left
+        val fullWidth: Int get() = INSET_LEFT + componentWidth + INSET_RIGHT
+        val fullHeight: Int get() = yCoordinates.last().answerY2 + insets.bottom
+    }
+
+    data class CardEditorLayout(
+        val questionY1: Int,
+        val questionY2: Int,
+        val answerY1: Int,
+        val answerY2: Int,
+    ) {
+        val questionHeight: Int get() = questionY2 - questionY1
+        val answerHeight: Int get() = answerY2 - answerY1
     }
 }
 
@@ -200,8 +238,8 @@ private class CardEditor(
     initialState: CardPresenterState,
 ) {
     val id = initialState.id
-    val questionEditor = JTextField(initialState.question)
-    val answerEditor = JTextField(initialState.answer)
+    val questionEditor = FixedWidthTextField(initialState.question)
+    val answerEditor = FixedWidthTextField(initialState.answer)
 
     init {
         questionEditor.document.addDocumentChangeListener {
@@ -279,4 +317,10 @@ private fun JTextComponent.addKeyListener(vararg keyCodes: Int, condition: JText
     })
 }
 
-private const val GAP_BETWEEN_CARDS = 5
+private const val INSET_TOP = 2
+private const val INSET_LEFT = 2
+private const val INSET_BOTTOM = 2
+private const val INSET_RIGHT = 2
+private const val GAP_BETWEEN_QUESTION_AND_ANSWER = 2
+private const val GAP_BETWEEN_CARDS = 10
+private const val MIN_WIDTH = 100
