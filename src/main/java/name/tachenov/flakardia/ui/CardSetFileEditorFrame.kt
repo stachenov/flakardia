@@ -2,6 +2,7 @@ package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.presenter.*
 import java.awt.BorderLayout
+import java.awt.Component
 import java.awt.Dimension
 import java.awt.Rectangle
 import java.awt.event.KeyAdapter
@@ -77,20 +78,18 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
                 }
                 val lastEditor = editors.lastOrNull()
                 if (lastEditor != null) {
-                    SwingUtilities.invokeLater {
-                        if (lastEditor.questionEditor.text.isEmpty()) {
-                            lastEditor.questionEditor.requestFocusInWindow()
-                        }
-                        else {
-                            lastEditor.answerEditor.requestFocusInWindow()
-                        }
+                    if (lastEditor.questionEditor.text.isEmpty()) {
+                        lastEditor.questionEditor.focusAndScroll()
+                    }
+                    else {
+                        lastEditor.answerEditor.focusAndScroll()
                     }
                 }
             }
             is CardSetFileEditorNoChange -> { }
             is CardAdded -> {
                 insertCardEditor(change.index, change.card)
-                editors[change.index].questionEditor.requestFocusInWindow()
+                editors[change.index].questionEditor.focusAndScroll()
             }
             is CardChanged -> {
                 updated = false
@@ -98,10 +97,10 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
             is CardRemoved -> {
                 removeCardEditor(change.index)
                 if (change.index < editors.size) {
-                    editors[change.index].questionEditor.requestFocusInWindow()
+                    editors[change.index].questionEditor.focusAndScroll()
                 }
                 else if (change.index - 1 >= 0) {
-                    editors[change.index - 1].answerEditor.requestFocusInWindow()
+                    editors[change.index - 1].answerEditor.focusAndScroll()
                 }
             }
         }
@@ -122,10 +121,10 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
             focusPreviousEditor(editor)
         }
         questionEditor.addKeyListener(KeyEvent.VK_DOWN, condition = { true }) {
-            answerEditor.requestFocusInWindow()
+            answerEditor.focusAndScroll()
         }
         answerEditor.addKeyListener(KeyEvent.VK_UP, condition = { true }) {
-            questionEditor.requestFocusInWindow()
+            questionEditor.focusAndScroll()
         }
         answerEditor.addKeyListener(KeyEvent.VK_DOWN, condition = { true }) {
             focusNextEditor(editor)
@@ -136,10 +135,10 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         val index = editors.indexOf(thisEditor)
         if (index == -1) return
         if (index > 0) {
-            editors[index - 1].answerEditor.requestFocusInWindow()
+            editors[index - 1].answerEditor.focusAndScroll()
         }
         else {
-            editors.last().answerEditor.requestFocusInWindow()
+            editors.last().answerEditor.focusAndScroll()
         }
     }
 
@@ -147,10 +146,10 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         val index = editors.indexOf(thisEditor)
         if (index == -1) return
         if (index + 1 < editors.size) {
-            editors[index + 1].questionEditor.requestFocusInWindow()
+            editors[index + 1].questionEditor.focusAndScroll()
         }
         else {
-            editors.first().questionEditor.requestFocusInWindow()
+            editors.first().questionEditor.focusAndScroll()
         }
     }
 
@@ -212,7 +211,7 @@ private class CardEditor(
             presenter.insertCardBefore(id)
         }
         questionEditor.addKeyListener(KeyEvent.VK_ENTER, condition = { caretPosition > 0 }) {
-            answerEditor.requestFocusInWindow()
+            answerEditor.focusAndScroll()
         }
         questionEditor.addKeyListener(KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE,
             condition = { questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty() }
@@ -233,6 +232,24 @@ private class CardEditor(
     }
 
     override fun toString(): String = "($questionEditor, $answerEditor)"
+}
+
+private fun JComponent.focusAndScroll() {
+    SwingUtilities.invokeLater {
+        // Can't just use scrollRectToVisible() because JTextField would only scroll itself then,
+        // as it has its own scrolling to scroll the text horizontally.
+        // But that's not what we want here, we want to scroll the whole editor vertically.
+        val parent = parent ?: return@invokeLater
+        var viewport: Component? = parent
+        while (viewport != null && viewport !is JViewport) {
+            viewport = viewport.parent
+        }
+        if (viewport is JViewport) {
+            val rect = SwingUtilities.convertRectangle(parent, bounds, viewport)
+            viewport.scrollRectToVisible(rect)
+        }
+        requestFocusInWindow()
+    }
 }
 
 private fun Document.addDocumentChangeListener(block: () -> Unit) {
