@@ -52,7 +52,10 @@ class CardSetFileEditorFrame(
 class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(), Scrollable {
     private val editors = mutableListOf<CardEditor>()
 
-    override fun getPreferredScrollableViewportSize(): Dimension = preferredSize
+    override fun getPreferredScrollableViewportSize(): Dimension =
+        preferredSize.apply {
+            height = computeLayout(MIN_WIDTH, numberOfEditors = 8) { preferredSize }.fullHeight
+        }
 
     override fun getScrollableUnitIncrement(visibleRect: Rectangle?, orientation: Int, direction: Int): Int =
         editors.first().questionEditor.height
@@ -173,7 +176,7 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
     override fun getMaximumSize(): Dimension = computeSize { maximumSize }
 
     private fun computeSize(sizeToUse: JComponent.() -> Dimension): Dimension {
-        val layout = computeLayout(MIN_WIDTH, sizeToUse)
+        val layout = computeLayout(MIN_WIDTH) { sizeToUse() }
         return Dimension(layout.fullWidth, layout.fullHeight)
     }
 
@@ -186,11 +189,19 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         }
     }
 
-    private fun computeLayout(minWidth: Int, sizeToUse: JComponent.() -> Dimension): Layout {
+    private fun computeLayout(
+        minWidth: Int,
+        numberOfEditors: Int = editors.size,
+        sizeToUse: JComponent.() -> Dimension,
+    ): Layout {
         var width = minWidth
         var y = INSET_TOP
         val yCoordinates = mutableListOf<CardEditorLayout>()
-        for (editorComponent in editors) {
+        for (i in 0 until numberOfEditors) {
+            // When computing the theoretical size for N editors when N is more than the actual number of editors,
+            // we fall back to using the first editor's size as a sort of default template size,
+            // which works fine in practice because they're all the same height usually.
+            val editorComponent = editors.getOrNull(i) ?: editors.first()
             val size1 = editorComponent.questionEditor.sizeToUse()
             width = width.coerceAtLeast(size1.width)
 
