@@ -116,12 +116,6 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
             }
             is CardRemoved -> {
                 removeCardEditor(change.index)
-                if (change.index < editors.size) {
-                    editors[change.index].questionEditor.focusAndScroll()
-                }
-                else if (change.index - 1 >= 0) {
-                    editors[change.index - 1].answerEditor.focusAndScroll()
-                }
             }
         }
         if (updated) {
@@ -141,35 +135,67 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
             focusPreviousEditor(editor)
         }
         questionEditor.addKeyListener(KeyEvent.VK_DOWN, condition = { true }) {
+            keepCaretPositionIfHomeOrEnd(questionEditor, answerEditor)
+            answerEditor.focusAndScroll()
+        }
+        questionEditor.addKeyListener(KeyEvent.VK_DELETE,
+            condition = { questionEditor.text.isNullOrEmpty() && !answerEditor.text.isNullOrEmpty() }
+        ) {
+            answerEditor.caretPosition = 0
             answerEditor.focusAndScroll()
         }
         answerEditor.addKeyListener(KeyEvent.VK_UP, condition = { true }) {
+            keepCaretPositionIfHomeOrEnd(answerEditor, questionEditor)
             questionEditor.focusAndScroll()
         }
         answerEditor.addKeyListener(KeyEvent.VK_DOWN, condition = { true }) {
             focusNextEditor(editor)
+        }
+        answerEditor.addKeyListener(KeyEvent.VK_BACK_SPACE,
+            condition = { !questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty() }
+        ) {
+            questionEditor.caretPosition = questionEditor.text.length
+            questionEditor.focusAndScroll()
         }
     }
 
     private fun focusPreviousEditor(thisEditor: CardEditor) {
         val index = editors.indexOf(thisEditor)
         if (index == -1) return
-        if (index > 0) {
-            editors[index - 1].answerEditor.focusAndScroll()
+        val previousAnswerEditor = if (index > 0) {
+            editors[index - 1].answerEditor
         }
         else {
-            editors.last().answerEditor.focusAndScroll()
+            editors.last().answerEditor
         }
+        keepCaretPositionIfHomeOrEnd(thisEditor.questionEditor, previousAnswerEditor)
+        previousAnswerEditor.focusAndScroll()
     }
 
     private fun focusNextEditor(thisEditor: CardEditor) {
         val index = editors.indexOf(thisEditor)
         if (index == -1) return
-        if (index + 1 < editors.size) {
-            editors[index + 1].questionEditor.focusAndScroll()
+        val nextQuestionEditor = if (index + 1 < editors.size) {
+            editors[index + 1].questionEditor
         }
         else {
-            editors.first().questionEditor.focusAndScroll()
+            editors.first().questionEditor
+        }
+        keepCaretPositionIfHomeOrEnd(thisEditor.answerEditor, nextQuestionEditor)
+        nextQuestionEditor.focusAndScroll()
+    }
+
+    private fun keepCaretPositionIfHomeOrEnd(fromEditor: JTextComponent, toEditor: JTextComponent) {
+        // If we meet an empty editor while moving between them,
+        // then both of these conditions are true.
+        // The first one wins, so the caret will keep moving to the starting position of every editor after the empty one.
+        // This doesn't really matter much because normally there should be no empty editors to begin with,
+        // so this is an uncommon case.
+        if (fromEditor.caretPosition == 0) {
+            toEditor.caretPosition = 0
+        }
+        else if (fromEditor.caretPosition == fromEditor.text.length) {
+            toEditor.caretPosition = toEditor.text.length
         }
     }
 
@@ -177,6 +203,17 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         val removed = editors.removeAt(index)
         remove(removed.questionEditor)
         remove(removed.answerEditor)
+        val removedFirstEditor = index == 0
+        val removedLastEditor = index == editors.size
+        val focusPreviousEditor = removedLastEditor || (removed.isRemovedUsingBackSpace && !removedFirstEditor)
+        if (focusPreviousEditor) {
+            editors[index - 1].answerEditor.caretPosition = editors[index - 1].answerEditor.text.length
+            editors[index - 1].answerEditor.focusAndScroll()
+        }
+        else {
+            editors[index].questionEditor.caretPosition = 0
+            editors[index].questionEditor.focusAndScroll()
+        }
     }
 
     override fun getMinimumSize(): Dimension = computeSize { minimumSize }
@@ -267,12 +304,15 @@ private class CardEditor(
     val id = initialState.id
     val questionEditor = FixedWidthTextField(initialState.question).also { enableSpellchecker(it) }
     val answerEditor = FixedWidthTextField(initialState.answer).also { enableSpellchecker(it) }
+    var isRemovedUsingBackSpace = false
+        private set
 
     init {
         questionEditor.document.addDocumentChangeListener {
             presenter.updateQuestion(id, questionEditor.text)
         }
-        questionEditor.addKeyListener(KeyEvent.VK_ENTER, condition = { caretPosition == 0 }) {
+        questionEditor.addKeyListener(KeyEvent.VK_ENTER,
+            condition = { caretPosition == 0 && !questionEditor.text.isNullOrBlank() && !answerEditor.text.isNullOrBlank()}) {
             presenter.insertCardBefore(id)
         }
         questionEditor.addKeyListener(KeyEvent.VK_ENTER, condition = { caretPosition > 0 }) {
@@ -280,7 +320,8 @@ private class CardEditor(
         }
         questionEditor.addKeyListener(KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE,
             condition = { questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty() }
-        ) {
+        ) { e ->
+            isRemovedUsingBackSpace = e.keyCode == KeyEvent.VK_BACK_SPACE
             presenter.removeCard(id)
         }
         answerEditor.document.addDocumentChangeListener {
@@ -291,7 +332,8 @@ private class CardEditor(
         }
         answerEditor.addKeyListener(KeyEvent.VK_DELETE, KeyEvent.VK_BACK_SPACE,
             condition = { questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty() }
-        ) {
+        ) { e ->
+            isRemovedUsingBackSpace = e.keyCode == KeyEvent.VK_BACK_SPACE
             presenter.removeCard(id)
         }
     }
@@ -356,11 +398,11 @@ private fun Document.addDocumentChangeListener(block: () -> Unit) {
     })
 }
 
-private fun JTextComponent.addKeyListener(vararg keyCodes: Int, condition: JTextComponent.() -> Boolean, listener: () -> Unit) {
+private fun JTextComponent.addKeyListener(vararg keyCodes: Int, condition: JTextComponent.() -> Boolean, listener: (KeyEvent) -> Unit) {
     addKeyListener(object : KeyAdapter() {
         override fun keyPressed(e: KeyEvent) {
             if (e.keyCode in keyCodes && condition()) {
-                listener()
+                listener(e)
                 e.consume()
             }
         }
