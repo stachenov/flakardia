@@ -7,5 +7,6 @@ module flakardia {
     requires kotlinx.coroutines.core;
     requires kotlinx.serialization.core;
     requires kotlinx.serialization.json;
+    requires jortho;
     exports name.tachenov.flakardia.storage;
 }

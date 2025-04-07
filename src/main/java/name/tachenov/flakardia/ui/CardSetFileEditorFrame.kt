@@ -265,8 +265,8 @@ private class CardEditor(
     initialState: CardPresenterState,
 ) {
     val id = initialState.id
-    val questionEditor = FixedWidthTextField(initialState.question)
-    val answerEditor = FixedWidthTextField(initialState.answer)
+    val questionEditor = FixedWidthTextField(initialState.question).also { enableSpellchecker(it) }
+    val answerEditor = FixedWidthTextField(initialState.answer).also { enableSpellchecker(it) }
 
     init {
         questionEditor.document.addDocumentChangeListener {
