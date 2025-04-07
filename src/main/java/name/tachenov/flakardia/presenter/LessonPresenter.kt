@@ -2,8 +2,7 @@ package name.tachenov.flakardia.presenter
 
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.background
-import name.tachenov.flakardia.data.SaveError
-import name.tachenov.flakardia.data.SaveSuccess
+import name.tachenov.flakardia.data.*
 import name.tachenov.flakardia.underModelLock
 
 interface LessonPresenterView : View
@@ -11,12 +10,21 @@ interface LessonPresenterView : View
 sealed class LessonStatusState
 data class QuestionState(val nextQuestion: Question) : LessonStatusState()
 data class AnswerState(val answerResult: AnswerResultPresenter) : LessonStatusState()
+data class EditWordState(val previousState: AnswerState, val word: EditWordPresenter) : LessonStatusState()
 data object DoneState : LessonStatusState()
 
 data class AnswerResultPresenter(
+    val path: RelativePath,
+    val question: String,
     val yourAnswer: String?,
     val correctAnswer: String,
     val isCorrect: Boolean,
+)
+
+data class EditWordPresenter(
+    val path: RelativePath,
+    val question: String,
+    val answer: String,
 )
 
 data class LessonPresenterState(
@@ -61,6 +69,8 @@ class LessonPresenter(
                 background {
                     val answerResult = lesson.answer(answer).let {
                         AnswerResultPresenter(
+                            path = it.flashcardSetPath,
+                            question = it.question.value,
                             yourAnswer = it.yourAnswer?.word?.value,
                             correctAnswer = it.correctAnswer.word.value,
                             isCorrect = it.isCorrect,
@@ -82,4 +92,56 @@ class LessonPresenter(
         }
     }
 
+    fun editCurrentWord() {
+        updateState { state ->
+            val lessonState = state.lessonStatus
+            if (lessonState !is AnswerState) return@updateState null
+            state.copy(lessonStatus = EditWordState(
+                previousState = lessonState,
+                EditWordPresenter(
+                    path = lessonState.answerResult.path,
+                    question = lessonState.answerResult.question,
+                    answer = lessonState.answerResult.correctAnswer,
+                )
+            ))
+        }
+    }
+
+    fun saveWord(newQuestion: String, newAnswer: String) {
+        updateState { state ->
+            val lessonState = state.lessonStatus
+            if (lessonState !is EditWordState) return@updateState null
+            if (newQuestion.isBlank() || newAnswer.isBlank()) {
+                view.showError("Save error", "Both the question and the answer must be specified")
+                return@updateState null
+            }
+            val saveResult = underModelLock {
+                background {
+                    library.saveUpdatedFlashcard(
+                        fileEntry = FlashcardSetFileEntry(lessonState.word.path),
+                        oldValue = Flashcard(Word(lessonState.word.question), Word(lessonState.word.answer)),
+                        newValue = Flashcard(Word(newQuestion), Word(newAnswer)),
+                    )
+                }
+            }
+            if (saveResult is SaveError) {
+                view.showError("Save error", saveResult.message)
+                return@updateState null
+            }
+            state.copy(lessonStatus = lessonState.previousState.copy(
+                answerResult = lessonState.previousState.answerResult.copy(
+                    question = newQuestion,
+                    correctAnswer = newAnswer,
+                )
+            ))
+        }
+    }
+
+    fun cancelEditing() {
+        updateState { state ->
+            val lessonState = state.lessonStatus
+            if (lessonState !is EditWordState) return@updateState null
+            state.copy(lessonStatus = lessonState.previousState)
+        }
+    }
 }

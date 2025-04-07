@@ -28,10 +28,7 @@ class LessonFrame(
 
     private val lessonResultPanel = LessonResultPanel()
 
-    private val questionAnswerPanel = QuestionAnswerPanel(
-        answered = presenter::answered,
-        nextQuestion = presenter::nextQuestion,
-    )
+    private val questionAnswerPanel = QuestionAnswerPanel(presenter)
     private val done = JLabel("All done!").apply { isVisible = false }
     private val status = JLabel("Initializing...")
 
@@ -93,7 +90,12 @@ class LessonFrame(
             is AnswerState -> {
                 questionAnswerPanel.isVisible = true
                 questionAnswerPanel.displayAnswerResult(lessonStatus.answerResult)
-                status.text = "Press Space to continue to the next question"
+                status.text = "Press Space to continue to the next question, or F2 to edit the card"
+            }
+            is EditWordState -> {
+                questionAnswerPanel.isVisible = true
+                questionAnswerPanel.editWord(lessonStatus.word)
+                status.text = "Press Enter to save the word or Esc to cancel editing"
             }
             is DoneState -> {
                 questionAnswerPanel.isVisible = false

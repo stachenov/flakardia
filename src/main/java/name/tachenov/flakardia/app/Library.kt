@@ -137,6 +137,18 @@ data class Library(private val storage: FlashcardStorage) {
         return storage.saveFlashcardSetFile(fileEntry.path, flashcards)
     }
 
+    fun saveUpdatedFlashcard(fileEntry: FlashcardSetFileEntry, oldValue: Flashcard, newValue: Flashcard): SaveResult {
+        assertBGT()
+        val cards = when (val oldCardsResult = readFlashcards(fileEntry)) {
+            is FlashcardSetError -> return SaveError(oldCardsResult.message)
+            is FlashcardSet -> oldCardsResult.cards.map { it.flashcard }.toMutableList()
+        }
+        val oldValueIndex = cards.indexOf(oldValue)
+        if (oldValueIndex == -1) return SaveError("Flashcard not found: $oldValue")
+        cards[oldValueIndex] = newValue
+        return storage.saveFlashcardSetFile(fileEntry.path, cards)
+    }
+
     fun readFlashcards(entry: FlashcardSetListEntry): FlashcardSetResult {
         return when (entry) {
             is FlashcardSetFileEntry -> storage.readFlashcards(entry.path)

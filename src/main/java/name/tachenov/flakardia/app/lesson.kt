@@ -21,7 +21,7 @@ data class Question(
 
 data class Answer(val word: Word)
 
-data class AnswerResult(val yourAnswer: Answer?, val correctAnswer: Answer) {
+data class AnswerResult(val flashcardSetPath: RelativePath, val question: Word, val yourAnswer: Answer?, val correctAnswer: Answer) {
     val isCorrect: Boolean get() {
         assertBGT()
         return yourAnswer?.word == correctAnswer.word
@@ -94,7 +94,12 @@ class Lesson(
         assertBGT()
         val currentFlashcard = currentFlashcard
         checkNotNull(currentFlashcard) { "Cannot answer when there is no question (active flashcard)" }
-        val answerResult = AnswerResult(answer, Answer(currentFlashcard.flashcard.back))
+        val answerResult = AnswerResult(
+            flashcardSetPath = currentFlashcard.path,
+            question = currentFlashcard.flashcard.front,
+            yourAnswer = answer,
+            correctAnswer = Answer(currentFlashcard.flashcard.back)
+        )
         val word = answerResult.correctAnswer.word
         var mistakes = this.mistakes[word] ?: 0
         if (!answerResult.isCorrect) {
