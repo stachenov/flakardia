@@ -1,14 +1,11 @@
 package name.tachenov.flakardia.presenter
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
 import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.debugMode
 import java.util.concurrent.atomic.AtomicInteger
@@ -41,11 +38,17 @@ abstract class Presenter<S : PresenterState, V : View> {
         launch {
             var state = computeInitialState()
             stateFlow.emit(state)
-            for (update in stateUpdateChannel) {
-                val newState = update(state)
-                if (newState != null) {
-                    state = newState
-                    stateFlow.emit(state)
+            try {
+                for (update in stateUpdateChannel) {
+                    val newState = update(state)
+                    if (newState != null) {
+                        state = newState
+                        stateFlow.emit(state)
+                    }
+                }
+            } finally {
+                withContext(NonCancellable) {
+                    saveLastState(state)
                 }
             }
         }
@@ -58,6 +61,8 @@ abstract class Presenter<S : PresenterState, V : View> {
             currentRunScope = null
         }
     }
+
+    protected open suspend fun saveLastState(state: S) { }
 
     protected fun updateState(update: suspend (S) -> S?) {
         check(stateUpdateChannel.trySend(update).isSuccess)

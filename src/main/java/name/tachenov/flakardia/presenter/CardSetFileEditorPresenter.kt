@@ -89,6 +89,10 @@ class CardSetFileEditorPresenter(
         }
     }
 
+    override suspend fun saveLastState(state: CardSetFileEditorState) {
+        saveFlashcards(state)
+    }
+
     private suspend fun saveFlashcards(state: CardSetFileEditorState): CardSetFileEditorState? {
         if (state.persistenceState == CardSetFileEditorSavedState) return null
         val result = underModelLock {
