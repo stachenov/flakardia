@@ -284,6 +284,17 @@ fun setCardSetManagerPresenterSavedState(state: CardSetManagerPresenterSavedStat
     }
 }
 
+fun setEditorBounds(bounds: Rectangle) {
+    putLocation("editor", bounds.location)
+    putSize("editor", bounds.size)
+}
+
+fun getEditorBounds(): Rectangle? {
+    val location = getLocation("editor")
+    val size = getSize("editor")
+    return if (location != null && size != null) Rectangle(location, size) else null
+}
+
 private inline fun <reified T : Enum<T>> Preferences.getEnum(name: String, defaultValue: T): T =
     try {
         enumValueOf<T>(get(name, defaultValue.name.lowercase()).uppercase())

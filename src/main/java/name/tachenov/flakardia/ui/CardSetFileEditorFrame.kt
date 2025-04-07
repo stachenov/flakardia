@@ -1,6 +1,8 @@
 package name.tachenov.flakardia.ui
 
+import name.tachenov.flakardia.getEditorBounds
 import name.tachenov.flakardia.presenter.*
+import name.tachenov.flakardia.setEditorBounds
 import java.awt.*
 import java.awt.event.HierarchyEvent
 import java.awt.event.HierarchyListener
@@ -34,10 +36,18 @@ class CardSetFileEditorFrame(
     }
 
     override fun restoreSavedViewState() {
-        setLocationRelativeTo(parent)
+        val bounds = getEditorBounds()
+        if (bounds == null) {
+            setLocationRelativeTo(parent)
+        }
+        else {
+            this.bounds = bounds
+        }
     }
 
-    override fun saveViewState() { }
+    override fun saveViewState() {
+        setEditorBounds(this.bounds)
+    }
 
     override fun applyPresenterState(state: CardSetFileEditorState) {
         editor.updateState(state)
