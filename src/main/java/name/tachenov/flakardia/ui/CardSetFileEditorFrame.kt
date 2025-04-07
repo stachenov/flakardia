@@ -14,7 +14,7 @@ import javax.swing.text.JTextComponent
 
 class CardSetFileEditorFrame(
     private val parent: JFrame,
-    presenter: CardSetFileEditorPresenter
+    presenter: CardSetFileEditorPresenter,
 ) : FrameView<CardSetFileEditorState, CardSetFileEditorView, CardSetFileEditorPresenter>(presenter), CardSetFileEditorView
 {
     private val editor = CardSetEditor(presenter)
@@ -25,6 +25,7 @@ class CardSetFileEditorFrame(
     private val statusLabel = JLabel()
 
     init {
+        title = presenter.name
         layout = BorderLayout()
         add(scrollPane, BorderLayout.CENTER)
         statusPanel.layout = BorderLayout()

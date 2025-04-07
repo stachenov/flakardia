@@ -63,6 +63,8 @@ class CardSetFileEditorPresenter(
 ) : Presenter<CardSetFileEditorState, CardSetFileEditorView>() {
     private val cardId = AtomicInteger()
 
+    val name: String get() = fileEntry.name
+
     override suspend fun computeInitialState(): CardSetFileEditorState = CardSetFileEditorState(
         editorFullState = CardSetFileEditorFullState(
             if (initialContent.isNotEmpty()) {
