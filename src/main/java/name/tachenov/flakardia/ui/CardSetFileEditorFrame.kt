@@ -138,6 +138,12 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
             keepCaretPositionIfHomeOrEnd(questionEditor, answerEditor)
             answerEditor.focusAndScroll()
         }
+        questionEditor.addKeyListener(KeyEvent.VK_HOME, condition = { e -> e.modifiersEx.isCtrlOrCmdDown }) {
+            controlHome()
+        }
+        questionEditor.addKeyListener(KeyEvent.VK_END, condition = { e -> e.modifiersEx.isCtrlOrCmdDown }) {
+            controlEnd()
+        }
         questionEditor.addKeyListener(KeyEvent.VK_DELETE,
             condition = { questionEditor.text.isNullOrEmpty() && !answerEditor.text.isNullOrEmpty() }
         ) {
@@ -151,12 +157,28 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         answerEditor.addKeyListener(KeyEvent.VK_DOWN, condition = { true }) {
             focusNextEditor(editor)
         }
+        answerEditor.addKeyListener(KeyEvent.VK_HOME, condition = { e -> e.modifiersEx.isCtrlOrCmdDown }) {
+            controlHome()
+        }
+        answerEditor.addKeyListener(KeyEvent.VK_END, condition = { e -> e.modifiersEx.isCtrlOrCmdDown }) {
+            controlEnd()
+        }
         answerEditor.addKeyListener(KeyEvent.VK_BACK_SPACE,
             condition = { !questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty() }
         ) {
             questionEditor.caretPosition = questionEditor.text.length
             questionEditor.focusAndScroll()
         }
+    }
+
+    private fun controlHome() {
+        editors.first().questionEditor.caretPosition = 0
+        editors.first().questionEditor.focusAndScroll()
+    }
+
+    private fun controlEnd() {
+        editors.last().answerEditor.caretPosition = editors.last().answerEditor.text.length
+        editors.last().answerEditor.focusAndScroll()
     }
 
     private fun focusPreviousEditor(thisEditor: CardEditor) {
@@ -398,16 +420,19 @@ private fun Document.addDocumentChangeListener(block: () -> Unit) {
     })
 }
 
-private fun JTextComponent.addKeyListener(vararg keyCodes: Int, condition: JTextComponent.() -> Boolean, listener: (KeyEvent) -> Unit) {
+private fun JTextComponent.addKeyListener(vararg keyCodes: Int, condition: JTextComponent.(KeyEvent) -> Boolean, listener: (KeyEvent) -> Unit) {
     addKeyListener(object : KeyAdapter() {
         override fun keyPressed(e: KeyEvent) {
-            if (e.keyCode in keyCodes && condition()) {
+            if (e.keyCode in keyCodes && condition(e)) {
                 listener(e)
                 e.consume()
             }
         }
     })
 }
+
+private val Int.isCtrlOrCmdDown: Boolean
+    get() = (this and (KeyEvent.META_DOWN_MASK or KeyEvent.CTRL_DOWN_MASK)) != 0
 
 private const val INSET_TOP = 2
 private const val INSET_LEFT = 2
