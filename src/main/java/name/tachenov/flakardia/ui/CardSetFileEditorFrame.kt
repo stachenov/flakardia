@@ -2,6 +2,8 @@ package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.presenter.*
 import java.awt.*
+import java.awt.event.HierarchyEvent
+import java.awt.event.HierarchyListener
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import javax.swing.*
@@ -276,21 +278,44 @@ private class CardEditor(
 }
 
 private fun JComponent.focusAndScroll() {
-    SwingUtilities.invokeLater {
-        // Can't just use scrollRectToVisible() because JTextField would only scroll itself then,
-        // as it has its own scrolling to scroll the text horizontally.
-        // But that's not what we want here, we want to scroll the whole editor vertically.
-        val parent = parent ?: return@invokeLater
-        var viewport: Component? = parent
-        while (viewport != null && viewport !is JViewport) {
-            viewport = viewport.parent
+    when {
+        isShowing && isValid -> {
+            doFocusAndScroll()
         }
-        if (viewport is JViewport) {
-            val rect = SwingUtilities.convertRectangle(parent, bounds, viewport)
-            viewport.scrollRectToVisible(rect)
+        isShowing && !isValid -> {
+            revalidate()
+            SwingUtilities.invokeLater {
+                focusAndScroll()
+            }
         }
-        requestFocusInWindow()
+        else -> {
+            val listener = object : HierarchyListener {
+                override fun hierarchyChanged(e: HierarchyEvent?) {
+                    if (isShowing) {
+                        focusAndScroll()
+                        removeHierarchyListener(this)
+                    }
+                }
+            }
+            addHierarchyListener(listener)
+        }
     }
+}
+
+private fun JComponent.doFocusAndScroll() {
+    // Can't just use scrollRectToVisible() because JTextField would only scroll itself then,
+    // as it has its own scrolling to scroll the text horizontally.
+    // But that's not what we want here, we want to scroll the whole editor vertically.
+    val parent = parent ?: return
+    var viewport: Component? = parent
+    while (viewport != null && viewport !is JViewport) {
+        viewport = viewport.parent
+    }
+    if (viewport is JViewport) {
+        val rect = SwingUtilities.convertRectangle(parent, bounds, viewport)
+        viewport.scrollRectToVisible(rect)
+    }
+    requestFocusInWindow()
 }
 
 private fun Document.addDocumentChangeListener(block: () -> Unit) {
