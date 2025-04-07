@@ -289,7 +289,7 @@ class CardSetManagerFrame(
         assertEDT()
         showPresenterFrame(
             presenterFactory = { CardSetFileEditorPresenter(library, fileEntry, cards) },
-            viewFactory = { CardSetFileEditorFrame(it) },
+            viewFactory = { CardSetFileEditorFrame(this, it) },
         )
     }
 

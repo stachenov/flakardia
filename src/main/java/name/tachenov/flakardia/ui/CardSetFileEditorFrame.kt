@@ -11,6 +11,7 @@ import javax.swing.text.Document
 import javax.swing.text.JTextComponent
 
 class CardSetFileEditorFrame(
+    private val parent: JFrame,
     presenter: CardSetFileEditorPresenter
 ) : FrameView<CardSetFileEditorState, CardSetFileEditorView, CardSetFileEditorPresenter>(presenter), CardSetFileEditorView
 {
@@ -29,7 +30,9 @@ class CardSetFileEditorFrame(
         add(statusPanel, BorderLayout.SOUTH)
     }
 
-    override fun restoreSavedViewState() { }
+    override fun restoreSavedViewState() {
+        setLocationRelativeTo(parent)
+    }
 
     override fun saveViewState() { }
 
