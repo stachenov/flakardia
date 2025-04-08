@@ -5,10 +5,7 @@ import kotlinx.coroutines.flow.collectLatest
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.background
-import name.tachenov.flakardia.data.Flashcard
-import name.tachenov.flakardia.data.SaveError
-import name.tachenov.flakardia.data.SaveSuccess
-import name.tachenov.flakardia.data.Word
+import name.tachenov.flakardia.data.*
 import name.tachenov.flakardia.underModelLock
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
@@ -53,7 +50,7 @@ data class CardPresenterState(
 
 sealed class CardSetFileEditorPersistenceState
 data object CardSetFileEditorEditedState : CardSetFileEditorPersistenceState()
-data object CardSetFileEditorSavedState : CardSetFileEditorPersistenceState()
+data class CardSetFileEditorSavedState(val warning: String?) : CardSetFileEditorPersistenceState()
 data class CardSetFileEditorSaveErrorState(val message: String) : CardSetFileEditorPersistenceState()
 
 class CardSetFileEditorPresenter(
@@ -75,7 +72,7 @@ class CardSetFileEditorPresenter(
             }
         ),
         changeFromPrevious = CardSetFileEditorFirstState,
-        persistenceState = CardSetFileEditorSavedState,
+        persistenceState = CardSetFileEditorSavedState(warning = null),
     ).also {
         launchSaveJob()
     }
@@ -96,7 +93,7 @@ class CardSetFileEditorPresenter(
     }
 
     private suspend fun saveFlashcards(state: CardSetFileEditorState): CardSetFileEditorState? {
-        if (state.persistenceState == CardSetFileEditorSavedState) return null
+        if (state.persistenceState is CardSetFileEditorSavedState && state.persistenceState.warning == null) return null
         val result = underModelLock {
             background {
                 library.saveFlashcardSetFile(fileEntry, state.editorFullState.cards
@@ -110,7 +107,8 @@ class CardSetFileEditorPresenter(
         return state.copy(
             changeFromPrevious = CardSetFileEditorNoChange,
             persistenceState = when (result) {
-                is SaveSuccess -> CardSetFileEditorSavedState
+                is SaveSuccess -> CardSetFileEditorSavedState(warning = null)
+                is SaveWarning -> CardSetFileEditorSavedState(warning = result.warning)
                 is SaveError -> CardSetFileEditorSaveErrorState(result.message)
             },
         )

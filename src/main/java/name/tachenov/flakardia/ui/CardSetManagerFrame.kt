@@ -293,16 +293,6 @@ class CardSetManagerFrame(
         )
     }
 
-    override fun showWarnings(warnings: List<String>) {
-        assertEDT()
-        JOptionPane.showMessageDialog(
-            this,
-            "<html>" + warnings.joinToString("<br>"),
-            "Warning",
-            JOptionPane.WARNING_MESSAGE,
-        )
-    }
-
     override fun showError(error: String) {
         assertEDT()
         showError("Error", error)

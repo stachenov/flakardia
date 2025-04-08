@@ -53,7 +53,7 @@ class CardSetFileEditorFrame(
         editor.updateState(state)
         statusLabel.text = when (val persistenceState = state.persistenceState) {
             is CardSetFileEditorEditedState -> "Saving..."
-            is CardSetFileEditorSavedState -> "Saved"
+            is CardSetFileEditorSavedState -> persistenceState.warning ?: "Saved"
             is CardSetFileEditorSaveErrorState -> "Save error: ${persistenceState.message}"
         }
     }

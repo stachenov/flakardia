@@ -98,6 +98,16 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
         pack()
     }
 
+    override fun showWarnings(warnings: List<String>) {
+        assertEDT()
+        JOptionPane.showMessageDialog(
+            this,
+            "<html>" + warnings.joinToString("<br>"),
+            "Warning",
+            JOptionPane.WARNING_MESSAGE,
+        )
+    }
+
     override fun showError(title: String, message: String) {
         assertEDT()
         JOptionPane.showMessageDialog(

@@ -8,7 +8,6 @@ interface CardSetManagerView : View {
     suspend fun viewFlashcards(result: LessonData)
     suspend fun startLesson(library: Library, result: LessonData)
     suspend fun editFile(library: Library, fileEntry: FlashcardSetFileEntry, cards: List<Flashcard>)
-    fun showWarnings(warnings: List<String>)
     fun showError(error: String)
 }
 

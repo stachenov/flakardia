@@ -14,6 +14,7 @@ interface View {
     suspend fun run()
     fun adjustSize()
     fun showError(title: String, message: String)
+    fun showWarnings(warnings: List<String>)
 }
 
 interface PresenterState

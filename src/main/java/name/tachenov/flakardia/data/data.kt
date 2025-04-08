@@ -89,6 +89,13 @@ data class LibraryStats(
     fun update(stats: LibraryStats): LibraryStats = LibraryStats(
         (wordStats.keys + stats.wordStats.keys).associateWith { (stats.wordStats[it] ?: wordStats.getValue(it)) }
     )
+
+    fun renameWords(updatedFlashcards: List<Pair<Flashcard, Flashcard>>): LibraryStats {
+        val changedAnswers = updatedFlashcards.associate { it.first.back to it.second.back }
+        return LibraryStats(
+            wordStats.mapKeys { changedAnswers[it.key] ?: it.key }
+        )
+    }
 }
 
 data class LibraryStatsError(val message: String) : LibraryStatsResult()
@@ -137,6 +144,8 @@ operator fun FullPath.plus(name: String): FullPath = FullPath(library, relativeP
 sealed class SaveResult
 
 data object SaveSuccess : SaveResult()
+
+data class SaveWarning(val warning: String) : SaveResult()
 
 data class SaveError(val message: String) : SaveResult()
 
