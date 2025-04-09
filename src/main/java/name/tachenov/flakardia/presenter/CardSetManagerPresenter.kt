@@ -46,10 +46,12 @@ class CardSetManagerPresenter(
             val state = getCardSetManagerPresenterSavedState()
             var restoredPath = false
             if (state.currentPath != null) {
-                val enterAttemptResult = backgroundWithProgress(this) {
+                restoredPath = when (backgroundWithProgress(this) {
                     manager.enter(state.currentPath)
+                }) {
+                    is DirEnterSuccess -> true
+                    is DirEnterError -> false
                 }
-                restoredPath = enterAttemptResult is DirEnterSuccess
             }
             if (restoredPath && state.selectedEntry != null) {
                 captureManagerState(selectEntry = state.selectedEntry)
