@@ -157,19 +157,20 @@ data class Library(private val storage: FlashcardStorage) {
         assertBGT()
         val cards = when (val oldCardsResult = readFlashcards(fileEntry)) {
             is FlashcardSetError -> return SaveError(oldCardsResult.message)
-            is FlashcardSet -> oldCardsResult.cards.map { it.flashcard }.toMutableList()
+            is FlashcardSet -> oldCardsResult.cards.map { it.flashcard }
         }
-        val oldValueIndex = cards.indexOf(card.oldCard)
-        if (oldValueIndex == -1) return SaveError("Flashcard not found: ${card.oldCard}")
-        cards[oldValueIndex] = card.newCard
-        val saveResult = storage.saveFlashcardSetFile(fileEntry.path, cards)
-        if (saveResult !is SaveSuccess) return saveResult
-        return when (val updateStatsResult = renameWordsInStats(listOf(card))) {
-            SaveSuccess -> SaveSuccess
-            is SaveWarnings -> updateStatsResult
-            // A stats update error converted to a warning, because the words were still saved successfully.
-            is SaveError -> SaveWarnings(updateStatsResult.message)
-        }
+        return saveFlashcardSetFile(
+            fileEntry,
+            cards
+                .map { oldCard ->
+                    if (oldCard == card.oldCard) {
+                        UpdatedOrNewFlashcard(oldCard = oldCard, newCard = card.newCard)
+                    }
+                    else {
+                        UpdatedOrNewFlashcard(oldCard = oldCard, newCard = oldCard)
+                    }
+                }
+        )
     }
 
     private fun renameWordsInStats(updatedFlashcards: List<UpdatedFlashcard>): SaveResult =
