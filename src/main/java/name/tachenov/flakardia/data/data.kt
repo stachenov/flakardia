@@ -41,6 +41,11 @@ data class Flashcard(
     val answer: Word,
 )
 
+data class UpdatedFlashcard(
+    val oldCard: Flashcard,
+    val newCard: Flashcard,
+)
+
 @Serializable(with = WordSerializer::class)
 class Word(val value: String) {
     override fun equals(other: Any?): Boolean {
@@ -90,8 +95,8 @@ data class LibraryStats(
         (wordStats.keys + stats.wordStats.keys).associateWith { (stats.wordStats[it] ?: wordStats.getValue(it)) }
     )
 
-    fun renameWords(updatedFlashcards: List<Pair<Flashcard, Flashcard>>): LibraryStats {
-        val changedAnswers = updatedFlashcards.associate { it.first.answer to it.second.answer }
+    fun renameWords(updatedFlashcards: List<UpdatedFlashcard>): LibraryStats {
+        val changedAnswers = updatedFlashcards.associate { it.oldCard.answer to it.newCard.answer }
         return LibraryStats(
             wordStats.mapKeys { changedAnswers[it.key] ?: it.key }
         )

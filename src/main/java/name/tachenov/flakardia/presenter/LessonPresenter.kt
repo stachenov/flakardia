@@ -120,8 +120,10 @@ class LessonPresenter(
                 background {
                     library.saveUpdatedFlashcard(
                         fileEntry = FlashcardSetFileEntry(lessonState.word.path),
-                        oldValue = Flashcard(Word(lessonState.word.question), Word(lessonState.word.answer)),
-                        newValue = Flashcard(Word(newQuestion), Word(newAnswer)),
+                        card = UpdatedFlashcard(
+                            oldCard = Flashcard(Word(lessonState.word.question), Word(lessonState.word.answer)),
+                            newCard = Flashcard(Word(newQuestion), Word(newAnswer)),
+                        )
                     )
                 }
             }

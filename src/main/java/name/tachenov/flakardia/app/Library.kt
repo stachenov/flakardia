@@ -140,18 +140,18 @@ data class Library(private val storage: FlashcardStorage) {
         return storage.saveFlashcardSetFile(fileEntry.path, flashcards)
     }
 
-    fun saveUpdatedFlashcard(fileEntry: FlashcardSetFileEntry, oldValue: Flashcard, newValue: Flashcard): SaveResult {
+    fun saveUpdatedFlashcard(fileEntry: FlashcardSetFileEntry, card: UpdatedFlashcard): SaveResult {
         assertBGT()
         val cards = when (val oldCardsResult = readFlashcards(fileEntry)) {
             is FlashcardSetError -> return SaveError(oldCardsResult.message)
             is FlashcardSet -> oldCardsResult.cards.map { it.flashcard }.toMutableList()
         }
-        val oldValueIndex = cards.indexOf(oldValue)
-        if (oldValueIndex == -1) return SaveError("Flashcard not found: $oldValue")
-        cards[oldValueIndex] = newValue
+        val oldValueIndex = cards.indexOf(card.oldCard)
+        if (oldValueIndex == -1) return SaveError("Flashcard not found: ${card.oldCard}")
+        cards[oldValueIndex] = card.newCard
         val saveResult = storage.saveFlashcardSetFile(fileEntry.path, cards)
         if (saveResult !is SaveSuccess) return saveResult
-        return when (val updateStatsResult = renameWordsInStats(listOf(oldValue to newValue))) {
+        return when (val updateStatsResult = renameWordsInStats(listOf(card))) {
             SaveSuccess -> SaveSuccess
             is SaveWarning -> updateStatsResult
             // A stats update error converted to a warning, because the words were still saved successfully.
@@ -159,7 +159,7 @@ data class Library(private val storage: FlashcardStorage) {
         }
     }
 
-    private fun renameWordsInStats(updatedFlashcards: List<Pair<Flashcard, Flashcard>>): SaveResult =
+    private fun renameWordsInStats(updatedFlashcards: List<UpdatedFlashcard>): SaveResult =
         saveUpdatedStats { oldStats -> oldStats.renameWords(updatedFlashcards) }
 
     fun readFlashcards(entry: FlashcardSetListEntry): FlashcardSetResult {
