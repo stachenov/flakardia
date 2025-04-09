@@ -41,6 +41,13 @@ data class Flashcard(
     val answer: Word,
 )
 
+data class UpdatedOrNewFlashcard(
+    val oldCard: Flashcard?,
+    val newCard: Flashcard,
+) {
+    fun toUpdatedFlashcardOrNull(): UpdatedFlashcard? = if (oldCard == null) null else UpdatedFlashcard(oldCard, newCard)
+}
+
 data class UpdatedFlashcard(
     val oldCard: Flashcard,
     val newCard: Flashcard,
@@ -146,11 +153,22 @@ data class FullPath(
 
 operator fun FullPath.plus(name: String): FullPath = FullPath(library, relativePath + name)
 
-sealed class SaveResult
+sealed class SaveResult {
+    abstract fun addWarnings(warnings: List<String>): SaveResult
+    fun addWarning(warning: String): SaveResult = addWarnings(listOf(warning))
+}
 
-data object SaveSuccess : SaveResult()
+data object SaveSuccess : SaveResult() {
+    override fun addWarnings(warnings: List<String>): SaveResult = SaveWarnings(warnings)
+}
 
-data class SaveWarning(val warning: String) : SaveResult()
+data class SaveWarnings(val warnings: List<String>) : SaveResult() {
+    constructor(warning: String) : this(listOf(warning))
+    override fun addWarnings(warnings: List<String>): SaveResult = SaveWarnings(this.warnings + warnings)
+}
 
-data class SaveError(val message: String) : SaveResult()
-
+data class SaveError(val message: String) : SaveResult() {
+    override fun addWarnings(warnings: List<String>): SaveResult {
+        throw UnsupportedOperationException("No warnings allowed after an error, should have stopped earlier")
+    }
+}

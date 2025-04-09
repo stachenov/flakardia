@@ -46,11 +46,33 @@ data class CardPresenterState(
     val id: CardId,
     val question: String,
     val answer: String,
-)
+    private val initialQuestion: String,
+    private val initialAnswer: String,
+) {
+
+    constructor(id: CardId) : this(id, "", "", "", "")
+
+    constructor(id: CardId, question: String, answer: String) : this(id, question, answer, question, answer)
+
+    fun isValid(): Boolean = question.isNotBlank() && answer.isNotBlank()
+
+    fun toValidFlashcard(): Flashcard {
+        check(isValid())
+        return Flashcard(Word(question), Word(answer))
+    }
+
+    fun getInitialFlashcardOrNull(): Flashcard? =
+        if (initialQuestion.isNotBlank() && initialAnswer.isNotBlank()) {
+            Flashcard(Word(initialQuestion), Word(initialAnswer))
+        }
+        else {
+            null
+        }
+}
 
 sealed class CardSetFileEditorPersistenceState
 data object CardSetFileEditorEditedState : CardSetFileEditorPersistenceState()
-data class CardSetFileEditorSavedState(val warning: String?) : CardSetFileEditorPersistenceState()
+data class CardSetFileEditorSavedState(val warnings: List<String>) : CardSetFileEditorPersistenceState()
 data class CardSetFileEditorSaveErrorState(val message: String) : CardSetFileEditorPersistenceState()
 
 class CardSetFileEditorPresenter(
@@ -68,11 +90,11 @@ class CardSetFileEditorPresenter(
                 initialContent.map { CardPresenterState(allocateId(), it.question.value, it.answer.value) }
             }
             else {
-                listOf(CardPresenterState(allocateId(), "", ""))
+                listOf(CardPresenterState(allocateId()))
             }
         ),
         changeFromPrevious = CardSetFileEditorFirstState,
-        persistenceState = CardSetFileEditorSavedState(warning = null),
+        persistenceState = CardSetFileEditorSavedState(warnings = emptyList()),
     ).also {
         launchSaveJob()
     }
@@ -82,40 +104,53 @@ class CardSetFileEditorPresenter(
             state.collectLatest {
                 delay(1L.seconds)
                 updateState { state ->
-                    saveFlashcards(state)
+                    saveFlashcards(state, updateStats = false)
                 }
             }
         }
     }
 
     override suspend fun saveLastState(state: CardSetFileEditorState) {
-        saveFlashcards(state)
+        // Only update the stats file when the editing is finished.
+        // Otherwise, it may lead to very undesirable data losses.
+        // For example, one has the word "super" somewhere, with accumulated stats from the previous lessons.
+        // Then they add a word "supermarket," with no stats so far, but they make a mistake when editing,
+        // entering "superarket."
+        // Then they erase the end and at some point they have "super" in the editor.
+        // And then they change it to "supermarket".
+        // This last change will then seem to the editor as renaming "super" to "supermarket," which it isn't.
+        // As a result, the stats for the word "super" will be lost and the stats for the word "supermarket" will be wrong.
+        // Therefore, updating stats halfway through the editing is dangerous.
+        // If we only do it when the editor is closed, the likelihood of something like that is much smaller.
+        saveFlashcards(state, updateStats = true)
     }
 
-    private suspend fun saveFlashcards(state: CardSetFileEditorState): CardSetFileEditorState? {
+    private suspend fun saveFlashcards(state: CardSetFileEditorState, updateStats: Boolean): CardSetFileEditorState? {
         val alreadySavedWithoutWarnings = when (state.persistenceState) {
             is CardSetFileEditorEditedState -> false
             is CardSetFileEditorSaveErrorState -> false
             is CardSetFileEditorSavedState -> {
-                state.persistenceState.warning == null
+                state.persistenceState.warnings.isEmpty()
             }
         }
-        if (alreadySavedWithoutWarnings) return null
+        if (alreadySavedWithoutWarnings && !updateStats) return null
         val result = underModelLock {
             background {
-                library.saveFlashcardSetFile(fileEntry, state.editorFullState.cards
-                    .asSequence()
-                    .filter { it.question.isNotBlank() && it.answer.isNotBlank() }
-                    .map { Flashcard(Word(it.question), Word(it.answer)) }
-                    .toList()
-                )
+                val validCards = state.editorFullState.cards
+                    .filter { it.isValid() }
+                library.saveFlashcardSetFile(fileEntry, validCards.map {
+                    UpdatedOrNewFlashcard(
+                        oldCard = if (updateStats) it.getInitialFlashcardOrNull() else null,
+                        newCard = it.toValidFlashcard(),
+                    )
+                })
             }
         }
         return state.copy(
             changeFromPrevious = CardSetFileEditorNoChange,
             persistenceState = when (result) {
-                is SaveSuccess -> CardSetFileEditorSavedState(warning = null)
-                is SaveWarning -> CardSetFileEditorSavedState(warning = result.warning)
+                is SaveSuccess -> CardSetFileEditorSavedState(warnings = emptyList())
+                is SaveWarnings -> CardSetFileEditorSavedState(warnings = result.warnings)
                 is SaveError -> CardSetFileEditorSaveErrorState(result.message)
             },
         )
@@ -175,7 +210,7 @@ class CardSetFileEditorPresenter(
     }
 
     private fun insertCardAt(state: CardSetFileEditorState, index: Int): CardSetFileEditorState {
-        val newCard = CardPresenterState(allocateId(), "", "")
+        val newCard = CardPresenterState(allocateId())
         val oldCardList = state.editorFullState.cards
         val updatedCardList = oldCardList.subList(0, index) + newCard + oldCardList.subList(index, oldCardList.size)
         return state.copy(

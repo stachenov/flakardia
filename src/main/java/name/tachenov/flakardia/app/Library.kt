@@ -135,9 +135,22 @@ data class Library(private val storage: FlashcardStorage) {
         }
     }
 
-    fun saveFlashcardSetFile(fileEntry: FlashcardSetFileEntry, flashcards: List<Flashcard>): SaveResult {
+    fun saveFlashcardSetFile(fileEntry: FlashcardSetFileEntry, flashcards: List<UpdatedOrNewFlashcard>): SaveResult {
         assertBGT()
-        return storage.saveFlashcardSetFile(fileEntry.path, flashcards)
+        return when (val saveResult = storage.saveFlashcardSetFile(fileEntry.path, flashcards.map { it.newCard })) {
+            is SaveError -> return saveResult
+            is SaveSuccess, is SaveWarnings -> {
+                val updatedFlashcards = flashcards.mapNotNull { it.toUpdatedFlashcardOrNull() }
+                if (updatedFlashcards.isEmpty()) {
+                    saveResult
+                }
+                else when (val updateStatsResult = renameWordsInStats(updatedFlashcards)) {
+                    is SaveError -> saveResult.addWarning(updateStatsResult.message)
+                    is SaveWarnings -> saveResult.addWarnings(updateStatsResult.warnings)
+                    is SaveSuccess -> saveResult
+                }
+            }
+        }
     }
 
     fun saveUpdatedFlashcard(fileEntry: FlashcardSetFileEntry, card: UpdatedFlashcard): SaveResult {
@@ -153,9 +166,9 @@ data class Library(private val storage: FlashcardStorage) {
         if (saveResult !is SaveSuccess) return saveResult
         return when (val updateStatsResult = renameWordsInStats(listOf(card))) {
             SaveSuccess -> SaveSuccess
-            is SaveWarning -> updateStatsResult
+            is SaveWarnings -> updateStatsResult
             // A stats update error converted to a warning, because the words were still saved successfully.
-            is SaveError -> SaveWarning(updateStatsResult.message)
+            is SaveError -> SaveWarnings(updateStatsResult.message)
         }
     }
 

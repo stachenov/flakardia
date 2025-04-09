@@ -86,7 +86,7 @@ class LessonPresenter(
             }
             when (saveResult) {
                 is SaveError -> view.showError("An error occurred when trying to save word statistics", saveResult.message)
-                is SaveWarning -> view.showWarnings(listOf(saveResult.warning))
+                is SaveWarnings -> view.showWarnings(saveResult.warnings)
                 is SaveSuccess -> {}
             }
             newState
@@ -132,8 +132,8 @@ class LessonPresenter(
                     view.showError("Save error", saveResult.message)
                     return@updateState null
                 }
-                is SaveWarning -> {
-                    view.showWarnings(listOf(saveResult.warning))
+                is SaveWarnings -> {
+                    view.showWarnings(saveResult.warnings)
                 }
                 SaveSuccess -> { }
             }
