@@ -87,7 +87,7 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
 
     override fun saveFlashcardSetFile(path: RelativePath, flashcards: List<Flashcard>): SaveResult =
         saveTextFile(path.toFilePath(), "cards", ".txt") {
-            flashcards.joinToString("\n") { "${it.front.value}\n${it.back.value}\n" }
+            flashcards.joinToString("\n") { "${it.question.value}\n${it.answer.value}\n" }
         }
 
     private fun saveTextFile(path: Path, tempPrefix: String, tempSuffix: String, content: () -> String): SaveResult {

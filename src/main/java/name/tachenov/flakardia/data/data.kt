@@ -37,8 +37,8 @@ data class FlashcardData(
 )
 
 data class Flashcard(
-    val front: Word,
-    val back: Word,
+    val question: Word,
+    val answer: Word,
 )
 
 @Serializable(with = WordSerializer::class)
@@ -79,7 +79,7 @@ data class LibraryStats(
 ) : LibraryStatsResult() {
     fun filter(flashcards: List<FlashcardData>): LibraryStats {
         val words = flashcards.asSequence()
-            .map { it.flashcard.back }
+            .map { it.flashcard.answer }
             .toSet()
         return LibraryStats(
             wordStats.filter { it.key in words }
@@ -91,7 +91,7 @@ data class LibraryStats(
     )
 
     fun renameWords(updatedFlashcards: List<Pair<Flashcard, Flashcard>>): LibraryStats {
-        val changedAnswers = updatedFlashcards.associate { it.first.back to it.second.back }
+        val changedAnswers = updatedFlashcards.associate { it.first.answer to it.second.answer }
         return LibraryStats(
             wordStats.mapKeys { changedAnswers[it.key] ?: it.key }
         )

@@ -158,8 +158,8 @@ class FlashcardSetViewFrame(
         for (card in state.cards) {
             model.addRow(arrayOf(
                 card.path,
-                card.front,
-                card.back,
+                card.question,
+                card.answer,
                 card.lastLearned,
                 card.mistakes,
                 card.intervalBeforeLastLearned,

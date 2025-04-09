@@ -2,12 +2,9 @@ package name.tachenov.flakardia.app
 
 import name.tachenov.flakardia.data.*
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
-import kotlin.random.Random
-import kotlin.random.nextInt
 
 class LessonTest {
 
@@ -186,8 +183,8 @@ class LessonTest {
         val lesson = getCreatedLesson()
         val question = getAskedQuestion()
         for (card in flashcardSet.cards) {
-            if (card.flashcard.front == question.word) {
-                lesson.answer(Answer(card.flashcard.back))
+            if (card.flashcard.question == question.word) {
+                lesson.answer(Answer(card.flashcard.answer))
                 return
             }
         }

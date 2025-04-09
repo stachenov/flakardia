@@ -94,7 +94,7 @@ class PrepareLessonDataTest {
                     interval(minIntervalWithManyMistakes),
                     randomness,
                 )
-            ).flashcards.map { it.flashcard.back }
+            ).flashcards.map { it.flashcard.answer }
             val actualWordSet = actualWords.toSet()
             assertThat(actualWordSet).isSubsetOf(expectedWordSet)
             assertThat(actualWordSet).hasSize(expectedCount)

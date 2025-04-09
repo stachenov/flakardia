@@ -99,21 +99,21 @@ data class Library(private val storage: FlashcardStorage) {
     }
 
     private fun addWarnings(data: LessonData, cards: List<FlashcardData>): LessonDataResult {
-        val cardsByFront = hashMapOf<Word, MutableList<FlashcardData>>()
-        val cardsByBack = hashMapOf<Word, MutableList<FlashcardData>>()
+        val cardsByQuestion = hashMapOf<Word, MutableList<FlashcardData>>()
+        val cardsByAnswer = hashMapOf<Word, MutableList<FlashcardData>>()
         for (cardData in cards) {
             val card = cardData.flashcard
-            cardsByFront.getOrPut(card.front) { mutableListOf() } += cardData
-            cardsByBack.getOrPut(card.back) { mutableListOf() } += cardData
+            cardsByQuestion.getOrPut(card.question) { mutableListOf() } += cardData
+            cardsByAnswer.getOrPut(card.answer) { mutableListOf() } += cardData
         }
         val duplicates = mutableSetOf<FlashcardData>()
-        duplicates += cardsByFront.values.asSequence().filter { it.size > 1 }.flatten().toSet()
-        duplicates += cardsByBack.values.asSequence().filter { it.size > 1 }.flatten().toSet()
+        duplicates += cardsByQuestion.values.asSequence().filter { it.size > 1 }.flatten().toSet()
+        duplicates += cardsByAnswer.values.asSequence().filter { it.size > 1 }.flatten().toSet()
         if (duplicates.isNotEmpty()) {
             return LessonDataWarnings(
                 data,
                 listOf("The following duplicate words were detected") +
-                duplicates.map { "${it.path}:${it.flashcard.front.value}:${it.flashcard.back.value}" }
+                duplicates.map { "${it.path}:${it.flashcard.question.value}:${it.flashcard.answer.value}" }
             )
         }
         else {
@@ -210,7 +210,7 @@ fun prepareLessonData(
     flashcards.shuffle()
     val random = Random.Default
     val orderingKeys = flashcardList.associateWith { cardData ->
-        val word = cardData.flashcard.back
+        val word = cardData.flashcard.answer
         val lastLearned: Instant = stats.wordStats[word]?.lastLearned ?: now.minus(lastLearnedFallback)
         val mistakes = stats.wordStats[word]?.mistakes ?: 0
         val previousInterval: Duration = stats.wordStats[word]?.intervalBeforeLastLearned ?: intervalFallback

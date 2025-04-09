@@ -65,7 +65,7 @@ class CardSetFileEditorPresenter(
     override suspend fun computeInitialState(): CardSetFileEditorState = CardSetFileEditorState(
         editorFullState = CardSetFileEditorFullState(
             if (initialContent.isNotEmpty()) {
-                initialContent.map { CardPresenterState(allocateId(), it.front.value, it.back.value) }
+                initialContent.map { CardPresenterState(allocateId(), it.question.value, it.answer.value) }
             }
             else {
                 listOf(CardPresenterState(allocateId(), "", ""))

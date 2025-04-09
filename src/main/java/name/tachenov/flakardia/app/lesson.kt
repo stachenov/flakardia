@@ -86,7 +86,7 @@ class Lesson(
         ++step
         return currentFlashcard?.let {
             lastSeen[it] = step
-            Question(it.path, it.flashcard.front)
+            Question(it.path, it.flashcard.question)
         }
     }
 
@@ -96,9 +96,9 @@ class Lesson(
         checkNotNull(currentFlashcard) { "Cannot answer when there is no question (active flashcard)" }
         val answerResult = AnswerResult(
             flashcardSetPath = currentFlashcard.path,
-            question = currentFlashcard.flashcard.front,
+            question = currentFlashcard.flashcard.question,
             yourAnswer = answer,
-            correctAnswer = Answer(currentFlashcard.flashcard.back)
+            correctAnswer = Answer(currentFlashcard.flashcard.answer)
         )
         val word = answerResult.correctAnswer.word
         var mistakes = this.mistakes[word] ?: 0

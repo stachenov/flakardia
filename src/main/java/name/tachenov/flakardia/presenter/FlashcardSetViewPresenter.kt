@@ -15,8 +15,8 @@ data class FlashcardSetViewPresenterState(
 
 data class FlashcardViewModel(
     val path: RelativePath,
-    val front: String,
-    val back: String,
+    val question: String,
+    val answer: String,
     val lastLearned: LastLearnedViewModel,
     val mistakes: Int?,
     val intervalBeforeLastLearned: IntervalViewModel
@@ -38,11 +38,11 @@ class FlashcardSetViewPresenter(
         title = lessonData.name,
         cards = lessonData.let { lessonData ->
             lessonData.flashcards.map { card ->
-                val stats = lessonData.stats.wordStats[card.flashcard.back]
+                val stats = lessonData.stats.wordStats[card.flashcard.answer]
                 FlashcardViewModel(
                     card.path,
-                    card.flashcard.front.value,
-                    card.flashcard.back.value,
+                    card.flashcard.question.value,
+                    card.flashcard.answer.value,
                     LastLearnedViewModel(stats?.lastLearned),
                     stats?.mistakes,
                     IntervalViewModel(stats?.intervalBeforeLastLearned),
