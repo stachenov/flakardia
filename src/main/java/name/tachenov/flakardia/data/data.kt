@@ -83,6 +83,12 @@ class Word(val value: String) {
     }
 }
 
+data class FlashcardDraft(
+    val path: RelativePath,
+    val question: String,
+    val answer: String,
+)
+
 sealed class LibraryStatsResult
 
 @Serializable

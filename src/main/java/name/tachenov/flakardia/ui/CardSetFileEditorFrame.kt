@@ -1,8 +1,10 @@
 package name.tachenov.flakardia.ui
 
+import name.tachenov.flakardia.data.FlashcardDraft
 import name.tachenov.flakardia.getEditorBounds
 import name.tachenov.flakardia.presenter.*
 import name.tachenov.flakardia.setEditorBounds
+import org.apache.commons.text.StringEscapeUtils
 import java.awt.*
 import java.awt.event.HierarchyEvent
 import java.awt.event.HierarchyListener
@@ -111,7 +113,17 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
                 insertCardEditor(change.index, change.card)
                 editors[change.index].questionEditor.focusAndScroll()
             }
-            is CardChanged -> {
+            is CardsChanged -> {
+                for (changed in change.changes) {
+                    val updatedQuestion = changed.updatedQuestion
+                    val updatedAnswer = changed.updatedAnswer
+                    if (updatedQuestion != null) {
+                        editors[changed.index].questionEditor.duplicates = updatedQuestion.duplicates
+                    }
+                    if (updatedAnswer != null) {
+                        editors[changed.index].answerEditor.duplicates = updatedAnswer.duplicates
+                    }
+                }
                 updated = false
             }
             is CardRemoved -> {
@@ -324,8 +336,12 @@ private class CardEditor(
     initialState: CardPresenterState,
 ) {
     val id = initialState.id
-    val questionEditor = FixedWidthTextField(initialState.question).also { enableSpellchecker(it) }
-    val answerEditor = FixedWidthTextField(initialState.answer).also { enableSpellchecker(it) }
+    val questionEditor = WordTextField(initialState.question.word).apply {
+        duplicates = initialState.question.duplicates
+    }
+    val answerEditor = WordTextField(initialState.answer.word).apply {
+        duplicates = initialState.answer.duplicates
+    }
     var isRemovedUsingBackSpace = false
         private set
 
@@ -361,6 +377,27 @@ private class CardEditor(
     }
 
     override fun toString(): String = "($questionEditor, $answerEditor)"
+}
+
+private class WordTextField(text: String) : FixedWidthTextField(text) {
+    var duplicates: List<FlashcardDraft> = emptyList()
+        set(value) {
+            field = value
+            toolTipText = if (value.isNotEmpty()) {
+                "<html>Duplicates detected:<br>${value.joinToString("<br>") { card ->
+                    val formattedCard = "${card.path}:${card.question}:${card.answer}"
+                    StringEscapeUtils.escapeHtml3(formattedCard)
+                }}</html>"
+            }
+            else {
+                null
+            }
+            foreground = if (value.isNotEmpty()) INCORRECT_COLOR else null
+        }
+
+    init {
+        enableSpellchecker(this)
+    }
 }
 
 private fun JComponent.focusAndScroll() {

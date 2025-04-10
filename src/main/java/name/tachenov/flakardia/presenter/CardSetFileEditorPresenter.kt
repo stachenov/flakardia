@@ -2,6 +2,7 @@ package name.tachenov.flakardia.presenter
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import name.tachenov.flakardia.app.DuplicateDetector
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.background
@@ -30,11 +31,15 @@ class CardAdded(
     val card: CardPresenterState,
 ) : CardSetFileEditorIncrementalStateUpdate()
 
+data class CardsChanged(
+    val changes: List<CardChanged>
+) : CardSetFileEditorIncrementalStateUpdate()
+
 data class CardChanged(
     val index: Int,
-    val updatedQuestion: String? = null,
-    val updatedAnswer: String? = null,
-) : CardSetFileEditorIncrementalStateUpdate()
+    val updatedQuestion: WordPresenterState? = null,
+    val updatedAnswer: WordPresenterState? = null,
+)
 
 data class CardRemoved(
     val index: Int,
@@ -44,21 +49,33 @@ data class CardRemoved(
 
 data class CardPresenterState(
     val id: CardId,
-    val question: String,
-    val answer: String,
+    val question: WordPresenterState,
+    val answer: WordPresenterState,
     private val initialQuestion: String,
     private val initialAnswer: String,
 ) {
 
-    constructor(id: CardId) : this(id, "", "", "", "")
+    constructor(id: CardId) : this(
+        id = id,
+        question = WordPresenterState("", emptyList()),
+        answer = WordPresenterState("", emptyList()),
+        initialQuestion = "",
+        initialAnswer = ""
+    )
 
-    constructor(id: CardId, question: String, answer: String) : this(id, question, answer, question, answer)
+    constructor(id: CardId, question: WordPresenterState, answer: WordPresenterState) : this(
+        id = id,
+        question = question,
+        answer = answer,
+        initialQuestion = question.word,
+        initialAnswer = answer.word,
+    )
 
-    fun isValid(): Boolean = question.isNotBlank() && answer.isNotBlank()
+    fun isValid(): Boolean = question.word.isNotBlank() && answer.word.isNotBlank()
 
     fun toValidFlashcard(): Flashcard {
         check(isValid())
-        return Flashcard(Word(question), Word(answer))
+        return Flashcard(Word(question.word), Word(answer.word))
     }
 
     fun getInitialFlashcardOrNull(): Flashcard? =
@@ -69,6 +86,11 @@ data class CardPresenterState(
             null
         }
 }
+
+data class WordPresenterState(
+    val word: String,
+    val duplicates: List<FlashcardDraft>,
+)
 
 sealed class CardSetFileEditorPersistenceState
 data object CardSetFileEditorEditedState : CardSetFileEditorPersistenceState()
@@ -81,13 +103,30 @@ class CardSetFileEditorPresenter(
     private val initialContent: List<Flashcard>,
 ) : Presenter<CardSetFileEditorState, CardSetFileEditorView>() {
     private val cardId = AtomicInteger()
+    private val duplicateDetector = DuplicateDetector()
 
     val name: String get() = fileEntry.name
 
     override suspend fun computeInitialState(): CardSetFileEditorState = CardSetFileEditorState(
         editorFullState = CardSetFileEditorFullState(
             if (initialContent.isNotEmpty()) {
-                initialContent.map { CardPresenterState(allocateId(), it.question.value, it.answer.value) }
+                for (flashcard in initialContent) {
+                    duplicateDetector.addCard(FlashcardDraft(fileEntry.path, flashcard.question.value, flashcard.answer.value))
+                }
+                initialContent.map {
+                    val card = FlashcardDraft(fileEntry.path, it.question.value, it.answer.value)
+                    CardPresenterState(
+                        id = allocateId(),
+                        question = WordPresenterState(
+                            card.question,
+                            duplicateDetector.getQuestionDuplicates(card),
+                        ),
+                        answer = WordPresenterState(
+                            card.answer,
+                            duplicateDetector.getAnswerDuplicates(card),
+                        )
+                    )
+                }
             }
             else {
                 listOf(CardPresenterState(allocateId()))
@@ -166,28 +205,53 @@ class CardSetFileEditorPresenter(
         updateCard(id) { card -> card.copy(answer = newAnswerText)}
     }
 
-    private fun updateCard(id: CardId, update: (CardPresenterState) -> CardPresenterState) {
+    private fun updateCard(id: CardId, update: (FlashcardDraft) -> FlashcardDraft) {
         updateState { state ->
             val oldCardList = state.editorFullState.cards
             val index = oldCardList.indexOfFirst { it.id == id }
             if (index == -1) return@updateState null
-            val oldCard = oldCardList[index]
+            val oldPresenter = oldCardList[index]
+            val oldCard = FlashcardDraft(fileEntry.path, oldPresenter.question.word, oldPresenter.answer.word)
+            duplicateDetector.removeCard(oldCard)
             val updatedCard = update(oldCard)
-            val updatedCardList = oldCardList.withIndex().map {
-                if (it.index == index) {
-                    updatedCard
+            duplicateDetector.addCard(updatedCard)
+            val updatedPresenter = oldPresenter.copy(
+                question = WordPresenterState(updatedCard.question, duplicateDetector.getQuestionDuplicates(updatedCard)),
+                answer = WordPresenterState(updatedCard.answer, duplicateDetector.getAnswerDuplicates(updatedCard)),
+            )
+            val updatedCardList = mutableListOf<CardPresenterState>()
+            val cardsChanged = mutableListOf<CardChanged>()
+            for ((i, value) in oldCardList.withIndex()) {
+                if (i == index) {
+                    updatedCardList.add(updatedPresenter)
+                    cardsChanged.add(CardChanged(
+                        index = index,
+                        updatedQuestion = if (oldPresenter.question == updatedPresenter.question) null else updatedPresenter.question,
+                        updatedAnswer = if (oldPresenter.answer == updatedPresenter.answer) null else updatedPresenter.answer,
+                    ))
                 }
                 else {
-                    it.value
+                    val card = FlashcardDraft(fileEntry.path, value.question.word, value.answer.word)
+                    val questionDuplicates = duplicateDetector.getQuestionDuplicates(card)
+                    val answerDuplicates = duplicateDetector.getAnswerDuplicates(card)
+                    val cardWithNewDuplicates = CardPresenterState(
+                        id = value.id,
+                        question = WordPresenterState(card.question, questionDuplicates),
+                        answer = WordPresenterState(card.answer, answerDuplicates),
+                    )
+                    updatedCardList.add(cardWithNewDuplicates)
+                    if (cardWithNewDuplicates != value) {
+                        cardsChanged.add(CardChanged(
+                            index = i,
+                            updatedQuestion = if (value.question == cardWithNewDuplicates.question) null else cardWithNewDuplicates.question,
+                            updatedAnswer = if (value.answer == cardWithNewDuplicates.answer) null else cardWithNewDuplicates.answer,
+                        ))
+                    }
                 }
             }
             state.copy(
                 editorFullState = CardSetFileEditorFullState(updatedCardList),
-                changeFromPrevious = CardChanged(
-                    index = index,
-                    updatedQuestion = if (oldCard.question == updatedCard.question) null else updatedCard.question,
-                    updatedAnswer = if (oldCard.answer == updatedCard.answer) null else updatedCard.answer,
-                ),
+                changeFromPrevious = CardsChanged(cardsChanged),
                 persistenceState = CardSetFileEditorEditedState,
             )
         }

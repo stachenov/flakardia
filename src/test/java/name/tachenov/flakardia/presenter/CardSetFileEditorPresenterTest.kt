@@ -21,16 +21,19 @@ class CardSetFileEditorPresenterTest {
     private lateinit var fs: FileSystem
     private lateinit var storage: FlashcardStorageImpl
     private lateinit var library: Library
+    private var sut: CardSetFileEditorPresenter? = null
 
     @BeforeEach
     fun setUp() {
         fs = Jimfs.newFileSystem()
         storage = FlashcardStorageImpl(fs.getPath("root"))
         library = Library(storage)
+        sut = null
     }
 
     @AfterEach
     fun tearDown() {
+        sut = null
         fs.close()
     }
 
@@ -43,13 +46,13 @@ class CardSetFileEditorPresenterTest {
             )
         ))
         edt {
-            val sut = editFile(path("dir", "file.txt"))
-            val state = sut.awaitStateUpdates()
-            assertCards(state, listOf(
+            editFile(path("dir", "file.txt"))
+            assertCards(
+                listOf(
                 "question a" to "answer a",
                 "question b" to "answer b",
             ))
-            assertFirstState(state)
+            assertFirstState()
         }
     }
 
@@ -59,10 +62,9 @@ class CardSetFileEditorPresenterTest {
             "root/dir/file.txt" to emptyList()
         ))
         edt {
-            val sut = editFile(path("dir", "file.txt"))
-            val state = sut.awaitStateUpdates()
-            assertCards(state, listOf("" to ""))
-            assertFirstState(state)
+            editFile(path("dir", "file.txt"))
+            assertCards(listOf("" to ""))
+            assertFirstState()
         }
     }
 
@@ -78,11 +80,11 @@ class CardSetFileEditorPresenterTest {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.removeCard(state1.editorFullState.cards.first().id)
-            val state2 = sut.awaitStateUpdates()
-            assertCards(state2, listOf(
+            assertCards(
+                listOf(
                 "question b" to "answer b",
             ))
-            assertCardRemoved(state2, index = 0)
+            assertCardRemoved(index = 0)
         }
     }
 
@@ -98,12 +100,13 @@ class CardSetFileEditorPresenterTest {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.removeCard(CardId(999999))
-            val state2 = sut.awaitStateUpdates()
-            assertCards(state2, listOf(
+            sut.awaitStateUpdates()
+            assertCards(
+                listOf(
                 "question a" to "answer a",
                 "question b" to "answer b",
             ))
-            assertFirstState(state2)
+            assertFirstState()
         }
     }
 
@@ -121,11 +124,11 @@ class CardSetFileEditorPresenterTest {
             for (card in state1.editorFullState.cards) {
                 sut.removeCard(card.id)
             }
-            val state2 = sut.awaitStateUpdates()
-            assertCards(state2, listOf(
+            assertCards(
+                listOf(
                 "question b" to "answer b",
             ))
-            assertCardRemoved(state2, index = 0)
+            assertCardRemoved(index = 0)
         }
     }
 
@@ -141,13 +144,13 @@ class CardSetFileEditorPresenterTest {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.insertCardBefore(state1.editorFullState.cards.first().id)
-            val state2 = sut.awaitStateUpdates()
-            assertCards(state2, listOf(
+            assertCards(
+                listOf(
                 "" to "",
                 "question a" to "answer a",
                 "question b" to "answer b",
             ))
-            assertCardAdded(state2, index = 0, card = "" to "")
+            assertCardAdded(index = 0, card = "" to "")
         }
     }
 
@@ -163,12 +166,12 @@ class CardSetFileEditorPresenterTest {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.insertCardBefore(CardId(999999))
-            val state2 = sut.awaitStateUpdates()
-            assertCards(state2, listOf(
+            assertCards(
+                listOf(
                 "question a" to "answer a",
                 "question b" to "answer b",
             ))
-            assertFirstState(state2)
+            assertFirstState()
         }
     }
 
@@ -184,13 +187,13 @@ class CardSetFileEditorPresenterTest {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.insertCardAfter(state1.editorFullState.cards.first().id)
-            val state2 = sut.awaitStateUpdates()
-            assertCards(state2, listOf(
+            assertCards(
+                listOf(
                 "question a" to "answer a",
                 "" to "",
                 "question b" to "answer b",
             ))
-            assertCardAdded(state2, index = 1, card = "" to "")
+            assertCardAdded(index = 1, card = "" to "")
         }
     }
 
@@ -206,12 +209,12 @@ class CardSetFileEditorPresenterTest {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.insertCardAfter(CardId(999999))
-            val state2 = sut.awaitStateUpdates()
-            assertCards(state2, listOf(
+            assertCards(
+                listOf(
                 "question a" to "answer a",
                 "question b" to "answer b",
             ))
-            assertFirstState(state2)
+            assertFirstState()
         }
     }
 
@@ -227,12 +230,15 @@ class CardSetFileEditorPresenterTest {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.updateQuestion(state1.editorFullState.cards.first().id, "new question")
-            val state2 = sut.awaitStateUpdates()
-            assertCards(state2, listOf(
+            assertCards(
+                listOf(
                 "new question" to "answer a",
                 "question b" to "answer b",
             ))
-            assertCardChanged(state2, index = 0, card = "new question" to null)
+            assertQuestionDuplicates(listOf(emptyList(), emptyList()))
+            assertAnswerDuplicates(listOf(emptyList(), emptyList()))
+            assertCardsChanged(listOf(0))
+            assertCardChanged(index = 0, card = "new question" to null)
         }
     }
 
@@ -248,12 +254,12 @@ class CardSetFileEditorPresenterTest {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.updateQuestion(CardId(999999), "new question")
-            val state2 = sut.awaitStateUpdates()
-            assertCards(state2, listOf(
+            assertCards(
+                listOf(
                 "question a" to "answer a",
                 "question b" to "answer b",
             ))
-            assertFirstState(state2)
+            assertFirstState()
         }
     }
 
@@ -269,12 +275,14 @@ class CardSetFileEditorPresenterTest {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.updateAnswer(state1.editorFullState.cards.first().id, "new answer")
-            val state2 = sut.awaitStateUpdates()
-            assertCards(state2, listOf(
+            assertCards(
+                listOf(
                 "question a" to "new answer",
                 "question b" to "answer b",
             ))
-            assertCardChanged(state2, index = 0, card = null to "new answer")
+            assertQuestionDuplicates(listOf(emptyList(), emptyList()))
+            assertAnswerDuplicates(listOf(emptyList(), emptyList()))
+            assertCardChanged(index = 0, card = null to "new answer")
         }
     }
 
@@ -290,39 +298,280 @@ class CardSetFileEditorPresenterTest {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.updateAnswer(CardId(999999), "new answer")
-            val state2 = sut.awaitStateUpdates()
-            assertCards(state2, listOf(
+            assertCards(
+                listOf(
                 "question a" to "answer a",
                 "question b" to "answer b",
             ))
-            assertFirstState(state2)
+            assertFirstState()
         }
     }
 
-    private fun assertCards(state: CardSetFileEditorState, cards: List<Pair<String, String>>) {
-        assertThat(state.editorFullState.cards.map { it.question to it.answer }).isEqualTo(cards)
+    @Test
+    fun `answer duplicates in the same file`() {
+        addContent(listOf(
+            "root/dir/file.txt" to listOf(
+                "question a" to "answer a",
+                "question b" to "answer b",
+                "question c" to "answer a",
+            ),
+        ))
+        edt {
+            val path = path("dir", "file.txt")
+            editFile(path)
+            assertAnswerDuplicates(
+                listOf(
+                listOf(
+                    path to ("question c" to "answer a"),
+                ),
+                emptyList(),
+                listOf(
+                    path to ("question a" to "answer a"),
+                ),
+            ))
+        }
     }
 
-    private fun assertFirstState(state: CardSetFileEditorState) {
+    @Test
+    fun `add duplicate question`() {
+        addContent(listOf(
+            "root/dir/file.txt" to listOf(
+                "question a" to "answer a",
+                "question b" to "answer b",
+            ),
+        ))
+        edt {
+            val path = path("dir", "file.txt")
+            val sut = editFile(path)
+            val state1 = sut.awaitStateUpdates()
+            sut.insertCardAfter(state1.editorFullState.cards.last().id)
+            val state2 = sut.awaitStateUpdates()
+            sut.updateQuestion(state2.editorFullState.cards.last().id, "question a")
+            assertQuestionDuplicates(
+                listOf(
+                listOf(
+                    path to ("question a" to ""),
+                ),
+                emptyList(),
+                listOf(
+                    path to ("question a" to "answer a"),
+                ),
+            ))
+            assertCardQuestionDuplicatesChanged(index = 0, listOf(path to ("question a" to "")))
+            assertCardQuestionDuplicatesChanged(index = 2, listOf(path to ("question a" to "answer a")))
+        }
+    }
+
+    @Test
+    fun `add duplicate answer`() {
+        addContent(listOf(
+            "root/dir/file.txt" to listOf(
+                "question a" to "answer a",
+                "question b" to "answer b",
+            ),
+        ))
+        edt {
+            val path = path("dir", "file.txt")
+            val sut = editFile(path)
+            val state1 = sut.awaitStateUpdates()
+            sut.insertCardAfter(state1.editorFullState.cards.last().id)
+            val state2 = sut.awaitStateUpdates()
+            sut.updateAnswer(state2.editorFullState.cards.last().id, "answer a")
+            assertAnswerDuplicates(
+                listOf(
+                listOf(
+                    path to ("" to "answer a"),
+                ),
+                emptyList(),
+                listOf(
+                    path to ("question a" to "answer a"),
+                ),
+            ))
+            assertCardAnswerDuplicatesChanged(index = 0, listOf(path to ("" to "answer a")))
+            assertCardAnswerDuplicatesChanged(index = 2, listOf(path to ("question a" to "answer a")))
+        }
+    }
+
+    @Test
+    fun `blank strings are not duplicates`() {
+        addContent(listOf(
+            "root/dir/file.txt" to listOf(
+                "question a" to "answer a",
+                "question b" to "answer b",
+            ),
+        ))
+        edt {
+            val path = path("dir", "file.txt")
+            val sut = editFile(path)
+            val state1 = sut.awaitStateUpdates()
+            sut.insertCardAfter(state1.editorFullState.cards.last().id)
+            assertCards(
+                listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "" to "",
+                ))
+            assertNoDuplicates()
+            val state2 = sut.awaitStateUpdates()
+            sut.updateQuestion(state2.editorFullState.cards.last().id, "question c")
+            assertCards(
+                listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to "",
+                ))
+            assertNoDuplicates()
+            sut.updateAnswer(state2.editorFullState.cards.last().id, " ")
+            assertCards(
+                listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to " ",
+                ))
+            assertNoDuplicates()
+            sut.insertCardAfter(state2.editorFullState.cards.last().id)
+            assertCards(
+                listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to " ",
+                    "" to "",
+                ))
+            val state3 = sut.awaitStateUpdates()
+            sut.updateQuestion(state3.editorFullState.cards.last().id, " ")
+            assertCards(
+                listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to " ",
+                    " " to "",
+                ))
+            assertNoDuplicates()
+            sut.updateAnswer(state3.editorFullState.cards.last().id, "answer d")
+            assertCards(
+                listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to " ",
+                    " " to "answer d",
+                ))
+            assertNoDuplicates()
+            sut.insertCardAfter(state3.editorFullState.cards.last().id)
+            assertCards(
+                listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to " ",
+                    " " to "answer d",
+                    "" to "",
+                ))
+            assertNoDuplicates()
+            val state4 = sut.awaitStateUpdates()
+            sut.updateQuestion(state4.editorFullState.cards.last().id, " ")
+            assertCards(
+                listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to " ",
+                    " " to "answer d",
+                    " " to "",
+                ))
+            assertNoDuplicates()
+            sut.updateAnswer(state4.editorFullState.cards.last().id, " ")
+            assertCards(
+                listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to " ",
+                    " " to "answer d",
+                    " " to " ",
+                ))
+            assertNoDuplicates()
+            assertCards(
+                listOf(
+                "question a" to "answer a",
+                "question b" to "answer b",
+                "question c" to " ",
+                " " to "answer d",
+                " " to " ",
+            ))
+            assertNoDuplicates()
+        }
+    }
+
+    private suspend fun assertCards(cards: List<Pair<String, String>>) {
+        val state = checkNotNull(sut?.awaitStateUpdates())
+        assertThat(state.editorFullState.cards.map { it.question.word to it.answer.word }).isEqualTo(cards)
+    }
+
+    private suspend fun assertFirstState() {
+        val state = checkNotNull(sut?.awaitStateUpdates())
         assertThat(state.changeFromPrevious).isEqualTo(CardSetFileEditorFirstState)
     }
 
-    private fun assertCardRemoved(state: CardSetFileEditorState, index: Int) {
+    private suspend fun assertCardRemoved(index: Int) {
+        val state = checkNotNull(sut?.awaitStateUpdates())
         assertThat(state.changeFromPrevious).isEqualTo(CardRemoved(index))
     }
 
-    private fun assertCardAdded(state: CardSetFileEditorState, index: Int, card: Pair<String, String>) {
+    private suspend fun assertCardAdded(index: Int, card: Pair<String, String>) {
+        val state = checkNotNull(sut?.awaitStateUpdates())
         state.changeFromPrevious as CardAdded
         assertThat(state.changeFromPrevious.index).isEqualTo(index)
-        assertThat(state.changeFromPrevious.card.question).isEqualTo(card.first)
-        assertThat(state.changeFromPrevious.card.answer).isEqualTo(card.second)
+        assertThat(state.changeFromPrevious.card.question.word).isEqualTo(card.first)
+        assertThat(state.changeFromPrevious.card.answer.word).isEqualTo(card.second)
     }
 
-    private fun assertCardChanged(state: CardSetFileEditorState, index: Int, card: Pair<String?, String?>) {
-        state.changeFromPrevious as CardChanged
-        assertThat(state.changeFromPrevious.index).isEqualTo(index)
-        assertThat(state.changeFromPrevious.updatedQuestion).isEqualTo(card.first)
-        assertThat(state.changeFromPrevious.updatedAnswer).isEqualTo(card.second)
+    private suspend fun assertCardsChanged(indices: List<Int>) {
+        val state = checkNotNull(sut?.awaitStateUpdates())
+        state.changeFromPrevious as CardsChanged
+        assertThat(state.changeFromPrevious.changes.map { it.index }).isEqualTo(indices)
+    }
+
+    private suspend fun assertCardChanged(index: Int, card: Pair<String?, String?>) {
+        val state = checkNotNull(sut?.awaitStateUpdates())
+        state.changeFromPrevious as CardsChanged
+        val change = state.changeFromPrevious.changes.find { it.index == index }
+        assertThat(change?.updatedQuestion?.word).isEqualTo(card.first)
+        assertThat(change?.updatedAnswer?.word).isEqualTo(card.second)
+    }
+
+    private suspend fun assertQuestionDuplicates(duplicates: List<List<Pair<RelativePath, Pair<String, String>>>>) {
+        val state = checkNotNull(sut?.awaitStateUpdates())
+        assertThat(state.editorFullState.cards.map { card ->
+            card.question.duplicates.map { it.path to (it.question to it.answer) }
+        }).isEqualTo(duplicates)
+    }
+
+    private suspend fun assertAnswerDuplicates(duplicates: List<List<Pair<RelativePath, Pair<String, String>>>>) {
+        val state = checkNotNull(sut?.awaitStateUpdates())
+        assertThat(state.editorFullState.cards.map { card ->
+            card.answer.duplicates.map { it.path to (it.question to it.answer) }
+        }).isEqualTo(duplicates)
+    }
+
+    private suspend fun assertNoDuplicates() {
+        val state = checkNotNull(sut?.awaitStateUpdates())
+        assertThat(state.editorFullState.cards.map { card ->
+            card.question.duplicates
+        }).allMatch { it.isEmpty() }
+        assertThat(state.editorFullState.cards.map { card ->
+            card.answer.duplicates
+        }).allMatch { it.isEmpty() }
+    }
+
+    private suspend fun assertCardQuestionDuplicatesChanged(index: Int, duplicates: List<Pair<RelativePath, Pair<String, String>>>) {
+        val state = checkNotNull(sut?.awaitStateUpdates())
+        state.changeFromPrevious as CardsChanged
+        val change = state.changeFromPrevious.changes.find { it.index == index }
+        assertThat(change?.updatedQuestion?.duplicates?.map { it.path to (it.question to it.answer) }).isEqualTo(duplicates)
+    }
+
+    private suspend fun assertCardAnswerDuplicatesChanged(index: Int, duplicates: List<Pair<RelativePath, Pair<String, String>>>) {
+        val state = checkNotNull(sut?.awaitStateUpdates())
+        state.changeFromPrevious as CardsChanged
+        val change = state.changeFromPrevious.changes.find { it.index == index }
+        assertThat(change?.updatedAnswer?.duplicates?.map { it.path to (it.question to it.answer) }).isEqualTo(duplicates)
     }
 
     private fun edt(block: suspend CoroutineScope.() -> Unit) {
@@ -366,6 +615,7 @@ class CardSetFileEditorPresenterTest {
         launch {
             presenter.run(MockView())
         }
+        sut = presenter
         return presenter
     }
 
