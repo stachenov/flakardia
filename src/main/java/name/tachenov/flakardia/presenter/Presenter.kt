@@ -2,12 +2,10 @@ package name.tachenov.flakardia.presenter
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.*
 import name.tachenov.flakardia.assertEDT
 import name.tachenov.flakardia.debugMode
+import org.jetbrains.annotations.TestOnly
 import java.util.concurrent.atomic.AtomicInteger
 
 interface View {
@@ -23,13 +21,23 @@ abstract class Presenter<S : PresenterState, V : View> {
     lateinit var view: V
         private set
 
-    private val stateUpdateChannel = Channel<suspend (S) -> S?>(Channel.UNLIMITED)
+    private val stateUpdateChannel = Channel<StateUpdate>(Channel.UNLIMITED)
     private val stateFlow = MutableSharedFlow<S>(replay = 1)
 
     val state: Flow<S> get() = stateFlow.asSharedFlow().distinctUntilChanged()
 
     private var currentRunScope: CoroutineScope? = null
     private val currentlyRunningTasks = AtomicInteger()
+
+    private val updateEpoch = AtomicInteger(1) // 1 represents the initial state
+    private val appliedUpdateEpoch = MutableStateFlow(0) // 0 means that the initial state has not been applied yet
+
+    private inner class StateUpdate(
+        val epoch: Int,
+        val update: suspend (S) -> S?,
+    ) {
+        operator suspend fun invoke(state: S): S? = update(state)
+    }
 
     protected abstract suspend fun computeInitialState(): S
 
@@ -39,6 +47,7 @@ abstract class Presenter<S : PresenterState, V : View> {
         launch {
             var state = computeInitialState()
             stateFlow.emit(state)
+            appliedUpdateEpoch.value = 1
             try {
                 for (update in stateUpdateChannel) {
                     val newState = update(state)
@@ -46,6 +55,7 @@ abstract class Presenter<S : PresenterState, V : View> {
                         state = newState
                         stateFlow.emit(state)
                     }
+                    appliedUpdateEpoch.value = update.epoch
                 }
             } finally {
                 withContext(NonCancellable) {
@@ -66,7 +76,10 @@ abstract class Presenter<S : PresenterState, V : View> {
     protected open suspend fun saveLastState(state: S) { }
 
     protected fun updateState(update: suspend (S) -> S?) {
-        check(stateUpdateChannel.trySend(update).isSuccess)
+        check(stateUpdateChannel.trySend(StateUpdate(
+            epoch = updateEpoch.incrementAndGet(),
+            update = update,
+        )).isSuccess)
     }
 
     protected fun launchUiTask(task: suspend () -> Unit) {
@@ -85,6 +98,13 @@ abstract class Presenter<S : PresenterState, V : View> {
                 System.err.println("Task stopped, $runningAfterStop tasks running in the presenter $presenterName")
             }
         }
+    }
+
+    @TestOnly
+    suspend fun awaitStateUpdates(): S {
+        val currentEpoch = updateEpoch.get()
+        appliedUpdateEpoch.first { it >= currentEpoch }
+        return stateFlow.replayCache.first()
     }
 }
 

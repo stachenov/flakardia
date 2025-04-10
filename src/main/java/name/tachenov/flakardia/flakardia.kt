@@ -10,6 +10,7 @@ import name.tachenov.flakardia.presenter.CardSetManagerPresenter
 import name.tachenov.flakardia.presenter.showPresenterFrame
 import name.tachenov.flakardia.ui.CardSetManagerFrame
 import name.tachenov.flakardia.ui.initializeSpellchecker
+import org.jetbrains.annotations.TestOnly
 import java.awt.Window
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
@@ -53,3 +54,6 @@ private val edtDispatcher = object : CoroutineDispatcher() {
         SwingUtilities.invokeLater(block)
     }
 }
+
+@get:TestOnly
+val edtDispatcherForTesting: CoroutineDispatcher get() = edtDispatcher
