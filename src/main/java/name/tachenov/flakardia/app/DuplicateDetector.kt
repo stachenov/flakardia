@@ -29,7 +29,7 @@ class DuplicateDetector(private val library: Library, private val draftFileEntry
     }
 
     private fun addFlashcardsFromOtherFiles(dir: FlashcardSetDirEntry) {
-        when (val otherCards = library.readFlashcards(dir)) {
+        when (val otherCards = library.readFlashcards(dir, ignoreErrors = true)) {
             is FlashcardSet -> {
                 for (card in otherCards.cards) {
                     if (card.path != draftFileEntry.path) {
@@ -37,8 +37,7 @@ class DuplicateDetector(private val library: Library, private val draftFileEntry
                     }
                 }
             }
-
-            is FlashcardSetError -> {}
+            is FlashcardSetError -> throw AssertionError("ignoreErrors was set to true")
         }
     }
 

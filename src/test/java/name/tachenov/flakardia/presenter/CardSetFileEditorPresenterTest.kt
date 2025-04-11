@@ -2,6 +2,7 @@ package name.tachenov.flakardia.presenter
 
 import com.google.common.jimfs.Jimfs
 import kotlinx.coroutines.*
+import name.tachenov.flakardia.NOT_PARSEABLE_FLASHCARDS
 import name.tachenov.flakardia.accessModel
 import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
@@ -638,6 +639,37 @@ class CardSetFileEditorPresenterTest {
         edt {
             val path = path("dir", "file.txt")
             editFile(path, detectDuplicatesIn = path("dir"))
+            val path2 = path("dir", "file2.txt")
+            assertQuestionDuplicates(
+                listOf(
+                    listOf(
+                        path2 to ("question a" to "answer d"),
+                    ),
+                    emptyList(),
+                    emptyList(),
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `duplicates in another file when some file has errors`() {
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to "answer c",
+                ),
+                "root/dir/file2.txt" to listOf(
+                    "question a" to "answer d",
+                ),
+            )
+        )
+        Files.writeString(fs.getPath("root/err.txt"), NOT_PARSEABLE_FLASHCARDS)
+        edt {
+            val path = path("dir", "file.txt")
+            editFile(path, detectDuplicatesIn = path())
             val path2 = path("dir", "file2.txt")
             assertQuestionDuplicates(
                 listOf(

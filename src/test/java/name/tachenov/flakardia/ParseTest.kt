@@ -12,6 +12,8 @@ import java.nio.file.Files
 
 private const val DEFAULT_NAME = "test.cards"
 
+const val NOT_PARSEABLE_FLASHCARDS = "a:b\n\n\nc,d\n"
+
 class ParseTest {
 
     private lateinit var fs: FileSystem
@@ -70,7 +72,7 @@ class ParseTest {
 
     @Test
     fun `using regular delimiter, different delimiters`() {
-        parse("a:b\n\n\nc,d\n", expect("delimiter"))
+        parse(NOT_PARSEABLE_FLASHCARDS, expect("delimiter"))
     }
 
     @Test

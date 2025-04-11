@@ -176,16 +176,19 @@ data class Library(private val storage: FlashcardStorage) {
     private fun renameWordsInStats(updatedFlashcards: List<UpdatedFlashcard>): SaveResult =
         saveUpdatedStats { oldStats -> oldStats.renameWords(updatedFlashcards) }
 
-    fun readFlashcards(entry: FlashcardSetListEntry): FlashcardSetResult {
+    fun readFlashcards(entry: FlashcardSetListEntry, ignoreErrors: Boolean = true): FlashcardSetResult {
         return when (entry) {
-            is FlashcardSetFileEntry -> storage.readFlashcards(entry.path)
+            is FlashcardSetFileEntry -> when (val result = storage.readFlashcards(entry.path)) {
+                is FlashcardSet -> result
+                is FlashcardSetError -> if (ignoreErrors) FlashcardSet(emptyList()) else result
+            }
             is FlashcardSetDirEntry -> {
                 val result = mutableListOf<FlashcardData>()
                 val subEntries = listEntries(entry.path)
                 for (subEntry in subEntries) {
-                    when (val subResult = readFlashcards(subEntry)) {
+                    when (val subResult = readFlashcards(subEntry, ignoreErrors)) {
                         is FlashcardSet -> result += subResult.cards
-                        is FlashcardSetError -> return subResult
+                        is FlashcardSetError -> if (!ignoreErrors) return subResult
                     }
                 }
                 FlashcardSet(result)
