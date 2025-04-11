@@ -39,28 +39,33 @@ class CardSetFileEditorPresenterTest {
 
     @Test
     fun `show initial content`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             editFile(path("dir", "file.txt"))
             assertCards(
                 listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
-            ))
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
+            )
             assertFirstState()
         }
     }
 
     @Test
     fun `show empty content`() {
-        addContent(listOf(
-            "root/dir/file.txt" to emptyList()
-        ))
+        addContent(
+            listOf(
+                "root/dir/file.txt" to emptyList()
+            )
+        )
         edt {
             editFile(path("dir", "file.txt"))
             assertCards(listOf("" to ""))
@@ -70,32 +75,37 @@ class CardSetFileEditorPresenterTest {
 
     @Test
     fun `remove first card`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.removeCard(state1.editorFullState.cards.first().id)
             assertCards(
                 listOf(
-                "question b" to "answer b",
-            ))
+                    "question b" to "answer b",
+                )
+            )
             assertCardRemoved(index = 0)
         }
     }
 
     @Test
     fun `remove a non-existing card`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
@@ -103,21 +113,24 @@ class CardSetFileEditorPresenterTest {
             sut.awaitStateUpdates()
             assertCards(
                 listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
-            ))
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
+            )
             assertFirstState()
         }
     }
 
     @Test
     fun `the last card cannot be removed`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
@@ -126,115 +139,131 @@ class CardSetFileEditorPresenterTest {
             }
             assertCards(
                 listOf(
-                "question b" to "answer b",
-            ))
+                    "question b" to "answer b",
+                )
+            )
             assertCardRemoved(index = 0)
         }
     }
 
     @Test
     fun `insert card before`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.insertCardBefore(state1.editorFullState.cards.first().id)
             assertCards(
                 listOf(
-                "" to "",
-                "question a" to "answer a",
-                "question b" to "answer b",
-            ))
+                    "" to "",
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
+            )
             assertCardAdded(index = 0, card = "" to "")
         }
     }
 
     @Test
     fun `insert card before a non-existing one`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.insertCardBefore(CardId(999999))
             assertCards(
                 listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
-            ))
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
+            )
             assertFirstState()
         }
     }
 
     @Test
     fun `insert card after`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.insertCardAfter(state1.editorFullState.cards.first().id)
             assertCards(
                 listOf(
-                "question a" to "answer a",
-                "" to "",
-                "question b" to "answer b",
-            ))
+                    "question a" to "answer a",
+                    "" to "",
+                    "question b" to "answer b",
+                )
+            )
             assertCardAdded(index = 1, card = "" to "")
         }
     }
 
     @Test
     fun `insert card after a non-existing one`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.insertCardAfter(CardId(999999))
             assertCards(
                 listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
-            ))
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
+            )
             assertFirstState()
         }
     }
 
     @Test
     fun `update card question`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.updateQuestion(state1.editorFullState.cards.first().id, "new question")
             assertCards(
                 listOf(
-                "new question" to "answer a",
-                "question b" to "answer b",
-            ))
+                    "new question" to "answer a",
+                    "question b" to "answer b",
+                )
+            )
             assertQuestionDuplicates(listOf(emptyList(), emptyList()))
             assertAnswerDuplicates(listOf(emptyList(), emptyList()))
             assertCardsChanged(listOf(0))
@@ -244,42 +273,48 @@ class CardSetFileEditorPresenterTest {
 
     @Test
     fun `update non-existing card question`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.updateQuestion(CardId(999999), "new question")
             assertCards(
                 listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
-            ))
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
+            )
             assertFirstState()
         }
     }
 
     @Test
     fun `update card answer`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.updateAnswer(state1.editorFullState.cards.first().id, "new answer")
             assertCards(
                 listOf(
-                "question a" to "new answer",
-                "question b" to "answer b",
-            ))
+                    "question a" to "new answer",
+                    "question b" to "answer b",
+                )
+            )
             assertQuestionDuplicates(listOf(emptyList(), emptyList()))
             assertAnswerDuplicates(listOf(emptyList(), emptyList()))
             assertCardChanged(index = 0, card = null to "new answer")
@@ -288,58 +323,66 @@ class CardSetFileEditorPresenterTest {
 
     @Test
     fun `update non-existing card answer`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
             )
-        ))
+        )
         edt {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.updateAnswer(CardId(999999), "new answer")
             assertCards(
                 listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
-            ))
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                )
+            )
             assertFirstState()
         }
     }
 
     @Test
     fun `answer duplicates in the same file`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
-                "question c" to "answer a",
-            ),
-        ))
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to "answer a",
+                ),
+            )
+        )
         edt {
             val path = path("dir", "file.txt")
             editFile(path)
             assertAnswerDuplicates(
                 listOf(
-                listOf(
-                    path to ("question c" to "answer a"),
-                ),
-                emptyList(),
-                listOf(
-                    path to ("question a" to "answer a"),
-                ),
-            ))
+                    listOf(
+                        path to ("question c" to "answer a"),
+                    ),
+                    emptyList(),
+                    listOf(
+                        path to ("question a" to "answer a"),
+                    ),
+                )
+            )
         }
     }
 
     @Test
     fun `add duplicate question`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
-            ),
-        ))
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                ),
+            )
+        )
         edt {
             val path = path("dir", "file.txt")
             val sut = editFile(path)
@@ -349,14 +392,15 @@ class CardSetFileEditorPresenterTest {
             sut.updateQuestion(state2.editorFullState.cards.last().id, "question a")
             assertQuestionDuplicates(
                 listOf(
-                listOf(
-                    path to ("question a" to ""),
-                ),
-                emptyList(),
-                listOf(
-                    path to ("question a" to "answer a"),
-                ),
-            ))
+                    listOf(
+                        path to ("question a" to ""),
+                    ),
+                    emptyList(),
+                    listOf(
+                        path to ("question a" to "answer a"),
+                    ),
+                )
+            )
             assertCardQuestionDuplicatesChanged(index = 0, listOf(path to ("question a" to "")))
             assertCardQuestionDuplicatesChanged(index = 2, listOf(path to ("question a" to "answer a")))
         }
@@ -364,12 +408,14 @@ class CardSetFileEditorPresenterTest {
 
     @Test
     fun `add duplicate answer`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
-            ),
-        ))
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                ),
+            )
+        )
         edt {
             val path = path("dir", "file.txt")
             val sut = editFile(path)
@@ -379,14 +425,15 @@ class CardSetFileEditorPresenterTest {
             sut.updateAnswer(state2.editorFullState.cards.last().id, "answer a")
             assertAnswerDuplicates(
                 listOf(
-                listOf(
-                    path to ("" to "answer a"),
-                ),
-                emptyList(),
-                listOf(
-                    path to ("question a" to "answer a"),
-                ),
-            ))
+                    listOf(
+                        path to ("" to "answer a"),
+                    ),
+                    emptyList(),
+                    listOf(
+                        path to ("question a" to "answer a"),
+                    ),
+                )
+            )
             assertCardAnswerDuplicatesChanged(index = 0, listOf(path to ("" to "answer a")))
             assertCardAnswerDuplicatesChanged(index = 2, listOf(path to ("question a" to "answer a")))
         }
@@ -394,12 +441,14 @@ class CardSetFileEditorPresenterTest {
 
     @Test
     fun `blank strings are not duplicates`() {
-        addContent(listOf(
-            "root/dir/file.txt" to listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
-            ),
-        ))
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                ),
+            )
+        )
         edt {
             val path = path("dir", "file.txt")
             val sut = editFile(path)
@@ -410,7 +459,8 @@ class CardSetFileEditorPresenterTest {
                     "question a" to "answer a",
                     "question b" to "answer b",
                     "" to "",
-                ))
+                )
+            )
             assertNoDuplicates()
             val state2 = sut.awaitStateUpdates()
             sut.updateQuestion(state2.editorFullState.cards.last().id, "question c")
@@ -419,7 +469,8 @@ class CardSetFileEditorPresenterTest {
                     "question a" to "answer a",
                     "question b" to "answer b",
                     "question c" to "",
-                ))
+                )
+            )
             assertNoDuplicates()
             sut.updateAnswer(state2.editorFullState.cards.last().id, " ")
             assertCards(
@@ -427,7 +478,8 @@ class CardSetFileEditorPresenterTest {
                     "question a" to "answer a",
                     "question b" to "answer b",
                     "question c" to " ",
-                ))
+                )
+            )
             assertNoDuplicates()
             sut.insertCardAfter(state2.editorFullState.cards.last().id)
             assertCards(
@@ -436,7 +488,8 @@ class CardSetFileEditorPresenterTest {
                     "question b" to "answer b",
                     "question c" to " ",
                     "" to "",
-                ))
+                )
+            )
             val state3 = sut.awaitStateUpdates()
             sut.updateQuestion(state3.editorFullState.cards.last().id, " ")
             assertCards(
@@ -445,7 +498,8 @@ class CardSetFileEditorPresenterTest {
                     "question b" to "answer b",
                     "question c" to " ",
                     " " to "",
-                ))
+                )
+            )
             assertNoDuplicates()
             sut.updateAnswer(state3.editorFullState.cards.last().id, "answer d")
             assertCards(
@@ -454,7 +508,8 @@ class CardSetFileEditorPresenterTest {
                     "question b" to "answer b",
                     "question c" to " ",
                     " " to "answer d",
-                ))
+                )
+            )
             assertNoDuplicates()
             sut.insertCardAfter(state3.editorFullState.cards.last().id)
             assertCards(
@@ -464,7 +519,8 @@ class CardSetFileEditorPresenterTest {
                     "question c" to " ",
                     " " to "answer d",
                     "" to "",
-                ))
+                )
+            )
             assertNoDuplicates()
             val state4 = sut.awaitStateUpdates()
             sut.updateQuestion(state4.editorFullState.cards.last().id, " ")
@@ -475,7 +531,8 @@ class CardSetFileEditorPresenterTest {
                     "question c" to " ",
                     " " to "answer d",
                     " " to "",
-                ))
+                )
+            )
             assertNoDuplicates()
             sut.updateAnswer(state4.editorFullState.cards.last().id, " ")
             assertCards(
@@ -485,16 +542,18 @@ class CardSetFileEditorPresenterTest {
                     "question c" to " ",
                     " " to "answer d",
                     " " to " ",
-                ))
+                )
+            )
             assertNoDuplicates()
             assertCards(
                 listOf(
-                "question a" to "answer a",
-                "question b" to "answer b",
-                "question c" to " ",
-                " " to "answer d",
-                " " to " ",
-            ))
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to " ",
+                    " " to "answer d",
+                    " " to " ",
+                )
+            )
             assertNoDuplicates()
         }
     }
