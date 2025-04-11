@@ -1,16 +1,13 @@
 package name.tachenov.flakardia.ui
 
+import name.tachenov.flakardia.*
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.FlashcardSetListEntry
 import name.tachenov.flakardia.app.Lesson
 import name.tachenov.flakardia.app.Library
-import name.tachenov.flakardia.assertUiAccessAllowed
 import name.tachenov.flakardia.data.Flashcard
 import name.tachenov.flakardia.data.LessonData
-import name.tachenov.flakardia.getManagerFrameLocation
 import name.tachenov.flakardia.presenter.*
-import name.tachenov.flakardia.setManagerFrameLocation
-import name.tachenov.flakardia.version
 import java.awt.Component
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
@@ -288,7 +285,7 @@ class CardSetManagerFrame(
     override suspend fun editFile(library: Library, fileEntry: FlashcardSetFileEntry, cards: List<Flashcard>) {
         assertUiAccessAllowed()
         showPresenterFrame(
-            presenterFactory = { CardSetFileEditorPresenter(library, fileEntry, cards) },
+            presenterFactory = { CardSetFileEditorPresenter(cardSetFileEditorConfig(), library, fileEntry, cards) },
             viewFactory = { CardSetFileEditorFrame(this, it) },
         )
     }

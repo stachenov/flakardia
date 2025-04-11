@@ -17,6 +17,10 @@ data class CardSetFileEditorState(
     val duplicateDetectionState: DuplicateDetectionState,
 ) : PresenterState
 
+interface CardSetFileEditorConfig {
+    var duplicateDetectionPath: FlashcardSetDirEntry?
+}
+
 data class DuplicateDetectionState(
     val availablePaths: List<DuplicateDetectionPath>,
     val selectedPath: DuplicateDetectionPath,
@@ -108,6 +112,7 @@ data class CardSetFileEditorSavedState(val warnings: List<String>) : CardSetFile
 data class CardSetFileEditorSaveErrorState(val message: String) : CardSetFileEditorPersistenceState()
 
 class CardSetFileEditorPresenter(
+    private val config: CardSetFileEditorConfig,
     private val library: Library,
     private val fileEntry: FlashcardSetFileEntry,
     private val initialContent: List<Flashcard>,
@@ -150,6 +155,7 @@ class CardSetFileEditorPresenter(
         persistenceState = CardSetFileEditorSavedState(warnings = emptyList()),
         duplicateDetectionState = computeInitialDuplicateDetectionState(),
     ).also {
+        startDetectingDuplicates()
         launchSaveJob()
     }
 
@@ -173,6 +179,10 @@ class CardSetFileEditorPresenter(
         override val dirEntry: FlashcardSetDirEntry?
             get() = if (fullPath.relativePath == editedPath) null else FlashcardSetDirEntry(fullPath.relativePath)
         override fun toString(): String = fullPath.toString()
+    }
+
+    private fun startDetectingDuplicates() {
+        detectDuplicatesIn(config.duplicateDetectionPath)
     }
 
     private fun launchSaveJob() {
@@ -233,6 +243,7 @@ class CardSetFileEditorPresenter(
     private fun allocateId(): FlashcardDraftId = FlashcardDraftId(cardId.incrementAndGet())
 
     fun detectDuplicatesIn(path: FlashcardSetDirEntry?) {
+        config.duplicateDetectionPath = path
         updateState { state ->
             val oldCardList = state.editorFullState.cards
             val updateBuilder = UpdateBuilder()

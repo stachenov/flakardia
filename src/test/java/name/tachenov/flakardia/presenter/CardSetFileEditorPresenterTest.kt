@@ -23,6 +23,7 @@ class CardSetFileEditorPresenterTest {
     private lateinit var fs: FileSystem
     private lateinit var storage: FlashcardStorageImpl
     private lateinit var library: Library
+    private lateinit var config: CardSetFileEditorConfig
     private var sut: CardSetFileEditorPresenter? = null
 
     @BeforeEach
@@ -30,6 +31,7 @@ class CardSetFileEditorPresenterTest {
         fs = Jimfs.newFileSystem()
         storage = FlashcardStorageImpl(fs.getPath("root"))
         library = Library(storage)
+        config = MockConfig()
         sut = null
     }
 
@@ -739,9 +741,11 @@ class CardSetFileEditorPresenterTest {
             val path3 = path("file3.txt")
             val rootPath = path()
             val sut = editFile(path)
+            assertConfig(null)
             assertSavedState()
             assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir/file.txt")
             sut.detectDuplicatesIn(FlashcardSetDirEntry(rootPath))
+            assertConfig(rootPath)
             assertSavedState()
             assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root")
             assertQuestionDuplicates(
@@ -755,6 +759,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
             sut.detectDuplicatesIn(FlashcardSetDirEntry(dirPath))
+            assertConfig(dirPath)
             assertSavedState()
             assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir")
             assertQuestionDuplicates(
@@ -820,6 +825,10 @@ class CardSetFileEditorPresenterTest {
         val state = checkNotNull(sut?.awaitStateUpdates())
         assertThat(state.duplicateDetectionState.availablePaths.map { it.toString() }).isEqualTo(availablePaths)
         assertThat(state.duplicateDetectionState.selectedPath.toString()).isEqualTo(selectedPath)
+    }
+
+    private suspend fun assertConfig(savedPath: RelativePath?) {
+        assertThat(config.duplicateDetectionPath?.path).isEqualTo(savedPath)
     }
 
     private suspend fun assertQuestionDuplicates(duplicates: List<List<Pair<RelativePath, Pair<String, String>>>>) {
@@ -891,7 +900,9 @@ class CardSetFileEditorPresenterTest {
         val flashcardSet = accessModel {
             library.readFlashcards(fileEntry) as FlashcardSet
         }
+        config.duplicateDetectionPath = detectDuplicatesIn?.let { FlashcardSetDirEntry(it) }
         val presenter = CardSetFileEditorPresenter(
+            config,
             library,
             fileEntry,
             initialContent = flashcardSet.cards.map { it.flashcard },
@@ -899,11 +910,13 @@ class CardSetFileEditorPresenterTest {
         launch {
             presenter.run(MockView())
         }
-        if (detectDuplicatesIn != null) {
-            presenter.detectDuplicatesIn(FlashcardSetDirEntry(detectDuplicatesIn))
-        }
+        presenter.awaitStateUpdates() // await the initial state
         sut = presenter
         return presenter
+    }
+
+    private class MockConfig : CardSetFileEditorConfig {
+        override var duplicateDetectionPath: FlashcardSetDirEntry? = null
     }
 
     private class MockView : CardSetFileEditorView {

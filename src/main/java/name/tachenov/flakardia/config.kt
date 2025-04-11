@@ -3,6 +3,7 @@ package name.tachenov.flakardia
 import com.github.weisj.darklaf.LafManager
 import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.data.parseRelativePath
+import name.tachenov.flakardia.presenter.CardSetFileEditorConfig
 import name.tachenov.flakardia.presenter.CardSetManagerPresenterSavedState
 import name.tachenov.flakardia.storage.FlashcardStorageImpl
 import name.tachenov.flakardia.ui.FlashcardSetViewColumn
@@ -283,6 +284,25 @@ fun setCardSetManagerPresenterSavedState(state: CardSetManagerPresenterSavedStat
         preferences.put("selected_path", selectedPath)
     }
 }
+
+private class EditorConfig : CardSetFileEditorConfig {
+    override var duplicateDetectionPath: FlashcardSetDirEntry?
+        get() {
+            val path = preferences.get("duplicate_detection_path", null)
+            return path?.parseRelativePath()?.let { FlashcardSetDirEntry(it) }
+        }
+        set(value) {
+            val path = value?.path?.toString()
+            if (path == null) {
+                preferences.remove("duplicate_detection_path")
+            }
+            else {
+                preferences.put("duplicate_detection_path", path)
+            }
+        }
+}
+
+fun cardSetFileEditorConfig(): CardSetFileEditorConfig = EditorConfig()
 
 fun setEditorBounds(bounds: Rectangle) {
     putLocation("editor", bounds.location)
