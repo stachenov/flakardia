@@ -30,7 +30,11 @@ class CardAdded(
 
 data class CardsChanged(
     val changes: List<CardChanged>
-) : CardSetFileEditorIncrementalStateUpdate()
+) : CardSetFileEditorIncrementalStateUpdate() {
+    init {
+        require(changes.isNotEmpty())
+    }
+}
 
 data class CardChanged(
     val index: Int,
@@ -204,6 +208,7 @@ class CardSetFileEditorPresenter(
                     updateBuilder.addCardWithPossiblyUpdatedDuplicates(index, oldCardPresenter)
                 }
             }
+            if (updateBuilder.cardsChanged.isEmpty()) return@updateState null
             state.copy(
                 editorFullState = CardSetFileEditorFullState(updateBuilder.updatedCardList),
                 changeFromPrevious = CardsChanged(updateBuilder.cardsChanged),

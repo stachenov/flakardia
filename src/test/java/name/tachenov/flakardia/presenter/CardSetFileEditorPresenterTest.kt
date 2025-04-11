@@ -652,6 +652,35 @@ class CardSetFileEditorPresenterTest {
     }
 
     @Test
+    fun `no duplicates in another file`() {
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to "answer c",
+                ),
+                "root/dir/file2.txt" to listOf(
+                    "question d" to "answer d",
+                ),
+            )
+        )
+        edt {
+            val path = path("dir", "file.txt")
+            val sut = editFile(path)
+            sut.detectDuplicatesIn(FlashcardSetDirEntry(path("dir")))
+            assertStateNotChanged()
+            assertQuestionDuplicates(
+                listOf(
+                    emptyList(),
+                    emptyList(),
+                    emptyList(),
+                )
+            )
+        }
+    }
+
+    @Test
     fun `change duplicate detection area`() {
         addContent(
             listOf(
@@ -706,6 +735,11 @@ class CardSetFileEditorPresenterTest {
     private suspend fun assertFirstState() {
         val state = checkNotNull(sut?.awaitStateUpdates())
         assertThat(state.changeFromPrevious).isEqualTo(CardSetFileEditorFirstState)
+    }
+
+    private suspend fun assertStateNotChanged() {
+        val state = checkNotNull(sut?.awaitStateUpdates())
+        assertThat(state.changeFromPrevious).isIn(CardSetFileEditorFirstState, CardSetFileEditorNoChange)
     }
 
     private suspend fun assertCardRemoved(index: Int) {
