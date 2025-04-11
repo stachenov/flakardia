@@ -7,5 +7,6 @@ module flakardia {
     requires kotlinx.serialization.json;
     requires jortho;
     requires org.jetbrains.annotations;
+    requires org.apache.commons.text;
     exports name.tachenov.flakardia.storage;
 }
