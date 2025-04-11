@@ -1,6 +1,6 @@
 package name.tachenov.flakardia.app
 
-import name.tachenov.flakardia.assertBGT
+import name.tachenov.flakardia.assertModelAccessAllowed
 import name.tachenov.flakardia.data.FlashcardDraft
 
 class DuplicateDetector {
@@ -8,13 +8,13 @@ class DuplicateDetector {
     private val cardsByAnswer = mutableMapOf<String, MutableSet<FlashcardDraft>>()
 
     fun removeCard(card: FlashcardDraft) {
-        assertBGT()
+        assertModelAccessAllowed()
         cardsByQuestion[card.question]?.remove(card)
         cardsByAnswer[card.answer]?.remove(card)
     }
 
     fun addCard(card: FlashcardDraft) {
-        assertBGT()
+        assertModelAccessAllowed()
         if (card.question.isNotBlank()) {
             cardsByQuestion.getOrPut(card.question) { mutableSetOf() }.add(card)
         }
@@ -24,12 +24,12 @@ class DuplicateDetector {
     }
 
     fun getQuestionDuplicates(card: FlashcardDraft): List<FlashcardDraft> {
-        assertBGT()
+        assertModelAccessAllowed()
         return cardsByQuestion[card.question]?.filter { it.id != card.id } ?: emptyList()
     }
 
     fun getAnswerDuplicates(card: FlashcardDraft): List<FlashcardDraft> {
-        assertBGT()
+        assertModelAccessAllowed()
         return cardsByAnswer[card.answer]?.filter { it.id != card.id } ?: emptyList()
     }
 }

@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.app
 
+import name.tachenov.flakardia.backgroundModelTest
 import name.tachenov.flakardia.data.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -54,16 +55,18 @@ class DuplicateDetectionTest {
     }
 
     private fun doTest(cards: List<Pair<String, String>>, expectedWarnings: List<String>) {
-        val storage = MockStorage(cards)
-        val sut = Library(storage)
-        val actual = sut.prepareLessonData(storage.readEntries(storage.rootPath).first())
-        val actualWarnings = getWarnings(actual)
-        if (expectedWarnings.isEmpty()) {
-            assertThat(actualWarnings).isEmpty()
-        }
-        else {
-            for (expectedWarning in expectedWarnings) {
-                assertThat(actualWarnings).`as`("must contain $expectedWarning").anyMatch { it.contains(expectedWarning) }
+        backgroundModelTest {
+            val storage = MockStorage(cards)
+            val sut = Library(storage)
+            val actual = sut.prepareLessonData(storage.readEntries(storage.rootPath).first())
+            val actualWarnings = getWarnings(actual)
+            if (expectedWarnings.isEmpty()) {
+                assertThat(actualWarnings).isEmpty()
+            }
+            else {
+                for (expectedWarning in expectedWarnings) {
+                    assertThat(actualWarnings).`as`("must contain $expectedWarning").anyMatch { it.contains(expectedWarning) }
+                }
             }
         }
     }

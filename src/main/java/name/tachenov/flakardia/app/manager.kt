@@ -1,6 +1,6 @@
 package name.tachenov.flakardia.app
 
-import name.tachenov.flakardia.assertBGT
+import name.tachenov.flakardia.assertModelAccessAllowed
 import name.tachenov.flakardia.data.FullPath
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.data.plus
@@ -9,34 +9,34 @@ class CardManager {
 
     var library: Library? = null
         get() {
-            assertBGT()
+            assertModelAccessAllowed()
             return field
         }
         private set
 
     var path: FullPath? = null
         get() {
-            assertBGT()
+            assertModelAccessAllowed()
             return field
         }
         private set
 
     var entries: List<FlashcardSetListEntry> = emptyList()
         get() {
-            assertBGT()
+            assertModelAccessAllowed()
             return field
         }
         private set
 
     fun enterLibrary(library: Library): DirEnterResult {
-        assertBGT()
+        assertModelAccessAllowed()
         if (library == this.library) return DirEnterSuccess
         this.library = library
         return enter(RelativePath())
     }
 
     fun enter(path: RelativePath): DirEnterResult {
-        assertBGT()
+        assertModelAccessAllowed()
         try {
             val library = this.library ?: return DirEnterError("No library selected")
             entries = library.listEntries(path)
@@ -57,7 +57,7 @@ class CardManager {
     }
 
     private fun runCreateAction(name: String, createWhatever: Library.(RelativePath) -> Unit): CreateResult {
-        assertBGT()
+        assertModelAccessAllowed()
         return try {
             val library = this.library ?: return CreateError("No library selected")
             val currentPath = this.path ?: return CreateError("No path selected")

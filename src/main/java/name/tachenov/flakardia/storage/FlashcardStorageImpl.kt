@@ -4,7 +4,7 @@ import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.FlashcardSetListEntry
 import name.tachenov.flakardia.app.FlashcardStorage
-import name.tachenov.flakardia.assertBGT
+import name.tachenov.flakardia.assertModelAccessAllowed
 import name.tachenov.flakardia.data.*
 import name.tachenov.flakardia.reportCurrentOperation
 import name.tachenov.flakardia.reportProgress
@@ -23,7 +23,7 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
         get() = fsPath.fileName.toString()
 
     override fun readEntries(path: RelativePath): List<FlashcardSetListEntry> {
-        assertBGT()
+        assertModelAccessAllowed()
         val result = mutableListOf<FlashcardSetListEntry>()
         Files.newDirectoryStream(
             path.toFilePath()
@@ -43,7 +43,7 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
     }
 
     override fun readFlashcards(path: RelativePath): FlashcardSetResult  {
-        assertBGT()
+        assertModelAccessAllowed()
         val lines = try {
             Files.readAllLines(path.toFilePath())
         } catch (e: Exception) {
@@ -65,7 +65,7 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
     }
 
     override fun readLibraryStats(): LibraryStatsResult {
-        assertBGT()
+        assertModelAccessAllowed()
         try {
             ensureFlakardiaDirExists()
             val json = if (Files.exists(statsFile)) {
@@ -91,7 +91,7 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
         }
 
     private fun saveTextFile(path: Path, tempPrefix: String, tempSuffix: String, content: () -> String): SaveResult {
-        assertBGT()
+        assertModelAccessAllowed()
         var tempFile: Path? = null
         try {
             ensureFlakardiaDirExists()
@@ -121,12 +121,12 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
     }
 
     override fun createDir(path: RelativePath) {
-        assertBGT()
+        assertModelAccessAllowed()
         Files.createDirectories(path.toFilePath())
     }
 
     override fun createFile(path: RelativePath) {
-        assertBGT()
+        assertModelAccessAllowed()
         Files.createFile(path.toFilePath())
     }
 }

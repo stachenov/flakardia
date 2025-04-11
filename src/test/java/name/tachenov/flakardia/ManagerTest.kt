@@ -2,7 +2,6 @@ package name.tachenov.flakardia
 
 import com.google.common.jimfs.Jimfs
 import name.tachenov.flakardia.app.*
-import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.data.FullPath
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.storage.FlashcardStorageImpl
@@ -61,34 +60,40 @@ class ManagerTest {
 
     @Test
     fun `entering and leaving subdirectory`() {
-        create(dir("cards", dir("sub", file("sub-file.cards")), file("file1.cards"), file("file2.cards")))
-        val sut = CardManager()
-        var enterResult = sut.enterLibrary(library)
-        expect(root, dirPath("cards/sub"), filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
-        val subPath = root.resolve("sub")
-        enterResult = sut.enter(subPath)
-        expect(subPath, upPath("cards"), filePath("cards/sub/sub-file.cards")).match(enterResult, sut.path, sut.entries)
-        enterResult = sut.enter(root)
-        expect(root, dirPath("cards/sub"), filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
+        backgroundModelTest {
+            create(dir("cards", dir("sub", file("sub-file.cards")), file("file1.cards"), file("file2.cards")))
+            val sut = CardManager()
+            var enterResult = sut.enterLibrary(library)
+            expect(root, dirPath("cards/sub"), filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
+            val subPath = root.resolve("sub")
+            enterResult = sut.enter(subPath)
+            expect(subPath, upPath("cards"), filePath("cards/sub/sub-file.cards")).match(enterResult, sut.path, sut.entries)
+            enterResult = sut.enter(root)
+            expect(root, dirPath("cards/sub"), filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
+        }
     }
 
     @Test
     fun `entering non-existent dir`() {
-        create(dir("cards", file("file1.cards"), file("file2.cards")))
-        val sut = CardManager()
-        var enterResult = sut.enterLibrary(library)
-        expect(root, filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
-        enterResult = sut.enter(root.resolve("sub"))
-        expect("sub", root, filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
+        backgroundModelTest {
+            create(dir("cards", file("file1.cards"), file("file2.cards")))
+            val sut = CardManager()
+            var enterResult = sut.enterLibrary(library)
+            expect(root, filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
+            enterResult = sut.enter(root.resolve("sub"))
+            expect("sub", root, filePath("cards/file1.cards"), filePath("cards/file2.cards")).match(enterResult, sut.path, sut.entries)
+        }
     }
 
     private fun test(structure: Dir?, expectation: Expectation) {
-        if (structure != null) {
-            create(structure)
+        backgroundModelTest {
+            if (structure != null) {
+                create(structure)
+            }
+            val sut = CardManager()
+            val enterResult = sut.enterLibrary(library)
+            expectation.match(enterResult, sut.path, sut.entries)
         }
-        val sut = CardManager()
-        val enterResult = sut.enterLibrary(library)
-        expectation.match(enterResult, sut.path, sut.entries)
     }
 
     private fun create(dir: Dir, parentPath: Path = fs.getPath(".")) {

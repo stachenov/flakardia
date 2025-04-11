@@ -1,7 +1,7 @@
 package name.tachenov.flakardia.app
 
 import name.tachenov.flakardia.LimitedValue
-import name.tachenov.flakardia.assertBGT
+import name.tachenov.flakardia.assertModelAccessAllowed
 import name.tachenov.flakardia.data.*
 import name.tachenov.flakardia.getLessonSettings
 import java.time.Duration
@@ -62,7 +62,7 @@ data class Library(private val storage: FlashcardStorage) {
         get() = storage.path
 
     fun listEntries(path: RelativePath): List<FlashcardSetListEntry> {
-        assertBGT()
+        assertModelAccessAllowed()
         val result = mutableListOf<FlashcardSetListEntry>()
         val parent = path.parent
         if (parent != null) {
@@ -73,12 +73,12 @@ data class Library(private val storage: FlashcardStorage) {
     }
 
     fun getAllFlashcards(entry: FlashcardSetListEntry): LessonDataResult {
-        assertBGT()
+        assertModelAccessAllowed()
         return prepareLessonData(entry) { name, flashcards, stats -> LessonData(name, flashcards, stats.filter(flashcards)) }
     }
 
     fun prepareLessonData(entry: FlashcardSetListEntry): LessonDataResult {
-        assertBGT()
+        assertModelAccessAllowed()
         return prepareLessonData(entry) { name, flashcards, stats ->
             prepareLessonData(Instant.now(), name, flashcards, stats, getLessonSettings())
         }
@@ -88,7 +88,7 @@ data class Library(private val storage: FlashcardStorage) {
         entry: FlashcardSetListEntry,
         prepare: (String, List<FlashcardData>, LibraryStats) -> LessonData,
     ): LessonDataResult {
-        assertBGT()
+        assertModelAccessAllowed()
         return when (val flashcardSet = readFlashcards(entry)) {
             is FlashcardSetError -> LessonDataError(flashcardSet.message)
             is FlashcardSet -> when (val stats = storage.readLibraryStats()) {
@@ -125,7 +125,7 @@ data class Library(private val storage: FlashcardStorage) {
         saveUpdatedStats { oldStats -> oldStats.update(stats) }
 
     private inline fun saveUpdatedStats(update: (LibraryStats) -> LibraryStats): SaveResult {
-        assertBGT()
+        assertModelAccessAllowed()
         return when (val allStats = storage.readLibraryStats()) {
             is LibraryStats -> {
                 val updatedStats = update(allStats)
@@ -136,7 +136,7 @@ data class Library(private val storage: FlashcardStorage) {
     }
 
     fun saveFlashcardSetFile(fileEntry: FlashcardSetFileEntry, flashcards: List<UpdatedOrNewFlashcard>): SaveResult {
-        assertBGT()
+        assertModelAccessAllowed()
         return when (val saveResult = storage.saveFlashcardSetFile(fileEntry.path, flashcards.map { it.newCard })) {
             is SaveError -> return saveResult
             is SaveSuccess, is SaveWarnings -> {
@@ -154,7 +154,7 @@ data class Library(private val storage: FlashcardStorage) {
     }
 
     fun saveUpdatedFlashcard(fileEntry: FlashcardSetFileEntry, card: UpdatedFlashcard): SaveResult {
-        assertBGT()
+        assertModelAccessAllowed()
         val cards = when (val oldCardsResult = readFlashcards(fileEntry)) {
             is FlashcardSetError -> return SaveError(oldCardsResult.message)
             is FlashcardSet -> oldCardsResult.cards.map { it.flashcard }
@@ -197,12 +197,12 @@ data class Library(private val storage: FlashcardStorage) {
     fun fullPath(path: RelativePath): FullPath = FullPath(this, path)
 
     fun createDir(path: RelativePath) {
-        assertBGT()
+        assertModelAccessAllowed()
         storage.createDir(path)
     }
 
     fun createFile(path: RelativePath) {
-        assertBGT()
+        assertModelAccessAllowed()
         storage.createFile(path)
     }
 }
@@ -214,7 +214,7 @@ fun prepareLessonData(
     stats: LibraryStats,
     settings: LessonSettings,
 ): LessonData {
-    assertBGT()
+    assertModelAccessAllowed()
     // Take all flashcards and calculate for every flashcard, when it should be ideally learned next.
     // This is calculated as the last learned time plus the interval, which is the interval between two
     // previous learn times, multiplied by a factor that depends on how many mistakes were there the last time.

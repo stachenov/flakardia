@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import name.tachenov.flakardia.assertEDT
+import name.tachenov.flakardia.assertUiAccessAllowed
 import name.tachenov.flakardia.presenter.Presenter
 import name.tachenov.flakardia.presenter.PresenterState
 import name.tachenov.flakardia.presenter.View
@@ -33,7 +33,7 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
 
     @OptIn(FlowPreview::class)
     override suspend fun run() = coroutineScope {
-        assertEDT()
+        assertUiAccessAllowed()
         val job = coroutineContext.job
         addWindowListener(object : WindowAdapter() {
             override fun windowClosed(e: WindowEvent?) {
@@ -68,14 +68,14 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
     }
 
     private fun beforeFirstStateInit() {
-        assertEDT()
+        assertUiAccessAllowed()
         if (packFrame == PackFrame.BEFORE_STATE_INIT) {
             pack()
         }
     }
 
     private fun afterFirstStateInit() {
-        assertEDT()
+        assertUiAccessAllowed()
         if (packFrame == PackFrame.AFTER_STATE_INIT) {
             pack()
         }
@@ -94,12 +94,12 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
     protected abstract fun applyPresenterState(state: S)
 
     override fun adjustSize() {
-        assertEDT()
+        assertUiAccessAllowed()
         pack()
     }
 
     override fun showWarnings(warnings: List<String>) {
-        assertEDT()
+        assertUiAccessAllowed()
         JOptionPane.showMessageDialog(
             this,
             "<html>" + warnings.joinToString("<br>"),
@@ -109,7 +109,7 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
     }
 
     override fun showError(title: String, message: String) {
-        assertEDT()
+        assertUiAccessAllowed()
         JOptionPane.showMessageDialog(
             this,
             message,

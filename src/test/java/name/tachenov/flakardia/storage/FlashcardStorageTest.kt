@@ -3,6 +3,7 @@ package name.tachenov.flakardia.storage
 import com.google.common.jimfs.Jimfs
 import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
+import name.tachenov.flakardia.backgroundModelTest
 import name.tachenov.flakardia.data.RelativePath
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -33,22 +34,28 @@ class FlashcardStorageTest {
 
     @Test
     fun `flakardia dir is ignored`() {
-        Files.createDirectories(root.resolve(DOT_FLAKARDIA))
-        assertThat(sut.readEntries(RelativePath())).doesNotContain(FlashcardSetDirEntry(RelativePath(listOf(DOT_FLAKARDIA))))
+        backgroundModelTest {
+            Files.createDirectories(root.resolve(DOT_FLAKARDIA))
+            assertThat(sut.readEntries(RelativePath())).doesNotContain(FlashcardSetDirEntry(RelativePath(listOf(DOT_FLAKARDIA))))
+        }
     }
 
     @Test
     fun `hidden dirs are ignored`() {
-        val dirName = ".some_dir"
-        Files.createDirectories(root.resolve(dirName))
-        assertThat(sut.readEntries(RelativePath())).doesNotContain(FlashcardSetDirEntry(RelativePath(listOf(dirName))))
+        backgroundModelTest {
+            val dirName = ".some_dir"
+            Files.createDirectories(root.resolve(dirName))
+            assertThat(sut.readEntries(RelativePath())).doesNotContain(FlashcardSetDirEntry(RelativePath(listOf(dirName))))
+        }
     }
 
     @Test
     fun `hidden files are ignored`() {
-        Files.createDirectory(root)
-        val fileName = ".some_file.tmp"
-        Files.createFile(root.resolve(fileName))
-        assertThat(sut.readEntries(RelativePath())).doesNotContain(FlashcardSetFileEntry(RelativePath(listOf(fileName))))
+        backgroundModelTest {
+            Files.createDirectory(root)
+            val fileName = ".some_file.tmp"
+            Files.createFile(root.resolve(fileName))
+            assertThat(sut.readEntries(RelativePath())).doesNotContain(FlashcardSetFileEntry(RelativePath(listOf(fileName))))
+        }
     }
 }

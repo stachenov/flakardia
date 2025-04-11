@@ -1,6 +1,6 @@
 package name.tachenov.flakardia.app
 
-import name.tachenov.flakardia.assertBGT
+import name.tachenov.flakardia.assertModelAccessAllowed
 import name.tachenov.flakardia.data.*
 import java.time.Duration
 import java.time.Instant
@@ -23,7 +23,7 @@ data class Answer(val word: Word)
 
 data class AnswerResult(val flashcardSetPath: RelativePath, val question: Word, val yourAnswer: Answer?, val correctAnswer: Answer) {
     val isCorrect: Boolean get() {
-        assertBGT()
+        assertModelAccessAllowed()
         return yourAnswer?.word == correctAnswer.word
     }
 }
@@ -53,13 +53,13 @@ class Lesson(
 
     val result: LessonResult
         get() {
-            assertBGT()
+            assertModelAccessAllowed()
             return LessonResult(round, correctingMistakes, total, correct, incorrect.size, remaining.size)
         }
 
     val stats: LibraryStats
         get() {
-            assertBGT()
+            assertModelAccessAllowed()
             return LibraryStats(
                 mistakes.keys.asSequence()
                     .associateWith { word ->
@@ -81,7 +81,7 @@ class Lesson(
     private var currentFlashcard: FlashcardData? = null
 
     fun nextQuestion(): Question? {
-        assertBGT()
+        assertModelAccessAllowed()
         goToNextFlashcard()
         ++step
         return currentFlashcard?.let {
@@ -91,7 +91,7 @@ class Lesson(
     }
 
     fun answer(answer: Answer?): AnswerResult {
-        assertBGT()
+        assertModelAccessAllowed()
         val currentFlashcard = currentFlashcard
         checkNotNull(currentFlashcard) { "Cannot answer when there is no question (active flashcard)" }
         val answerResult = AnswerResult(

@@ -7,8 +7,6 @@ import kotlinx.coroutines.sync.withLock
 import name.tachenov.flakardia.presenter.Presenter
 import name.tachenov.flakardia.ui.dialogIndicator
 import javax.swing.SwingUtilities
-import kotlin.coroutines.AbstractCoroutineContextElement
-import kotlin.coroutines.CoroutineContext
 
 abstract class ProgressIndicator {
     abstract val job: Job?
@@ -72,35 +70,61 @@ private val currentIndicator = ThreadLocal<ProgressIndicator>()
 
 private fun currentIndicator(): ProgressIndicator? = currentIndicator.get()
 
-fun assertBGT() {
-    if (SwingUtilities.isEventDispatchThread()) {
-        throw AssertionError("Shouldn't be called from UI")
+private val isUnderModelLock: ThreadLocal<Boolean> = ThreadLocal.withInitial { false }
+
+fun assertModelAccessAllowed() {
+    if (!isUnderModelLock.get()) {
+        throw AssertionError("Model access not allowed")
     }
 }
 
-fun assertEDT() {
+fun assertUiAccessAllowed() {
     if (!SwingUtilities.isEventDispatchThread()) {
         throw AssertionError("Should be called from the EDT")
     }
 }
 
-suspend fun assertUnderModelLock() {
-    if (currentCoroutineContext()[ModelLockKey] == null) {
-        throw AssertionError("Background operations are for mutable model access, so they must be under the model lock")
+/**
+ * Executes a block of code with model access allowed.
+ *
+ * Reentrant, does not lock the lock if it's already locked.
+ * The given code is always executed on a background thread.
+ */
+suspend fun <T> accessModel(code: suspend () -> T): T =
+    underModelLock {
+        background {
+            code()
+        }
     }
-}
 
-suspend fun <T> background(code: () -> T): T {
-    assertUnderModelLock()
+/**
+ * Executes a block of code with model access allowed and a progress dialog.
+ *
+ * Unlike [accessModel], not reentrant, but it's allowed to call [accessModel] inside (not vice versa).
+ * Can only be called from UI code because it needs UI access to show the dialog.
+ * The given code is always executed on a background thread.
+ */
+suspend fun <T> accessModelWithProgress(owner: Presenter<*, *>, code: suspend () -> T): T =
+    underModelLock {
+        backgroundWithProgress(owner) {
+            code()
+        }
+    }
+
+private suspend fun <T> background(code: suspend () -> T): T {
+    assertModelAccessAllowed()
     return withContext(Dispatchers.IO) {
         code()
     }
 }
 
-suspend fun <T> backgroundWithProgress(owner: Presenter<*, *>, code: suspend () -> T): T =
+private suspend fun <T> backgroundWithProgress(owner: Presenter<*, *>, code: suspend () -> T): T =
     coroutineScope {
-        assertEDT()
-        assertUnderModelLock()
+        // This is the only place where both UI and model access are allowed,
+        // as UI access is needed to show the progress bar.
+        // But once the progress dialog is created, we transfer to background immediately.
+        assertUiAccessAllowed()
+        assertModelAccessAllowed()
         val indicator = dialogIndicator(owner, currentCoroutineContext().job)
         val indicatorJob = launch {
             indicator.run()
@@ -115,15 +139,14 @@ suspend fun <T> backgroundWithProgress(owner: Presenter<*, *>, code: suspend () 
         }
     }
 
-suspend fun <T> underModelLock(code: suspend () -> T): T {
-    val context = currentCoroutineContext()
-    return if (context[ModelLockKey] != null) {
+private suspend fun <T> underModelLock(code: suspend () -> T): T {
+    return if (isUnderModelLock.get()) {
         code()
     }
     else {
         modelLock.withLock {
             coroutineScope {
-                withContext(context + ModelLock) {
+                withContext(isUnderModelLock.asContextElement(value = true)) {
                     code()
                 }
             }
@@ -132,7 +155,3 @@ suspend fun <T> underModelLock(code: suspend () -> T): T {
 }
 
 private val modelLock = Mutex()
-
-private object ModelLock : AbstractCoroutineContextElement(ModelLockKey)
-
-private object ModelLockKey : CoroutineContext.Key<ModelLock>

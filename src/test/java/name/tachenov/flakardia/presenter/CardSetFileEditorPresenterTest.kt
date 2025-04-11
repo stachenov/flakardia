@@ -2,15 +2,14 @@ package name.tachenov.flakardia.presenter
 
 import com.google.common.jimfs.Jimfs
 import kotlinx.coroutines.*
+import name.tachenov.flakardia.accessModel
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.Library
-import name.tachenov.flakardia.background
 import name.tachenov.flakardia.data.FlashcardDraftId
 import name.tachenov.flakardia.data.FlashcardSet
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.edtDispatcherForTesting
 import name.tachenov.flakardia.storage.FlashcardStorageImpl
-import name.tachenov.flakardia.underModelLock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -694,10 +693,8 @@ class CardSetFileEditorPresenterTest {
 
     private suspend fun CoroutineScope.editFile(path: RelativePath): CardSetFileEditorPresenter {
         val fileEntry = FlashcardSetFileEntry(path)
-        val flashcardSet = underModelLock {
-            background {
-                library.readFlashcards(fileEntry) as FlashcardSet
-            }
+        val flashcardSet = accessModel {
+            library.readFlashcards(fileEntry) as FlashcardSet
         }
         val presenter = CardSetFileEditorPresenter(
             library,

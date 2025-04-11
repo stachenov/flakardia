@@ -3,7 +3,7 @@ package name.tachenov.flakardia.presenter
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
-import name.tachenov.flakardia.assertEDT
+import name.tachenov.flakardia.assertUiAccessAllowed
 import name.tachenov.flakardia.debugMode
 import org.jetbrains.annotations.TestOnly
 import java.util.concurrent.atomic.AtomicInteger
@@ -36,13 +36,13 @@ abstract class Presenter<S : PresenterState, V : View> {
         val epoch: Int,
         val update: suspend (S) -> S?,
     ) {
-        operator suspend fun invoke(state: S): S? = update(state)
+        suspend operator fun invoke(state: S): S? = update(state)
     }
 
     protected abstract suspend fun computeInitialState(): S
 
     suspend fun run(view: V) = coroutineScope {
-        assertEDT()
+        assertUiAccessAllowed()
         this@Presenter.view = view
         launch {
             var state = computeInitialState()
@@ -83,7 +83,7 @@ abstract class Presenter<S : PresenterState, V : View> {
     }
 
     protected fun launchUiTask(task: suspend () -> Unit) {
-        assertEDT()
+        assertUiAccessAllowed()
         val taskJob = currentRunScope?.launch {
             task()
         } ?: return

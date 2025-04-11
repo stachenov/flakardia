@@ -1,9 +1,8 @@
 package name.tachenov.flakardia.presenter
 
+import name.tachenov.flakardia.accessModel
 import name.tachenov.flakardia.app.*
-import name.tachenov.flakardia.background
 import name.tachenov.flakardia.data.*
-import name.tachenov.flakardia.underModelLock
 
 interface LessonPresenterView : View
 
@@ -38,51 +37,45 @@ class LessonPresenter(
     private val lesson: Lesson,
 ) : Presenter<LessonPresenterState, LessonPresenterView>() {
 
-    override suspend fun computeInitialState(): LessonPresenterState  = underModelLock {
-        background {
-            val nextQuestion = lesson.nextQuestion()
-            LessonPresenterState(
-                title = lesson.name,
-                lessonResult = lesson.result,
-                lessonStatus = nextQuestion?.let { question -> QuestionState(question) } ?: DoneState,
-            )
-        }
+    override suspend fun computeInitialState(): LessonPresenterState  = accessModel {
+        val nextQuestion = lesson.nextQuestion()
+        LessonPresenterState(
+            title = lesson.name,
+            lessonResult = lesson.result,
+            lessonStatus = nextQuestion?.let { question -> QuestionState(question) } ?: DoneState,
+        )
     }
 
     fun nextQuestion() {
         updateState { state ->
-            underModelLock {
-                background {
-                    val nextQuestion = lesson.nextQuestion()
-                    state.copy(
-                        lessonResult = lesson.result,
-                        lessonStatus = nextQuestion?.let { question -> QuestionState(question) } ?: DoneState,
-                    )
-                }
+            accessModel {
+                val nextQuestion = lesson.nextQuestion()
+                state.copy(
+                    lessonResult = lesson.result,
+                    lessonStatus = nextQuestion?.let { question -> QuestionState(question) } ?: DoneState,
+                )
             }
         }
     }
 
     fun answered(answer: Answer?) {
         updateState { state ->
-            val (newState, saveResult) = underModelLock {
-                background {
-                    val answerResult = lesson.answer(answer).let {
-                        AnswerResultPresenter(
-                            path = it.flashcardSetPath,
-                            question = it.question.value,
-                            yourAnswer = it.yourAnswer?.word?.value,
-                            correctAnswer = it.correctAnswer.word.value,
-                            isCorrect = it.isCorrect,
-                        )
-                    }
-                    val newState = state.copy(
-                        lessonResult = lesson.result,
-                        lessonStatus = AnswerState(answerResult),
+            val (newState, saveResult) = accessModel {
+                val answerResult = lesson.answer(answer).let {
+                    AnswerResultPresenter(
+                        path = it.flashcardSetPath,
+                        question = it.question.value,
+                        yourAnswer = it.yourAnswer?.word?.value,
+                        correctAnswer = it.correctAnswer.word.value,
+                        isCorrect = it.isCorrect,
                     )
-                    val saveResult = library.saveUpdatedStats(lesson.stats)
-                    newState to saveResult
                 }
+                val newState = state.copy(
+                    lessonResult = lesson.result,
+                    lessonStatus = AnswerState(answerResult),
+                )
+                val saveResult = library.saveUpdatedStats(lesson.stats)
+                newState to saveResult
             }
             when (saveResult) {
                 is SaveError -> view.showError("An error occurred when trying to save word statistics", saveResult.message)
@@ -116,16 +109,14 @@ class LessonPresenter(
                 view.showError("Save error", "Both the question and the answer must be specified")
                 return@updateState null
             }
-            val saveResult = underModelLock {
-                background {
-                    library.saveUpdatedFlashcard(
-                        fileEntry = FlashcardSetFileEntry(lessonState.word.path),
-                        card = UpdatedFlashcard(
-                            oldCard = Flashcard(Word(lessonState.word.question), Word(lessonState.word.answer)),
-                            newCard = Flashcard(Word(newQuestion), Word(newAnswer)),
-                        )
+            val saveResult = accessModel {
+                library.saveUpdatedFlashcard(
+                    fileEntry = FlashcardSetFileEntry(lessonState.word.path),
+                    card = UpdatedFlashcard(
+                        oldCard = Flashcard(Word(lessonState.word.question), Word(lessonState.word.answer)),
+                        newCard = Flashcard(Word(newQuestion), Word(newAnswer)),
                     )
-                }
+                )
             }
             when (saveResult) {
                 is SaveError -> {

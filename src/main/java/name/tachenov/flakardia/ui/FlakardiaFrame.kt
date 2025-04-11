@@ -1,12 +1,12 @@
 package name.tachenov.flakardia.ui
 
-import name.tachenov.flakardia.assertEDT
+import name.tachenov.flakardia.assertUiAccessAllowed
 import javax.swing.JFrame
 
 open class FlakardiaFrame : JFrame() {
 
     init {
-        assertEDT()
+        assertUiAccessAllowed()
         defaultCloseOperation = DISPOSE_ON_CLOSE
         rootPane.setupShortcuts(this)
     }

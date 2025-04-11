@@ -4,7 +4,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import name.tachenov.flakardia.ProgressIndicator
 import name.tachenov.flakardia.UiProgressIndicator
-import name.tachenov.flakardia.assertEDT
+import name.tachenov.flakardia.assertUiAccessAllowed
 import name.tachenov.flakardia.presenter.Presenter
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -33,7 +33,7 @@ fun dialogIndicator(owner: Presenter<*, *>, job: Job): ProgressIndicator {
         }
 
         private fun dialog(): ProgressIndicatorDialog {
-            assertEDT()
+            assertUiAccessAllowed()
             job.ensureActive()
             var dialog = dialog
             if (dialog == null) {

@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.app
 
+import name.tachenov.flakardia.backgroundModelTest
 import name.tachenov.flakardia.data.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -76,31 +77,33 @@ class PrepareLessonDataTest {
         minIntervalWithManyMistakes: Double = 0.1,
         randomness: Double = 0.0,
     ) {
-        val allActualWords = hashSetOf<Word>()
-        val expectedWordSet = expectedWords.map { Word(it) }.toSet()
-        repeat(if (randomness > 0.0) 100 else 1) {
-            val actualWords = prepareLessonData(
-                time(now),
-                "test",
-                buildFlashcards(testWords),
-                buildStats(testWords),
-                LessonSettings(
-                    maxWordsPerLesson,
-                    intervalMultiplierWithoutMistakes,
-                    interval(minIntervalWithoutMistakes),
-                    intervalMultiplierWithMistake,
-                    interval(minIntervalWithMistake),
-                    intervalMultiplierWithManyMistakes,
-                    interval(minIntervalWithManyMistakes),
-                    randomness,
-                )
-            ).flashcards.map { it.flashcard.answer }
-            val actualWordSet = actualWords.toSet()
-            assertThat(actualWordSet).isSubsetOf(expectedWordSet)
-            assertThat(actualWordSet).hasSize(expectedCount)
-            allActualWords += actualWordSet
+        backgroundModelTest {
+            val allActualWords = hashSetOf<Word>()
+            val expectedWordSet = expectedWords.map { Word(it) }.toSet()
+            repeat(if (randomness > 0.0) 100 else 1) {
+                val actualWords = prepareLessonData(
+                    time(now),
+                    "test",
+                    buildFlashcards(testWords),
+                    buildStats(testWords),
+                    LessonSettings(
+                        maxWordsPerLesson,
+                        intervalMultiplierWithoutMistakes,
+                        interval(minIntervalWithoutMistakes),
+                        intervalMultiplierWithMistake,
+                        interval(minIntervalWithMistake),
+                        intervalMultiplierWithManyMistakes,
+                        interval(minIntervalWithManyMistakes),
+                        randomness,
+                    )
+                ).flashcards.map { it.flashcard.answer }
+                val actualWordSet = actualWords.toSet()
+                assertThat(actualWordSet).isSubsetOf(expectedWordSet)
+                assertThat(actualWordSet).hasSize(expectedCount)
+                allActualWords += actualWordSet
+            }
+            assertThat(allActualWords).isEqualTo(expectedWordSet)
         }
-        assertThat(allActualWords).isEqualTo(expectedWordSet)
     }
 
     private fun buildFlashcards(testWords: List<TestWord>): List<FlashcardData> =

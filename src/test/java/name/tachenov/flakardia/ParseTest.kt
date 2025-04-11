@@ -75,14 +75,18 @@ class ParseTest {
 
     @Test
     fun `IO error`() {
-        val result = storage.readFlashcards(RelativePath(listOf(DEFAULT_NAME)))
-        expect("file").match(result)
+        backgroundModelTest {
+            val result = storage.readFlashcards(RelativePath(listOf(DEFAULT_NAME)))
+            expect("file").match(result)
+        }
     }
 
     private fun parse(input: String, expectation: Expectation) {
-        val file = fs.getPath(DEFAULT_NAME)
-        Files.write(file, input.toByteArray())
-        expectation.match(storage.readFlashcards(RelativePath(listOf(DEFAULT_NAME))))
+        backgroundModelTest {
+            val file = fs.getPath(DEFAULT_NAME)
+            Files.write(file, input.toByteArray())
+            expectation.match(storage.readFlashcards(RelativePath(listOf(DEFAULT_NAME))))
+        }
     }
 
     private abstract class Expectation {

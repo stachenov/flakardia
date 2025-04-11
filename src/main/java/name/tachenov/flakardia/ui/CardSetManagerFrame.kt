@@ -4,7 +4,7 @@ import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.FlashcardSetListEntry
 import name.tachenov.flakardia.app.Lesson
 import name.tachenov.flakardia.app.Library
-import name.tachenov.flakardia.assertEDT
+import name.tachenov.flakardia.assertUiAccessAllowed
 import name.tachenov.flakardia.data.Flashcard
 import name.tachenov.flakardia.data.LessonData
 import name.tachenov.flakardia.getManagerFrameLocation
@@ -205,7 +205,7 @@ class CardSetManagerFrame(
     }
 
     override fun restoreSavedViewState() {
-        assertEDT()
+        assertUiAccessAllowed()
         val location = getManagerFrameLocation()
         if (location == null) {
             setLocationRelativeTo(null)
@@ -217,7 +217,7 @@ class CardSetManagerFrame(
     }
 
     override fun saveViewState() {
-        assertEDT()
+        assertUiAccessAllowed()
         setManagerFrameLocation(location)
     }
 
@@ -227,7 +227,7 @@ class CardSetManagerFrame(
     }
 
     override fun applyPresenterState(state: CardSetManagerPresenterState) {
-        assertEDT()
+        assertUiAccessAllowed()
         try {
             nowApplyingPresenterState = true
             title = "Flakardia ${version()}"
@@ -257,7 +257,7 @@ class CardSetManagerFrame(
     }
 
     private fun updateWidth() {
-        assertEDT()
+        assertUiAccessAllowed()
         val listAndListAreaWidth = max(listScrollPane.width, dir.width)
         val listPreferredWidth = list.preferredScrollableViewportSize.width + FRAME_EXTRA_WIDTH
         val dirPreferredWidth = dir.preferredSize.width + FRAME_EXTRA_WIDTH
@@ -270,7 +270,7 @@ class CardSetManagerFrame(
     }
 
     override suspend fun viewFlashcards(result: LessonData) {
-        assertEDT()
+        assertUiAccessAllowed()
         showPresenterFrame(
             presenterFactory = { FlashcardSetViewPresenter(result) },
             viewFactory = { FlashcardSetViewFrame(this@CardSetManagerFrame, it) },
@@ -278,7 +278,7 @@ class CardSetManagerFrame(
     }
 
     override suspend fun startLesson(library: Library, result: LessonData) {
-        assertEDT()
+        assertUiAccessAllowed()
         showPresenterFrame(
             presenterFactory = { LessonPresenter(library, Lesson(result)) },
             viewFactory = { LessonFrame(this@CardSetManagerFrame, it) },
@@ -286,7 +286,7 @@ class CardSetManagerFrame(
     }
 
     override suspend fun editFile(library: Library, fileEntry: FlashcardSetFileEntry, cards: List<Flashcard>) {
-        assertEDT()
+        assertUiAccessAllowed()
         showPresenterFrame(
             presenterFactory = { CardSetFileEditorPresenter(library, fileEntry, cards) },
             viewFactory = { CardSetFileEditorFrame(this, it) },
@@ -294,7 +294,7 @@ class CardSetManagerFrame(
     }
 
     override fun showError(error: String) {
-        assertEDT()
+        assertUiAccessAllowed()
         showError("Error", error)
     }
 

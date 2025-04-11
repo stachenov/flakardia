@@ -126,7 +126,7 @@ suspend fun configureAndEnterLibrary(manager: CardManager): Library {
         }
         else {
             val library = Library(FlashcardStorageImpl(libraryPath))
-            when (val result = underModelLock { background { manager.enterLibrary(library) } }) {
+            when (val result = accessModel { manager.enterLibrary(library) }) {
                 is DirEnterError -> {
                     JOptionPane.showMessageDialog(
                         null,

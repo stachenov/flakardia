@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.app
 
+import name.tachenov.flakardia.backgroundModelTest
 import name.tachenov.flakardia.data.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -32,78 +33,86 @@ class LessonTest {
 
     @Test
     fun `no mistakes`() {
-        startLesson(flashcardSet, emptyStats)
-        nextQuestion()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 0, remaining = 3)
-        answerCorrectly()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
-        nextQuestion()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
-        answerCorrectly()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
-        nextQuestion()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
-        answerCorrectly()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 3, incorrect = 0, remaining = 0)
-        nextQuestion()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 3, incorrect = 0, remaining = 0)
-        assertThat(question).isNull()
+        backgroundModelTest {
+            startLesson(flashcardSet, emptyStats)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 0, remaining = 3)
+            answerCorrectly()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
+            answerCorrectly()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
+            answerCorrectly()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 3, incorrect = 0, remaining = 0)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 3, incorrect = 0, remaining = 0)
+            assertThat(question).isNull()
+        }
     }
 
     @Test
     fun `mistakes in the first round only`() {
-        startLesson(flashcardSet, emptyStats)
-        nextQuestion()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 0, remaining = 3)
-        answerCorrectly()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
-        nextQuestion()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
-        answerCorrectly()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
-        nextQuestion()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
-        answerIncorrectly()
-        assertResult(round = 1, correctingMistakes = false, total = 3, correct = 2, incorrect = 1, remaining = 0)
-        nextQuestion()
-        assertResult(round = 1, correctingMistakes = true, total = 3, correct = 2, incorrect = 0, remaining = 1)
-        answerCorrectly()
-        assertResult(round = 1, correctingMistakes = true, total = 3, correct = 3, incorrect = 0, remaining = 0)
-        nextQuestion()
-        assertResult(round = 2, correctingMistakes = false, total = 3, correct = 0, incorrect = 0, remaining = 3)
-        answerCorrectly()
-        assertResult(round = 2, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
-        nextQuestion()
-        assertResult(round = 2, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
-        answerCorrectly()
-        assertResult(round = 2, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
-        nextQuestion()
-        assertResult(round = 2, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
-        answerCorrectly()
-        assertResult(round = 2, correctingMistakes = false, total = 3, correct = 3, incorrect = 0, remaining = 0)
-        nextQuestion()
-        assertResult(round = 2, correctingMistakes = false, total = 3, correct = 3, incorrect = 0, remaining = 0)
-        assertThat(question).isNull()
+        backgroundModelTest {
+            startLesson(flashcardSet, emptyStats)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 0, remaining = 3)
+            answerCorrectly()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
+            answerCorrectly()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
+            answerIncorrectly()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 2, incorrect = 1, remaining = 0)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = true, total = 3, correct = 2, incorrect = 0, remaining = 1)
+            answerCorrectly()
+            assertResult(round = 1, correctingMistakes = true, total = 3, correct = 3, incorrect = 0, remaining = 0)
+            nextQuestion()
+            assertResult(round = 2, correctingMistakes = false, total = 3, correct = 0, incorrect = 0, remaining = 3)
+            answerCorrectly()
+            assertResult(round = 2, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
+            nextQuestion()
+            assertResult(round = 2, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
+            answerCorrectly()
+            assertResult(round = 2, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
+            nextQuestion()
+            assertResult(round = 2, correctingMistakes = false, total = 3, correct = 2, incorrect = 0, remaining = 1)
+            answerCorrectly()
+            assertResult(round = 2, correctingMistakes = false, total = 3, correct = 3, incorrect = 0, remaining = 0)
+            nextQuestion()
+            assertResult(round = 2, correctingMistakes = false, total = 3, correct = 3, incorrect = 0, remaining = 0)
+            assertThat(question).isNull()
+        }
     }
 
     @RepeatedTest(100)
     fun `words do not repeat too soon`() {
-        startBigLesson()
-        nextQuestion()
-        runOneRound(mistakes = 1)
-        correctMistakes()
-        runOneRound(mistakes = 0)
-        assertThatQuestionsDoNotRepeatSoonerThan(5)
+        backgroundModelTest {
+            startBigLesson()
+            nextQuestion()
+            runOneRound(mistakes = 1)
+            correctMistakes()
+            runOneRound(mistakes = 0)
+            assertThatQuestionsDoNotRepeatSoonerThan(5)
+        }
     }
 
     @RepeatedTest(100)
     fun `words do not repeat too soon when correcting a lot of mistakes`() {
-        startBigLesson()
-        nextQuestion()
-        runOneRound(mistakes = 15)
-        correctMistakes()
-        runOneRound(mistakes = 0)
-        assertThatQuestionsDoNotRepeatSoonerThan(5)
+        backgroundModelTest {
+            startBigLesson()
+            nextQuestion()
+            runOneRound(mistakes = 15)
+            correctMistakes()
+            runOneRound(mistakes = 0)
+            assertThatQuestionsDoNotRepeatSoonerThan(5)
+        }
     }
 
     private fun startBigLesson() {
