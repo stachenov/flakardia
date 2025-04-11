@@ -1,10 +1,8 @@
 package name.tachenov.flakardia.ui
 
-import name.tachenov.flakardia.app.Duplicate
 import name.tachenov.flakardia.getEditorBounds
 import name.tachenov.flakardia.presenter.*
 import name.tachenov.flakardia.setEditorBounds
-import org.apache.commons.text.StringEscapeUtils
 import java.awt.*
 import java.awt.event.HierarchyEvent
 import java.awt.event.HierarchyListener
@@ -400,27 +398,6 @@ private class CardEditor(
     }
 
     override fun toString(): String = "($questionEditor, $answerEditor)"
-}
-
-private class WordTextField(text: String) : FixedWidthTextField(text) {
-    var duplicates: List<Duplicate> = emptyList()
-        set(value) {
-            field = value
-            toolTipText = if (value.isNotEmpty()) {
-                "<html>Duplicates detected:<br>${value.joinToString("<br>") { card ->
-                    val formattedCard = "${card.path}:${card.question}:${card.answer}"
-                    StringEscapeUtils.escapeHtml3(formattedCard)
-                }}</html>"
-            }
-            else {
-                null
-            }
-            foreground = if (value.isNotEmpty()) INCORRECT_COLOR else null
-        }
-
-    init {
-        enableSpellchecker(this)
-    }
 }
 
 private fun JComponent.focusAndScroll() {

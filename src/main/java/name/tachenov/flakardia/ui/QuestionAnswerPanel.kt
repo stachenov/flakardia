@@ -19,14 +19,12 @@ import javax.swing.SwingUtilities
 class QuestionAnswerPanel(private val presenter: LessonPresenter) : JPanel() {
 
     private val question = FixedWidthLabel()
-    private val questionEditor = FixedWidthTextField().also {
+    private val questionEditor = WordTextField().also {
         it.isVisible = false
-        enableSpellchecker(it)
     }
     private val answerInput = FixedWidthTextField()
-    private val answerEditor = FixedWidthTextField().also {
+    private val answerEditor = WordTextField().also {
         it.isVisible = false
-        enableSpellchecker(it)
     }
     private val blinkRate = answerInput.caret.blinkRate
     private val correctAnswer = FixedWidthLabel().apply { foreground = CORRECT_COLOR }
