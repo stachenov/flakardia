@@ -77,6 +77,11 @@ class QuestionAnswerPanel(private val presenter: LessonPresenter) : JPanel() {
     }
 
     fun editWord(word: EditWordPresenter) {
+        questionEditor.duplicates = word.questionDuplicates
+        answerEditor.duplicates = word.answerDuplicates
+
+        if (questionEditor.isVisible && answerEditor.isVisible) return // already in edit mode, avoid recursive updates from the model
+
         questionEditor.isVisible = true
         answerEditor.isVisible = true
 
@@ -160,6 +165,12 @@ class QuestionAnswerPanel(private val presenter: LessonPresenter) : JPanel() {
         }
         questionEditor.addKeyListener(editorKeyListener)
         answerEditor.addKeyListener(editorKeyListener)
+        questionEditor.document.addDocumentChangeListener {
+            presenter.refreshQuestionDuplicates(questionEditor.text)
+        }
+        answerEditor.document.addDocumentChangeListener {
+            presenter.refreshAnswerDuplicates(answerEditor.text)
+        }
     }
 
 }

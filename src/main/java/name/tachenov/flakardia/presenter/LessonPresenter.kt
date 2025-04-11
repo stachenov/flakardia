@@ -2,6 +2,7 @@ package name.tachenov.flakardia.presenter
 
 import name.tachenov.flakardia.accessModel
 import name.tachenov.flakardia.app.*
+import name.tachenov.flakardia.cardSetFileEditorConfig
 import name.tachenov.flakardia.data.*
 
 interface LessonPresenterView : View
@@ -22,8 +23,12 @@ data class AnswerResultPresenter(
 
 data class EditWordPresenter(
     val path: RelativePath,
+    val initialQuestion: String,
     val question: String,
+    val questionDuplicates: List<Duplicate>,
+    val initialAnswer: String,
     val answer: String,
+    val answerDuplicates: List<Duplicate>,
 )
 
 data class LessonPresenterState(
@@ -36,6 +41,8 @@ class LessonPresenter(
     private val library: Library,
     private val lesson: Lesson,
 ) : Presenter<LessonPresenterState, LessonPresenterView>() {
+
+    private var duplicateDetector: DuplicateDetector? = null
 
     override suspend fun computeInitialState(): LessonPresenterState  = accessModel {
         val nextQuestion = lesson.nextQuestion()
@@ -90,14 +97,63 @@ class LessonPresenter(
         updateState { state ->
             val lessonState = state.lessonStatus
             if (lessonState !is AnswerState) return@updateState null
-            state.copy(lessonStatus = EditWordState(
-                previousState = lessonState,
-                EditWordPresenter(
+            accessModel {
+                val draft = FlashcardDraft(
+                    id = DRAFT_ID,
                     path = lessonState.answerResult.path,
                     question = lessonState.answerResult.question,
                     answer = lessonState.answerResult.correctAnswer,
                 )
-            ))
+                val duplicateDetector = DuplicateDetector(library, FlashcardSetFileEntry(draft.path))
+                duplicateDetector.area = cardSetFileEditorConfig().duplicateDetectionPath
+                this.duplicateDetector = duplicateDetector
+                state.copy(
+                    lessonStatus = EditWordState(
+                        previousState = lessonState,
+                        EditWordPresenter(
+                            path = draft.path,
+                            initialQuestion = draft.question,
+                            question = draft.question,
+                            questionDuplicates = duplicateDetector.getQuestionDuplicates(draft),
+                            initialAnswer = draft.answer,
+                            answer = draft.answer,
+                            answerDuplicates = duplicateDetector.getAnswerDuplicates(draft),
+                        )
+                    )
+                )
+            }
+        }
+    }
+
+    fun refreshQuestionDuplicates(newQuestion: String) {
+        updateCard { card -> card.copy(question = newQuestion) }
+    }
+
+    fun refreshAnswerDuplicates(newAnswer: String) {
+        updateCard { card -> card.copy(answer = newAnswer) }
+    }
+
+    private fun updateCard(update: (FlashcardDraft) -> FlashcardDraft) {
+        updateState { state ->
+            val lessonState = state.lessonStatus
+            if (lessonState !is EditWordState) return@updateState null // Most likely already finished editing.
+            accessModel {
+                val oldCard = FlashcardDraft(DRAFT_ID, lessonState.word.path, lessonState.word.question, lessonState.word.answer)
+                val duplicateDetector = checkNotNull(duplicateDetector)
+                duplicateDetector.removeCard(oldCard)
+                val newCard = update(oldCard)
+                duplicateDetector.addCard(newCard)
+                state.copy(
+                    lessonStatus = lessonState.copy(
+                        word = lessonState.word.copy(
+                            question = newCard.question,
+                            questionDuplicates = duplicateDetector.getQuestionDuplicates(newCard),
+                            answer = newCard.answer,
+                            answerDuplicates = duplicateDetector.getAnswerDuplicates(newCard),
+                        )
+                    )
+                )
+            }
         }
     }
 
@@ -113,7 +169,7 @@ class LessonPresenter(
                 library.saveUpdatedFlashcard(
                     fileEntry = FlashcardSetFileEntry(lessonState.word.path),
                     card = UpdatedFlashcard(
-                        oldCard = Flashcard(Word(lessonState.word.question), Word(lessonState.word.answer)),
+                        oldCard = Flashcard(Word(lessonState.word.initialQuestion), Word(lessonState.word.initialAnswer)),
                         newCard = Flashcard(Word(newQuestion), Word(newAnswer)),
                     )
                 )
@@ -145,3 +201,6 @@ class LessonPresenter(
         }
     }
 }
+
+// We have only one draft in this editor, so the ID is always the same.
+private val DRAFT_ID = FlashcardDraftId(0)

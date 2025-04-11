@@ -9,9 +9,6 @@ import java.awt.event.HierarchyListener
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import javax.swing.*
-import javax.swing.event.DocumentEvent
-import javax.swing.event.DocumentListener
-import javax.swing.text.Document
 import javax.swing.text.JTextComponent
 
 class CardSetFileEditorFrame(
@@ -439,22 +436,6 @@ private fun JComponent.doFocusAndScroll() {
         viewport.scrollRectToVisible(rect)
     }
     requestFocusInWindow()
-}
-
-private fun Document.addDocumentChangeListener(block: () -> Unit) {
-    addDocumentListener(object : DocumentListener {
-        override fun insertUpdate(e: DocumentEvent?) {
-            block()
-        }
-
-        override fun removeUpdate(e: DocumentEvent?) {
-            block()
-        }
-
-        override fun changedUpdate(e: DocumentEvent?) {
-            block()
-        }
-    })
 }
 
 private fun JTextComponent.addKeyListener(vararg keyCodes: Int, condition: JTextComponent.(KeyEvent) -> Boolean, listener: (KeyEvent) -> Unit) {

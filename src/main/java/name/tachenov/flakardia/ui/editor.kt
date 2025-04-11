@@ -2,6 +2,9 @@ package name.tachenov.flakardia.ui
 
 import name.tachenov.flakardia.app.Duplicate
 import org.apache.commons.text.StringEscapeUtils
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
+import javax.swing.text.Document
 
 class WordTextField(text: String = "") : FixedWidthTextField(text) {
     var duplicates: List<Duplicate> = emptyList()
@@ -22,4 +25,20 @@ class WordTextField(text: String = "") : FixedWidthTextField(text) {
     init {
         enableSpellchecker(this)
     }
+}
+
+fun Document.addDocumentChangeListener(block: () -> Unit) {
+    addDocumentListener(object : DocumentListener {
+        override fun insertUpdate(e: DocumentEvent?) {
+            block()
+        }
+
+        override fun removeUpdate(e: DocumentEvent?) {
+            block()
+        }
+
+        override fun changedUpdate(e: DocumentEvent?) {
+            block()
+        }
+    })
 }
