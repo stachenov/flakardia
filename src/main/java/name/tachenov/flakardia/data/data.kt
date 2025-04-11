@@ -157,6 +157,7 @@ data class FullPath(
     val library: Library,
     val relativePath: RelativePath,
 ) {
+    val parent: FullPath? get() = relativePath.parent?.let { FullPath(library, it) }
     override fun toString(): String = if (relativePath.isEmpty()) library.path else library.path + "/" + relativePath.toString()
 }
 

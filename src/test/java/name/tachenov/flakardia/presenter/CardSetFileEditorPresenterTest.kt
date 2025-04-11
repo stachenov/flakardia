@@ -668,8 +668,11 @@ class CardSetFileEditorPresenterTest {
         edt {
             val path = path("dir", "file.txt")
             val sut = editFile(path)
+            assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir/file.txt")
             sut.detectDuplicatesIn(FlashcardSetDirEntry(path("dir")))
+            assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir")
             assertStateNotChanged()
+            assertSavedState()
             assertQuestionDuplicates(
                 listOf(
                     emptyList(),
@@ -703,7 +706,12 @@ class CardSetFileEditorPresenterTest {
             val path2 = path("dir", "file2.txt")
             val path3 = path("file3.txt")
             val rootPath = path()
-            val sut = editFile(path, detectDuplicatesIn = rootPath)
+            val sut = editFile(path)
+            assertSavedState()
+            assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir/file.txt")
+            sut.detectDuplicatesIn(FlashcardSetDirEntry(rootPath))
+            assertSavedState()
+            assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root")
             assertQuestionDuplicates(
                 listOf(
                     listOf(
@@ -715,6 +723,8 @@ class CardSetFileEditorPresenterTest {
                 )
             )
             sut.detectDuplicatesIn(FlashcardSetDirEntry(dirPath))
+            assertSavedState()
+            assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir")
             assertQuestionDuplicates(
                 listOf(
                     listOf(
@@ -742,6 +752,11 @@ class CardSetFileEditorPresenterTest {
         assertThat(state.changeFromPrevious).isIn(CardSetFileEditorFirstState, CardSetFileEditorNoChange)
     }
 
+    private suspend fun assertSavedState() {
+        val state = checkNotNull(sut?.awaitStateUpdates())
+        assertThat(state.persistenceState).isEqualTo(CardSetFileEditorSavedState(emptyList()))
+    }
+
     private suspend fun assertCardRemoved(index: Int) {
         val state = checkNotNull(sut?.awaitStateUpdates())
         assertThat(state.changeFromPrevious).isEqualTo(CardRemoved(index))
@@ -767,6 +782,12 @@ class CardSetFileEditorPresenterTest {
         val change = state.changeFromPrevious.changes.find { it.index == index }
         assertThat(change?.updatedQuestion?.word).isEqualTo(card.first)
         assertThat(change?.updatedAnswer?.word).isEqualTo(card.second)
+    }
+
+    private suspend fun assertDuplicateDetectionState(availablePaths: List<String>, selectedPath: String) {
+        val state = checkNotNull(sut?.awaitStateUpdates())
+        assertThat(state.duplicateDetectionState.availablePaths.map { it.toString() }).isEqualTo(availablePaths)
+        assertThat(state.duplicateDetectionState.selectedPath.toString()).isEqualTo(selectedPath)
     }
 
     private suspend fun assertQuestionDuplicates(duplicates: List<List<Pair<RelativePath, Pair<String, String>>>>) {

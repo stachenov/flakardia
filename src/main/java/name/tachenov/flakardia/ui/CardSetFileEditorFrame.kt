@@ -23,10 +23,14 @@ class CardSetFileEditorFrame(
 {
     private val editor = CardSetEditor(presenter)
     private val scrollPane = JScrollPane(editor)
+    private val toolBar = JPanel()
+    private val duplicateComboModel = DefaultComboBoxModel<DuplicateDetectionPath>()
+    private val duplicateCombo = JComboBox<DuplicateDetectionPath>(duplicateComboModel)
     private val statusPanel = JPanel().apply {
         border = BorderFactory.createEmptyBorder(INSET_TOP, INSET_LEFT, INSET_BOTTOM, INSET_RIGHT)
     }
     private val statusLabel = JLabel()
+    private var applyingStateUpdate = false
 
     init {
         title = presenter.name
@@ -34,7 +38,17 @@ class CardSetFileEditorFrame(
         add(scrollPane, BorderLayout.CENTER)
         statusPanel.layout = BorderLayout()
         statusPanel.add(statusLabel, BorderLayout.WEST)
+        add(toolBar, BorderLayout.NORTH)
+        toolBar.layout = FlowLayout(FlowLayout.LEADING)
+        toolBar.add(JLabel("Detect duplicates in:"))
+        toolBar.add(duplicateCombo)
         add(statusPanel, BorderLayout.SOUTH)
+
+        duplicateCombo.addActionListener {
+            // Don't send the state back to the model, could cause glitches and recursion.
+            if (applyingStateUpdate) return@addActionListener
+            presenter.detectDuplicatesIn((duplicateCombo.selectedItem as? DuplicateDetectionPath?)?.dirEntry)
+        }
     }
 
     override fun restoreSavedViewState() {
@@ -52,11 +66,20 @@ class CardSetFileEditorFrame(
     }
 
     override fun applyPresenterState(state: CardSetFileEditorState) {
-        editor.updateState(state)
-        statusLabel.text = when (val persistenceState = state.persistenceState) {
-            is CardSetFileEditorEditedState -> "Saving..."
-            is CardSetFileEditorSavedState -> persistenceState.warnings.firstOrNull() ?: "Saved"
-            is CardSetFileEditorSaveErrorState -> "Save error: ${persistenceState.message}"
+        assert(!applyingStateUpdate)
+        try {
+            applyingStateUpdate = true
+            editor.updateState(state)
+            duplicateComboModel.removeAllElements()
+            duplicateComboModel.addAll(state.duplicateDetectionState.availablePaths)
+            duplicateComboModel.selectedItem = state.duplicateDetectionState.selectedPath
+            statusLabel.text = when (val persistenceState = state.persistenceState) {
+                is CardSetFileEditorEditedState -> "Saving..."
+                is CardSetFileEditorSavedState -> persistenceState.warnings.firstOrNull() ?: "Saved"
+                is CardSetFileEditorSaveErrorState -> "Save error: ${persistenceState.message}"
+            }
+        } finally {
+            applyingStateUpdate = false
         }
     }
 }

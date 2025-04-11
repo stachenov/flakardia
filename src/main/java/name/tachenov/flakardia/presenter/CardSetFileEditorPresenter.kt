@@ -14,7 +14,18 @@ data class CardSetFileEditorState(
     val editorFullState: CardSetFileEditorFullState,
     val changeFromPrevious: CardSetFileEditorIncrementalStateUpdate,
     val persistenceState: CardSetFileEditorPersistenceState,
+    val duplicateDetectionState: DuplicateDetectionState,
 ) : PresenterState
+
+data class DuplicateDetectionState(
+    val availablePaths: List<DuplicateDetectionPath>,
+    val selectedPath: DuplicateDetectionPath,
+)
+
+interface DuplicateDetectionPath {
+    val path: FullPath
+    val dirEntry: FlashcardSetDirEntry?
+}
 
 data class CardSetFileEditorFullState(val cards: List<CardPresenterState>)
 
@@ -137,8 +148,31 @@ class CardSetFileEditorPresenter(
         ),
         changeFromPrevious = CardSetFileEditorFirstState,
         persistenceState = CardSetFileEditorSavedState(warnings = emptyList()),
+        duplicateDetectionState = computeInitialDuplicateDetectionState(),
     ).also {
         launchSaveJob()
+    }
+
+    private fun computeInitialDuplicateDetectionState(): DuplicateDetectionState {
+        val allPaths = mutableListOf<DuplicateDetectionPath>()
+        val editedPath = library.fullPath(fileEntry.path)
+        var path: FullPath? = editedPath
+        while (path != null) {
+            allPaths += DuplicateDetectionPathImpl(path, editedPath.relativePath)
+            path = path.parent
+        }
+        return DuplicateDetectionState(
+            availablePaths = allPaths.reversed(),
+            selectedPath = allPaths.first(),
+        )
+    }
+
+    private data class DuplicateDetectionPathImpl(val fullPath: FullPath, val editedPath: RelativePath) : DuplicateDetectionPath {
+        override val path: FullPath
+            get() = fullPath
+        override val dirEntry: FlashcardSetDirEntry?
+            get() = if (fullPath.relativePath == editedPath) null else FlashcardSetDirEntry(fullPath.relativePath)
+        override fun toString(): String = fullPath.toString()
     }
 
     private fun launchSaveJob() {
@@ -208,12 +242,29 @@ class CardSetFileEditorPresenter(
                     updateBuilder.addCardWithPossiblyUpdatedDuplicates(index, oldCardPresenter)
                 }
             }
-            if (updateBuilder.cardsChanged.isEmpty()) return@updateState null
-            state.copy(
-                editorFullState = CardSetFileEditorFullState(updateBuilder.updatedCardList),
-                changeFromPrevious = CardsChanged(updateBuilder.cardsChanged),
-                persistenceState = CardSetFileEditorEditedState,
+            val cardsChanged = updateBuilder.cardsChanged.isNotEmpty()
+            val newDuplicateDetectionState = DuplicateDetectionState(
+                availablePaths = state.duplicateDetectionState.availablePaths,
+                selectedPath = DuplicateDetectionPathImpl(
+                    fullPath = library.fullPath(path?.path ?: fileEntry.path),
+                    editedPath = fileEntry.path,
+                )
             )
+            when {
+                cardsChanged -> {
+                    state.copy(
+                        editorFullState = CardSetFileEditorFullState(updateBuilder.updatedCardList),
+                        changeFromPrevious = CardsChanged(updateBuilder.cardsChanged),
+                        duplicateDetectionState = newDuplicateDetectionState,
+                    )
+                }
+                newDuplicateDetectionState != state.duplicateDetectionState -> { // another dir was chosen, but didn't affect the presentation
+                    state.copy(
+                        duplicateDetectionState = newDuplicateDetectionState,
+                    )
+                }
+                else -> null
+            }
         }
     }
 
