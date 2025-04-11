@@ -108,22 +108,28 @@ class CardSetFileEditorPresenter(
     override suspend fun computeInitialState(): CardSetFileEditorState = CardSetFileEditorState(
         editorFullState = CardSetFileEditorFullState(
             if (initialContent.isNotEmpty()) {
-                val drafts = initialContent.map { FlashcardDraft(allocateId(), fileEntry.path, it.question.value, it.answer.value) }
-                for (draft in drafts) {
-                    duplicateDetector.addCard(draft)
-                }
-                drafts.map { draft ->
-                    CardPresenterState(
-                        id = draft.id,
-                        question = WordPresenterState(
-                            draft.question,
-                            duplicateDetector.getQuestionDuplicates(draft),
-                        ),
-                        answer = WordPresenterState(
-                            draft.answer,
-                            duplicateDetector.getAnswerDuplicates(draft),
-                        ),
-                    )
+                underModelLock {
+                    background {
+                        val drafts = initialContent.map {
+                            FlashcardDraft(allocateId(), fileEntry.path, it.question.value, it.answer.value)
+                        }
+                        for (draft in drafts) {
+                            duplicateDetector.addCard(draft)
+                        }
+                        drafts.map { draft ->
+                            CardPresenterState(
+                                id = draft.id,
+                                question = WordPresenterState(
+                                    draft.question,
+                                    duplicateDetector.getQuestionDuplicates(draft),
+                                ),
+                                answer = WordPresenterState(
+                                    draft.answer,
+                                    duplicateDetector.getAnswerDuplicates(draft),
+                                ),
+                            )
+                        }
+                    }
                 }
             }
             else {
@@ -210,18 +216,22 @@ class CardSetFileEditorPresenter(
             if (index == -1) return@updateState null
 
             val oldPresenter = oldCardList[index]
-            val oldCard = FlashcardDraft(oldPresenter.id, fileEntry.path, oldPresenter.question.word, oldPresenter.answer.word)
-            duplicateDetector.removeCard(oldCard)
-            val updatedCard = update(oldCard)
-            duplicateDetector.addCard(updatedCard)
-
             val updateBuilder = UpdateBuilder()
-            for ((i, value) in oldCardList.withIndex()) {
-                if (i == index) {
-                    updateBuilder.addUpdatedCard(i, oldPresenter, updatedCard)
-                }
-                else {
-                    updateBuilder.addCardWithPossiblyUpdatedDuplicates(i, value)
+            underModelLock {
+                background {
+                    val oldCard = FlashcardDraft(oldPresenter.id, fileEntry.path, oldPresenter.question.word, oldPresenter.answer.word)
+                    duplicateDetector.removeCard(oldCard)
+                    val updatedCard = update(oldCard)
+                    duplicateDetector.addCard(updatedCard)
+
+                    for ((i, value) in oldCardList.withIndex()) {
+                        if (i == index) {
+                            updateBuilder.addUpdatedCard(i, oldPresenter, updatedCard)
+                        }
+                        else {
+                            updateBuilder.addCardWithPossiblyUpdatedDuplicates(i, value)
+                        }
+                    }
                 }
             }
             state.copy(
