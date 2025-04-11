@@ -210,51 +210,66 @@ class CardSetFileEditorPresenter(
             val oldCardList = state.editorFullState.cards
             val index = oldCardList.indexOfFirst { it.id == id }
             if (index == -1) return@updateState null
+
             val oldPresenter = oldCardList[index]
             val oldCard = FlashcardDraft(fileEntry.path, oldPresenter.question.word, oldPresenter.answer.word)
             duplicateDetector.removeCard(oldCard)
             val updatedCard = update(oldCard)
             duplicateDetector.addCard(updatedCard)
+
+            val updateBuilder = UpdateBuilder()
+            for ((i, value) in oldCardList.withIndex()) {
+                if (i == index) {
+                    updateBuilder.addUpdatedCard(i, oldPresenter, updatedCard)
+                }
+                else {
+                    updateBuilder.addCardWithPossiblyUpdatedDuplicates(i, value)
+                }
+            }
+            state.copy(
+                editorFullState = CardSetFileEditorFullState(updateBuilder.updatedCardList),
+                changeFromPrevious = CardsChanged(updateBuilder.cardsChanged),
+                persistenceState = CardSetFileEditorEditedState,
+            )
+        }
+    }
+
+    private inner class UpdateBuilder {
+        val updatedCardList = mutableListOf<CardPresenterState>()
+        val cardsChanged = mutableListOf<CardChanged>()
+
+        fun addUpdatedCard(index: Int, oldPresenter: CardPresenterState, updatedCard: FlashcardDraft) {
             val updatedPresenter = oldPresenter.copy(
                 question = WordPresenterState(updatedCard.question, duplicateDetector.getQuestionDuplicates(updatedCard)),
                 answer = WordPresenterState(updatedCard.answer, duplicateDetector.getAnswerDuplicates(updatedCard)),
             )
-            val updatedCardList = mutableListOf<CardPresenterState>()
-            val cardsChanged = mutableListOf<CardChanged>()
-            for ((i, value) in oldCardList.withIndex()) {
-                if (i == index) {
-                    updatedCardList.add(updatedPresenter)
-                    cardsChanged.add(CardChanged(
-                        index = index,
-                        updatedQuestion = if (oldPresenter.question == updatedPresenter.question) null else updatedPresenter.question,
-                        updatedAnswer = if (oldPresenter.answer == updatedPresenter.answer) null else updatedPresenter.answer,
-                    ))
-                }
-                else {
-                    val card = FlashcardDraft(fileEntry.path, value.question.word, value.answer.word)
-                    val questionDuplicates = duplicateDetector.getQuestionDuplicates(card)
-                    val answerDuplicates = duplicateDetector.getAnswerDuplicates(card)
-                    val cardWithNewDuplicates = CardPresenterState(
-                        id = value.id,
-                        question = WordPresenterState(card.question, questionDuplicates),
-                        answer = WordPresenterState(card.answer, answerDuplicates),
-                    )
-                    updatedCardList.add(cardWithNewDuplicates)
-                    if (cardWithNewDuplicates != value) {
-                        cardsChanged.add(CardChanged(
-                            index = i,
-                            updatedQuestion = if (value.question == cardWithNewDuplicates.question) null else cardWithNewDuplicates.question,
-                            updatedAnswer = if (value.answer == cardWithNewDuplicates.answer) null else cardWithNewDuplicates.answer,
-                        ))
-                    }
-                }
-            }
-            state.copy(
-                editorFullState = CardSetFileEditorFullState(updatedCardList),
-                changeFromPrevious = CardsChanged(cardsChanged),
-                persistenceState = CardSetFileEditorEditedState,
-            )
+            updatedCardList.add(updatedPresenter)
+            cardsChanged.add(CardChanged(
+                index = index,
+                updatedQuestion = if (oldPresenter.question == updatedPresenter.question) null else updatedPresenter.question,
+                updatedAnswer = if (oldPresenter.answer == updatedPresenter.answer) null else updatedPresenter.answer,
+            ))
         }
+
+        fun addCardWithPossiblyUpdatedDuplicates(index: Int, oldPresenter: CardPresenterState) {
+            val card = FlashcardDraft(fileEntry.path, oldPresenter.question.word, oldPresenter.answer.word)
+            val questionDuplicates = duplicateDetector.getQuestionDuplicates(card)
+            val answerDuplicates = duplicateDetector.getAnswerDuplicates(card)
+            val newPresenter = CardPresenterState(
+                id = oldPresenter.id,
+                question = WordPresenterState(card.question, questionDuplicates),
+                answer = WordPresenterState(card.answer, answerDuplicates),
+            )
+            updatedCardList.add(newPresenter)
+            if (newPresenter != oldPresenter) {
+                cardsChanged.add(CardChanged(
+                    index = index,
+                    updatedQuestion = if (oldPresenter.question == newPresenter.question) null else newPresenter.question,
+                    updatedAnswer = if (oldPresenter.answer == newPresenter.answer) null else newPresenter.answer,
+                ))
+            }
+        }
+
     }
 
     fun insertCardBefore(beforeId: CardId) {
