@@ -774,6 +774,27 @@ class CardSetFileEditorPresenterTest {
         }
     }
 
+    @Test
+    fun `invalid path in config is ignored`() {
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to "answer c",
+                ),
+                "root/dir/file2.txt" to listOf(
+                    "question d" to "answer d",
+                ),
+            )
+        )
+        edt {
+            val path = path("dir", "file.txt")
+            editFile(path, detectDuplicatesIn = path("dir2"))
+            assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir/file.txt")
+        }
+    }
+
     private suspend fun assertCards(cards: List<Pair<String, String>>) {
         val state = checkNotNull(sut?.awaitStateUpdates())
         assertThat(state.editorFullState.cards.map { it.question.word to it.answer.word }).isEqualTo(cards)
@@ -827,7 +848,7 @@ class CardSetFileEditorPresenterTest {
         assertThat(state.duplicateDetectionState.selectedPath.toString()).isEqualTo(selectedPath)
     }
 
-    private suspend fun assertConfig(savedPath: RelativePath?) {
+    private fun assertConfig(savedPath: RelativePath?) {
         assertThat(config.duplicateDetectionPath?.path).isEqualTo(savedPath)
     }
 

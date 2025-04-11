@@ -247,8 +247,18 @@ class CardSetFileEditorPresenter(
         updateState { state ->
             val oldCardList = state.editorFullState.cards
             val updateBuilder = UpdateBuilder()
+            val newPath = DuplicateDetectionPathImpl(
+                fullPath = library.fullPath(path?.path ?: fileEntry.path),
+                editedPath = fileEntry.path,
+            )
+            val selectedPath = if (newPath in state.duplicateDetectionState.availablePaths) {
+                newPath
+            }
+            else {
+                state.duplicateDetectionState.availablePaths.last()
+            }
             accessModel {
-                duplicateDetector.area = path
+                duplicateDetector.area = selectedPath.dirEntry
                 for ((index, oldCardPresenter) in oldCardList.withIndex()) {
                     updateBuilder.addCardWithPossiblyUpdatedDuplicates(index, oldCardPresenter)
                 }
@@ -256,10 +266,7 @@ class CardSetFileEditorPresenter(
             val cardsChanged = updateBuilder.cardsChanged.isNotEmpty()
             val newDuplicateDetectionState = DuplicateDetectionState(
                 availablePaths = state.duplicateDetectionState.availablePaths,
-                selectedPath = DuplicateDetectionPathImpl(
-                    fullPath = library.fullPath(path?.path ?: fileEntry.path),
-                    editedPath = fileEntry.path,
-                )
+                selectedPath = selectedPath,
             )
             when {
                 cardsChanged -> {
