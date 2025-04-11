@@ -3,9 +3,7 @@ package name.tachenov.flakardia.presenter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import name.tachenov.flakardia.accessModel
-import name.tachenov.flakardia.app.DuplicateDetector
-import name.tachenov.flakardia.app.FlashcardSetFileEntry
-import name.tachenov.flakardia.app.Library
+import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.data.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
@@ -86,7 +84,7 @@ data class CardPresenterState(
 
 data class WordPresenterState(
     val word: String,
-    val duplicates: List<FlashcardDraft>,
+    val duplicates: List<Duplicate>,
 )
 
 sealed class CardSetFileEditorPersistenceState
@@ -100,7 +98,7 @@ class CardSetFileEditorPresenter(
     private val initialContent: List<Flashcard>,
 ) : Presenter<CardSetFileEditorState, CardSetFileEditorView>() {
     private val cardId = AtomicInteger()
-    private val duplicateDetector = DuplicateDetector()
+    private val duplicateDetector = DuplicateDetector(library, fileEntry)
 
     val name: String get() = fileEntry.name
 
@@ -195,6 +193,24 @@ class CardSetFileEditorPresenter(
     }
 
     private fun allocateId(): FlashcardDraftId = FlashcardDraftId(cardId.incrementAndGet())
+
+    fun detectDuplicatesIn(path: FlashcardSetDirEntry?) {
+        updateState { state ->
+            val oldCardList = state.editorFullState.cards
+            val updateBuilder = UpdateBuilder()
+            accessModel {
+                duplicateDetector.area = path
+                for ((index, oldCardPresenter) in oldCardList.withIndex()) {
+                    updateBuilder.addCardWithPossiblyUpdatedDuplicates(index, oldCardPresenter)
+                }
+            }
+            state.copy(
+                editorFullState = CardSetFileEditorFullState(updateBuilder.updatedCardList),
+                changeFromPrevious = CardsChanged(updateBuilder.cardsChanged),
+                persistenceState = CardSetFileEditorEditedState,
+            )
+        }
+    }
 
     fun updateQuestion(id: FlashcardDraftId, newQuestionText: String) {
         updateCard(id) { card -> card.copy(question = newQuestionText)}

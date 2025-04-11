@@ -3,6 +3,7 @@ package name.tachenov.flakardia.presenter
 import com.google.common.jimfs.Jimfs
 import kotlinx.coroutines.*
 import name.tachenov.flakardia.accessModel
+import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.data.FlashcardDraftId
@@ -590,6 +591,113 @@ class CardSetFileEditorPresenterTest {
         }
     }
 
+    @Test
+    fun `answer duplicates in another file`() {
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to "answer c",
+                ),
+                "root/dir/file2.txt" to listOf(
+                    "question d" to "answer a",
+                ),
+            )
+        )
+        edt {
+            val path = path("dir", "file.txt")
+            editFile(path, detectDuplicatesIn = path("dir"))
+            val path2 = path("dir", "file2.txt")
+            assertAnswerDuplicates(
+                listOf(
+                    listOf(
+                        path2 to ("question d" to "answer a"),
+                    ),
+                    emptyList(),
+                    emptyList(),
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `question duplicates in another file`() {
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to "answer c",
+                ),
+                "root/dir/file2.txt" to listOf(
+                    "question a" to "answer d",
+                ),
+            )
+        )
+        edt {
+            val path = path("dir", "file.txt")
+            editFile(path, detectDuplicatesIn = path("dir"))
+            val path2 = path("dir", "file2.txt")
+            assertQuestionDuplicates(
+                listOf(
+                    listOf(
+                        path2 to ("question a" to "answer d"),
+                    ),
+                    emptyList(),
+                    emptyList(),
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `change duplicate detection area`() {
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to "answer c",
+                ),
+                "root/dir/file2.txt" to listOf(
+                    "question a" to "answer d",
+                ),
+                "root/file3.txt" to listOf(
+                    "question a" to "answer e",
+                ),
+            )
+        )
+        edt {
+            val path = path("dir", "file.txt")
+            val dirPath = path("dir")
+            val path2 = path("dir", "file2.txt")
+            val path3 = path("file3.txt")
+            val rootPath = path()
+            val sut = editFile(path, detectDuplicatesIn = rootPath)
+            assertQuestionDuplicates(
+                listOf(
+                    listOf(
+                        path2 to ("question a" to "answer d"),
+                        path3 to ("question a" to "answer e"),
+                    ),
+                    emptyList(),
+                    emptyList(),
+                )
+            )
+            sut.detectDuplicatesIn(FlashcardSetDirEntry(dirPath))
+            assertQuestionDuplicates(
+                listOf(
+                    listOf(
+                        path2 to ("question a" to "answer d"),
+                    ),
+                    emptyList(),
+                    emptyList(),
+                )
+            )
+        }
+    }
+
     private suspend fun assertCards(cards: List<Pair<String, String>>) {
         val state = checkNotNull(sut?.awaitStateUpdates())
         assertThat(state.editorFullState.cards.map { it.question.word to it.answer.word }).isEqualTo(cards)
@@ -691,7 +799,7 @@ class CardSetFileEditorPresenterTest {
         }
     }
 
-    private suspend fun CoroutineScope.editFile(path: RelativePath): CardSetFileEditorPresenter {
+    private suspend fun CoroutineScope.editFile(path: RelativePath, detectDuplicatesIn: RelativePath? = null): CardSetFileEditorPresenter {
         val fileEntry = FlashcardSetFileEntry(path)
         val flashcardSet = accessModel {
             library.readFlashcards(fileEntry) as FlashcardSet
@@ -703,6 +811,9 @@ class CardSetFileEditorPresenterTest {
         )
         launch {
             presenter.run(MockView())
+        }
+        if (detectDuplicatesIn != null) {
+            presenter.detectDuplicatesIn(FlashcardSetDirEntry(detectDuplicatesIn))
         }
         sut = presenter
         return presenter

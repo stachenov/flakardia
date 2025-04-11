@@ -1,6 +1,6 @@
 package name.tachenov.flakardia.ui
 
-import name.tachenov.flakardia.data.FlashcardDraft
+import name.tachenov.flakardia.app.Duplicate
 import name.tachenov.flakardia.getEditorBounds
 import name.tachenov.flakardia.presenter.*
 import name.tachenov.flakardia.setEditorBounds
@@ -380,7 +380,7 @@ private class CardEditor(
 }
 
 private class WordTextField(text: String) : FixedWidthTextField(text) {
-    var duplicates: List<FlashcardDraft> = emptyList()
+    var duplicates: List<Duplicate> = emptyList()
         set(value) {
             field = value
             toolTipText = if (value.isNotEmpty()) {
