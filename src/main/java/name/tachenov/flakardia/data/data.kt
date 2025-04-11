@@ -41,6 +41,12 @@ data class Flashcard(
     val answer: Word,
 )
 
+data class FlashcardDraft(
+    val path: RelativePath,
+    val question: String,
+    val answer: String,
+)
+
 data class UpdatedOrNewFlashcard(
     val oldCard: Flashcard?,
     val newCard: Flashcard,
@@ -82,12 +88,6 @@ class Word(val value: String) {
         return "Word(value='$value')"
     }
 }
-
-data class FlashcardDraft(
-    val path: RelativePath,
-    val question: String,
-    val answer: String,
-)
 
 sealed class LibraryStatsResult
 
