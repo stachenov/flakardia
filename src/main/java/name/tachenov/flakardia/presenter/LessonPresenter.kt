@@ -98,14 +98,33 @@ class LessonPresenter(
             val lessonState = state.lessonStatus
             if (lessonState !is AnswerState) return@updateState null
             accessModel {
+                var id = DRAFT_ID // this ID goes to the card we edit
                 val draft = FlashcardDraft(
-                    id = DRAFT_ID,
+                    id = id,
                     path = lessonState.answerResult.path,
                     question = lessonState.answerResult.question,
                     answer = lessonState.answerResult.correctAnswer,
                 )
-                val duplicateDetector = DuplicateDetector(library, FlashcardSetFileEntry(draft.path))
+                val fileEntry = FlashcardSetFileEntry(draft.path)
+                val duplicateDetector = DuplicateDetector(library, fileEntry)
                 duplicateDetector.area = cardSetFileEditorConfig().duplicateDetectionPath
+                duplicateDetector.addCard(draft)
+                when (val otherWords = library.readFlashcards(fileEntry)) {
+                    is FlashcardSet -> {
+                        for (card in otherWords.cards) {
+                            if (card.flashcard != Flashcard(Word(draft.question), Word(draft.answer))) {
+                                id = FlashcardDraftId(id.value + 1) // other cards get IDs 1, 2, 3...
+                                duplicateDetector.addCard(FlashcardDraft(
+                                    id = id,
+                                    path = fileEntry.path,
+                                    question = card.flashcard.question.value,
+                                    answer = card.flashcard.answer.value,
+                                ))
+                            }
+                        }
+                    }
+                    is FlashcardSetError -> { }
+                }
                 this.duplicateDetector = duplicateDetector
                 state.copy(
                     lessonStatus = EditWordState(
