@@ -4,6 +4,7 @@ import com.google.common.jimfs.Jimfs
 import kotlinx.coroutines.*
 import name.tachenov.flakardia.NOT_PARSEABLE_FLASHCARDS
 import name.tachenov.flakardia.accessModel
+import name.tachenov.flakardia.app.DuplicateDetector
 import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.Library
@@ -13,6 +14,7 @@ import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.edtDispatcherForTesting
 import name.tachenov.flakardia.storage.FlashcardStorageImpl
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -792,6 +794,27 @@ class CardSetFileEditorPresenterTest {
             val path = path("dir", "file.txt")
             editFile(path, detectDuplicatesIn = path("dir2"))
             assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir/file.txt")
+        }
+    }
+
+    @Test
+    fun `directory does not exist`() {
+        addContent(
+            listOf(
+                "root/dir/file.txt" to listOf(
+                    "question a" to "answer a",
+                    "question b" to "answer b",
+                    "question c" to "answer c",
+                ),
+            )
+        )
+        edt {
+            val sut = DuplicateDetector(library, FlashcardSetFileEntry(path("dir", "file.txt")))
+            accessModel {
+                assertThatCode {
+                    sut.area = FlashcardSetDirEntry(path("no-such-dir"))
+                }.doesNotThrowAnyException()
+            }
         }
     }
 

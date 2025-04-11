@@ -223,12 +223,12 @@ class CardSetManagerPresenter(
 
     private fun launchCreateAction(name: String, createWhatever: CardManager.() -> CreateResult) {
         updateState { state ->
-            val (newState, error) = accessModel {
+            val (newState, errorOrWarning) = accessModel {
                 when (val result = manager.createWhatever()) {
                     is CreateSuccess -> {
                         captureManagerState(selectEntry = state.currentRelativePath?.plus(name)) to null
                     }
-                    is CreateError -> {
+                    is CreateError, is CreateWarning -> {
                         null to result
                     }
                 }
@@ -237,8 +237,11 @@ class CardSetManagerPresenter(
             if (newFileEntry != null) {
                 editFile(newFileEntry)
             }
-            if (error != null) {
-                view.showError(error.message)
+            if (errorOrWarning is CreateError) {
+                view.showError(errorOrWarning.message)
+            }
+            if (errorOrWarning is CreateWarning) {
+                view.showWarnings(listOf(errorOrWarning.message))
             }
             newState
         }

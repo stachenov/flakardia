@@ -1,6 +1,7 @@
 package name.tachenov.flakardia.storage
 
 import com.google.common.jimfs.Jimfs
+import name.tachenov.flakardia.app.EntryList
 import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.backgroundModelTest
@@ -36,7 +37,7 @@ class FlashcardStorageTest {
     fun `flakardia dir is ignored`() {
         backgroundModelTest {
             Files.createDirectories(root.resolve(DOT_FLAKARDIA))
-            assertThat(sut.readEntries(RelativePath())).doesNotContain(FlashcardSetDirEntry(RelativePath(listOf(DOT_FLAKARDIA))))
+            assertThat(readRootEntries()).doesNotContain(FlashcardSetDirEntry(RelativePath(listOf(DOT_FLAKARDIA))))
         }
     }
 
@@ -45,7 +46,7 @@ class FlashcardStorageTest {
         backgroundModelTest {
             val dirName = ".some_dir"
             Files.createDirectories(root.resolve(dirName))
-            assertThat(sut.readEntries(RelativePath())).doesNotContain(FlashcardSetDirEntry(RelativePath(listOf(dirName))))
+            assertThat(readRootEntries()).doesNotContain(FlashcardSetDirEntry(RelativePath(listOf(dirName))))
         }
     }
 
@@ -55,7 +56,10 @@ class FlashcardStorageTest {
             Files.createDirectory(root)
             val fileName = ".some_file.tmp"
             Files.createFile(root.resolve(fileName))
-            assertThat(sut.readEntries(RelativePath())).doesNotContain(FlashcardSetFileEntry(RelativePath(listOf(fileName))))
+            assertThat(readRootEntries()).doesNotContain(FlashcardSetFileEntry(RelativePath(listOf(fileName))))
         }
     }
+
+    private fun readRootEntries() =
+        (sut.readEntries(RelativePath()) as EntryList).entries
 }

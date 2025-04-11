@@ -39,7 +39,10 @@ class CardManager {
         assertModelAccessAllowed()
         try {
             val library = this.library ?: return DirEnterError("No library selected")
-            entries = library.listEntries(path)
+            entries = when (val result = library.listEntries(path)) {
+                is EntryList -> result.entries
+                is EntryListError -> return DirEnterError(result.message)
+            }
             this.path = library.fullPath(path)
             return DirEnterSuccess
         }
@@ -63,7 +66,10 @@ class CardManager {
             val currentPath = this.path ?: return CreateError("No path selected")
             val newElementPath = currentPath + name
             library.createWhatever(newElementPath.relativePath)
-            entries = library.listEntries(currentPath.relativePath)
+            when (val newEntries = library.listEntries(currentPath.relativePath)) {
+                is EntryList -> entries = newEntries.entries
+                is EntryListError -> return CreateWarning(newEntries.message)
+            }
             CreateSuccess
         } catch (e: Exception) {
             CreateError(e.toString())
@@ -77,6 +83,14 @@ sealed class DirEnterResult
 data object DirEnterSuccess : DirEnterResult()
 
 data class DirEnterError(val message: String) : DirEnterResult()
+
+sealed class EntryListResult
+
+data class EntryList(
+    val entries: List<FlashcardSetListEntry>
+) : EntryListResult()
+
+data class EntryListError(val message: String) : EntryListResult()
 
 sealed class FlashcardSetListEntry {
     abstract val path: RelativePath
@@ -101,5 +115,7 @@ data class FlashcardSetUpEntry(override val path: RelativePath) : FlashcardSetLi
 sealed class CreateResult
 
 data object CreateSuccess : CreateResult()
+
+data class CreateWarning(val message: String) : CreateResult()
 
 data class CreateError(val message: String) : CreateResult()

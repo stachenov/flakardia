@@ -58,7 +58,7 @@ class DuplicateDetectionTest {
         backgroundModelTest {
             val storage = MockStorage(cards)
             val sut = Library(storage)
-            val actual = sut.prepareLessonData(storage.readEntries(storage.rootPath).first())
+            val actual = sut.prepareLessonData((storage.readEntries(storage.rootPath) as EntryList).entries.first())
             val actualWarnings = getWarnings(actual)
             if (expectedWarnings.isEmpty()) {
                 assertThat(actualWarnings).isEmpty()
@@ -84,7 +84,7 @@ class DuplicateDetectionTest {
 
         private val filePath = RelativePath(listOf(path, "test.txt"))
 
-        override fun readEntries(path: RelativePath): List<FlashcardSetListEntry> = listOf(FlashcardSetFileEntry(filePath))
+        override fun readEntries(path: RelativePath): EntryListResult = EntryList(listOf(FlashcardSetFileEntry(filePath)))
 
         override fun readFlashcards(path: RelativePath): FlashcardSetResult =
             FlashcardSet(

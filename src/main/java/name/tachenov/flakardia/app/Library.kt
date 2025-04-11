@@ -47,7 +47,7 @@ private val intervalFallback: Duration = Duration.ofDays(1)
 
 interface FlashcardStorage {
     val path: String
-    fun readEntries(path: RelativePath): List<FlashcardSetListEntry>
+    fun readEntries(path: RelativePath): EntryListResult
     fun readFlashcards(path: RelativePath): FlashcardSetResult
     fun readLibraryStats(): LibraryStatsResult
     fun saveLibraryStats(stats: LibraryStats): SaveResult
@@ -61,15 +61,22 @@ data class Library(private val storage: FlashcardStorage) {
     val path: String
         get() = storage.path
 
-    fun listEntries(path: RelativePath): List<FlashcardSetListEntry> {
+    fun listEntries(path: RelativePath, ignoreErrors: Boolean = false): EntryListResult {
         assertModelAccessAllowed()
         val result = mutableListOf<FlashcardSetListEntry>()
         val parent = path.parent
         if (parent != null) {
             result += FlashcardSetUpEntry(parent)
         }
-        result += storage.readEntries(path)
-        return result.sortedWith(compareBy({ it is FlashcardSetFileEntry }, { it.name }))
+        when (val entriesFromStorage = storage.readEntries(path)) {
+            is EntryList -> {
+                result += entriesFromStorage.entries
+            }
+            is EntryListError -> {
+                if (!ignoreErrors) return entriesFromStorage
+            }
+        }
+        return EntryList(result.sortedWith(compareBy({ it is FlashcardSetFileEntry }, { it.name })))
     }
 
     fun getAllFlashcards(entry: FlashcardSetListEntry): LessonDataResult {
@@ -184,12 +191,16 @@ data class Library(private val storage: FlashcardStorage) {
             }
             is FlashcardSetDirEntry -> {
                 val result = mutableListOf<FlashcardData>()
-                val subEntries = listEntries(entry.path)
-                for (subEntry in subEntries) {
-                    when (val subResult = readFlashcards(subEntry, ignoreErrors)) {
-                        is FlashcardSet -> result += subResult.cards
-                        is FlashcardSetError -> if (!ignoreErrors) return subResult
+                when (val subEntries = listEntries(entry.path, ignoreErrors)) {
+                    is EntryList -> {
+                        for (subEntry in subEntries.entries) {
+                            when (val subResult = readFlashcards(subEntry, ignoreErrors)) {
+                                is FlashcardSet -> result += subResult.cards
+                                is FlashcardSetError -> if (!ignoreErrors) return subResult
+                            }
+                        }
                     }
+                    is EntryListError -> if (!ignoreErrors) return FlashcardSetError(subEntries.message)
                 }
                 FlashcardSet(result)
             }

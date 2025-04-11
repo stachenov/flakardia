@@ -1,9 +1,6 @@
 package name.tachenov.flakardia.storage
 
-import name.tachenov.flakardia.app.FlashcardSetDirEntry
-import name.tachenov.flakardia.app.FlashcardSetFileEntry
-import name.tachenov.flakardia.app.FlashcardSetListEntry
-import name.tachenov.flakardia.app.FlashcardStorage
+import name.tachenov.flakardia.app.*
 import name.tachenov.flakardia.assertModelAccessAllowed
 import name.tachenov.flakardia.data.*
 import name.tachenov.flakardia.reportCurrentOperation
@@ -22,24 +19,28 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
     override val path: String
         get() = fsPath.fileName.toString()
 
-    override fun readEntries(path: RelativePath): List<FlashcardSetListEntry> {
+    override fun readEntries(path: RelativePath): EntryListResult {
         assertModelAccessAllowed()
         val result = mutableListOf<FlashcardSetListEntry>()
-        Files.newDirectoryStream(
-            path.toFilePath()
-        ) {
-            !it.fileName.toString().startsWith(".")
-        }.use { dir ->
-            dir.forEach { entry ->
-                if (Files.isRegularFile(entry) && Files.isReadable(entry)) {
-                    result += FlashcardSetFileEntry(entry.toRelativePath())
-                }
-                else if (Files.isDirectory(entry)) {
-                    result += FlashcardSetDirEntry(entry.toRelativePath())
+        return try {
+            Files.newDirectoryStream(
+                path.toFilePath()
+            ) {
+                !it.fileName.toString().startsWith(".")
+            }.use { dir ->
+                dir.forEach { entry ->
+                    if (Files.isRegularFile(entry) && Files.isReadable(entry)) {
+                        result += FlashcardSetFileEntry(entry.toRelativePath())
+                    }
+                    else if (Files.isDirectory(entry)) {
+                        result += FlashcardSetDirEntry(entry.toRelativePath())
+                    }
                 }
             }
+            EntryList(result)
+        } catch (e: Exception) {
+            EntryListError(e.toString())
         }
-        return result
     }
 
     override fun readFlashcards(path: RelativePath): FlashcardSetResult  {
