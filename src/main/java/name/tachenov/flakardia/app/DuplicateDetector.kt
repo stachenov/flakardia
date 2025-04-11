@@ -21,8 +21,8 @@ class DuplicateDetector {
     }
 
     fun getQuestionDuplicates(card: FlashcardDraft): List<FlashcardDraft> =
-        cardsByQuestion[card.question]?.filter { it != card } ?: emptyList()
+        cardsByQuestion[card.question]?.filter { it.id != card.id } ?: emptyList()
 
     fun getAnswerDuplicates(card: FlashcardDraft): List<FlashcardDraft> =
-        cardsByAnswer[card.answer]?.filter { it != card } ?: emptyList()
+        cardsByAnswer[card.answer]?.filter { it.id != card.id } ?: emptyList()
 }

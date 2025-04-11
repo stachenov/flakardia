@@ -5,6 +5,7 @@ import kotlinx.coroutines.*
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
 import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.background
+import name.tachenov.flakardia.data.FlashcardDraftId
 import name.tachenov.flakardia.data.FlashcardSet
 import name.tachenov.flakardia.data.RelativePath
 import name.tachenov.flakardia.edtDispatcherForTesting
@@ -109,7 +110,7 @@ class CardSetFileEditorPresenterTest {
         edt {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
-            sut.removeCard(CardId(999999))
+            sut.removeCard(FlashcardDraftId(999999))
             sut.awaitStateUpdates()
             assertCards(
                 listOf(
@@ -184,7 +185,7 @@ class CardSetFileEditorPresenterTest {
         edt {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
-            sut.insertCardBefore(CardId(999999))
+            sut.insertCardBefore(FlashcardDraftId(999999))
             assertCards(
                 listOf(
                     "question a" to "answer a",
@@ -233,7 +234,7 @@ class CardSetFileEditorPresenterTest {
         edt {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
-            sut.insertCardAfter(CardId(999999))
+            sut.insertCardAfter(FlashcardDraftId(999999))
             assertCards(
                 listOf(
                     "question a" to "answer a",
@@ -284,7 +285,7 @@ class CardSetFileEditorPresenterTest {
         edt {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
-            sut.updateQuestion(CardId(999999), "new question")
+            sut.updateQuestion(FlashcardDraftId(999999), "new question")
             assertCards(
                 listOf(
                     "question a" to "answer a",
@@ -334,7 +335,7 @@ class CardSetFileEditorPresenterTest {
         edt {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
-            sut.updateAnswer(CardId(999999), "new answer")
+            sut.updateAnswer(FlashcardDraftId(999999), "new answer")
             assertCards(
                 listOf(
                     "question a" to "answer a",
@@ -435,6 +436,38 @@ class CardSetFileEditorPresenterTest {
                 )
             )
             assertCardAnswerDuplicatesChanged(index = 0, listOf(path to ("" to "answer a")))
+            assertCardAnswerDuplicatesChanged(index = 2, listOf(path to ("question a" to "answer a")))
+        }
+    }
+
+    @Test
+    fun `add duplicate card`() {
+        addContent(listOf(
+            "root/dir/file.txt" to listOf(
+                "question a" to "answer a",
+                "question b" to "answer b",
+            ),
+        ))
+        edt {
+            val path = path("dir", "file.txt")
+            val sut = editFile(path)
+            val state1 = sut.awaitStateUpdates()
+            sut.insertCardAfter(state1.editorFullState.cards.last().id)
+            val state2 = sut.awaitStateUpdates()
+            sut.updateQuestion(state2.editorFullState.cards.last().id, "question a")
+            sut.updateAnswer(state2.editorFullState.cards.last().id, "answer a")
+            assertAnswerDuplicates(
+                listOf(
+                    listOf(
+                        path to ("question a" to "answer a"),
+                    ),
+                    emptyList(),
+                    listOf(
+                        path to ("question a" to "answer a"),
+                    ),
+                )
+            )
+            assertCardAnswerDuplicatesChanged(index = 0, listOf(path to ("question a" to "answer a")))
             assertCardAnswerDuplicatesChanged(index = 2, listOf(path to ("question a" to "answer a")))
         }
     }

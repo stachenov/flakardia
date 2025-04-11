@@ -42,10 +42,13 @@ data class Flashcard(
 )
 
 data class FlashcardDraft(
+    val id: FlashcardDraftId,
     val path: RelativePath,
     val question: String,
     val answer: String,
 )
+
+@JvmInline value class FlashcardDraftId(val value: Int)
 
 data class UpdatedOrNewFlashcard(
     val oldCard: Flashcard?,
