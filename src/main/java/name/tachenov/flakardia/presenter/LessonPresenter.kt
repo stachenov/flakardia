@@ -184,31 +184,40 @@ class LessonPresenter(
                 view.showError("Save error", "Both the question and the answer must be specified")
                 return@updateState null
             }
-            val saveResult = accessModel {
-                library.saveUpdatedFlashcard(
+            val (saveResult, newState) = accessModel {
+                val oldCard = Flashcard(Word(lessonState.word.initialQuestion), Word(lessonState.word.initialAnswer))
+                val newCard = Flashcard(Word(newQuestion), Word(newAnswer))
+                val saveResult = library.saveUpdatedFlashcard(
                     fileEntry = FlashcardSetFileEntry(lessonState.word.path),
-                    card = UpdatedFlashcard(
-                        oldCard = Flashcard(Word(lessonState.word.initialQuestion), Word(lessonState.word.initialAnswer)),
-                        newCard = Flashcard(Word(newQuestion), Word(newAnswer)),
-                    )
+                    card = UpdatedFlashcard(oldCard, newCard),
                 )
+                when (saveResult) {
+                    is SaveError -> saveResult to null
+                    is SaveSuccess, is SaveWarnings -> {
+                        val answerResult = lesson.updateCurrentCard(newCard)
+                        saveResult to state.copy(
+                            lessonResult = lesson.result,
+                            lessonStatus = lessonState.previousState.copy(
+                                answerResult = lessonState.previousState.answerResult.copy(
+                                    question = answerResult.question.value,
+                                    correctAnswer = answerResult.correctAnswer.word.value,
+                                    isCorrect = answerResult.isCorrect,
+                                ),
+                            )
+                        )
+                    }
+                }
             }
             when (saveResult) {
                 is SaveError -> {
                     view.showError("Save error", saveResult.message)
-                    return@updateState null
                 }
                 is SaveWarnings -> {
                     view.showWarnings(saveResult.warnings)
                 }
                 SaveSuccess -> { }
             }
-            state.copy(lessonStatus = lessonState.previousState.copy(
-                answerResult = lessonState.previousState.answerResult.copy(
-                    question = newQuestion,
-                    correctAnswer = newAnswer,
-                )
-            ))
+            newState
         }
     }
 

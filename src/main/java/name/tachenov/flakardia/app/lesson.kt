@@ -26,13 +26,21 @@ data class AnswerResult(val flashcardSetPath: RelativePath, val question: Word, 
         assertModelAccessAllowed()
         return yourAnswer?.word == correctAnswer.word
     }
+
+    val flashcardData: FlashcardData get() {
+        assertModelAccessAllowed()
+        return FlashcardData(flashcardSetPath, Flashcard(question, correctAnswer.word))
+    }
 }
 
 class Lesson(
-    private val lessonData: LessonData,
+    lessonData: LessonData,
 ) {
 
+    private val allFlashcards: MutableSet<FlashcardData> = lessonData.flashcards.toHashSet()
+
     private val lessonTime: Instant = Instant.now()
+    private val previousLessonStats: MutableMap<Word, WordStats> = lessonData.stats.wordStats.toMutableMap()
     private val mistakes = hashMapOf<Word, Int>()
 
     // For a word learned for the first time, we need some sensible fake stats to initialize them.
@@ -63,7 +71,7 @@ class Lesson(
             return LibraryStats(
                 mistakes.keys.asSequence()
                     .associateWith { word ->
-                        val lastLearnedInPreviousLesson = lessonData.stats.wordStats[word]?.lastLearned
+                        val lastLearnedInPreviousLesson = previousLessonStats[word]?.lastLearned
                         WordStats(
                             lessonTime,
                             if (lastLearnedInPreviousLesson == null) {
@@ -79,6 +87,19 @@ class Lesson(
         }
 
     private var currentFlashcard: FlashcardData? = null
+    private var currentAnswerResult: AnswerResult? = null
+
+    fun updateCurrentCard(newCard: Flashcard): AnswerResult {
+        val currentAnswerResult = checkNotNull(currentAnswerResult) {
+            "Cannot update the current flashcard because there is no current flashcard"
+        }
+        val newAnswerResult = currentAnswerResult.copy(
+            question = newCard.question,
+            correctAnswer = Answer(newCard.answer),
+        )
+        changeAnswerResult(newAnswerResult)
+        return newAnswerResult
+    }
 
     fun nextQuestion(): Question? {
         assertModelAccessAllowed()
@@ -100,12 +121,6 @@ class Lesson(
             yourAnswer = answer,
             correctAnswer = Answer(currentFlashcard.flashcard.answer)
         )
-        val word = answerResult.correctAnswer.word
-        var mistakes = this.mistakes[word] ?: 0
-        if (!answerResult.isCorrect) {
-            ++mistakes
-        }
-        this.mistakes[word] = mistakes
         recordAnswerResult(answerResult)
         return answerResult
     }
@@ -121,7 +136,7 @@ class Lesson(
             correctingMistakes || round == 0 -> {
                 ++round
                 correctingMistakes = false
-                remaining.addAll(shuffle(lessonData.flashcards))
+                remaining.addAll(shuffle(allFlashcards))
             }
         }
         if (remaining.isNotEmpty()) {
@@ -130,6 +145,7 @@ class Lesson(
         else {
             currentFlashcard = null
         }
+        currentAnswerResult = null
     }
 
     private fun shuffle(cards: Collection<FlashcardData>): List<FlashcardData> {
@@ -158,11 +174,52 @@ class Lesson(
     }
 
     private fun recordAnswerResult(answerResult: AnswerResult) {
+        check(currentAnswerResult == null)
         val current = remaining.removeFirst()
+        val word = answerResult.correctAnswer.word
+
+        var mistakes = this.mistakes[word] ?: 0
+        if (!answerResult.isCorrect) {
+            ++mistakes
+        }
+        this.mistakes[word] = mistakes
+
         currentFlashcard = null
+        this.currentAnswerResult = answerResult
         if (!answerResult.isCorrect) {
             incorrect += current
         }
+    }
+
+    private fun changeAnswerResult(newAnswerResult: AnswerResult) {
+        val previousAnswerResult = checkNotNull(currentAnswerResult)
+        val previousFlashcardData = previousAnswerResult.flashcardData
+        val newFlashcardData = newAnswerResult.flashcardData
+
+        allFlashcards.remove(previousFlashcardData)
+        allFlashcards.add(newFlashcardData)
+
+        val mistakes = this.mistakes.remove(previousAnswerResult.correctAnswer.word)
+        checkNotNull(mistakes) { "The old value ${previousAnswerResult.correctAnswer.word} not found in the stats" }
+        this.mistakes[newAnswerResult.correctAnswer.word] = mistakes
+
+        val lastSeen = this.lastSeen.remove(previousFlashcardData)
+        checkNotNull(lastSeen) { "The current card never seen - makes no sense" }
+        this.lastSeen[newFlashcardData] = lastSeen
+
+        val wordStats = this.previousLessonStats.remove(previousAnswerResult.correctAnswer.word)
+        if (wordStats != null) { // the word may not have existed in the previous lesson
+            this.previousLessonStats[newAnswerResult.correctAnswer.word] = wordStats
+        }
+
+        if (!previousAnswerResult.isCorrect) {
+            incorrect -= previousFlashcardData
+        }
+        if (!newAnswerResult.isCorrect) {
+            incorrect += newFlashcardData
+        }
+
+        this.currentAnswerResult = newAnswerResult
     }
 
 }

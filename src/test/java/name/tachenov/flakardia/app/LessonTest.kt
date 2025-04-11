@@ -6,6 +6,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 class LessonTest {
 
@@ -19,6 +22,7 @@ class LessonTest {
 
     private var lesson: Lesson? = null
     private var question: Question? = null
+    private var answerResult: AnswerResult? = null
     private lateinit var questions: MutableList<Question>
     private lateinit var stepWasDuringCorrectingMistakes: MutableMap<Int, Boolean>
 
@@ -115,6 +119,98 @@ class LessonTest {
         }
     }
 
+    @RepeatedTest(100)
+    fun `words do not repeat too soon even when renamed`() {
+        backgroundModelTest {
+            startBigLesson()
+            nextQuestion()
+            runOneRound(mistakes = 1, renameWords = true)
+            correctMistakes()
+            runOneRound(mistakes = 0)
+            assertThatQuestionsDoNotRepeatSoonerThan(5)
+        }
+    }
+
+    @Test
+    fun `update incorrect word to incorrect`() {
+        backgroundModelTest {
+            startLesson(flashcardSet, emptyStats)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 0, remaining = 3)
+            answerIncorrectly()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 1, remaining = 2)
+            updateCurrentCardAnswerToIncorrect()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 1, remaining = 2)
+        }
+    }
+
+    @Test
+    fun `update incorrect word to correct`() {
+        backgroundModelTest {
+            startLesson(flashcardSet, emptyStats)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 0, remaining = 3)
+            answerIncorrectly()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 1, remaining = 2)
+            updateCurrentCardAnswerToCorrect()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
+        }
+    }
+
+    @Test
+    fun `update correct word to incorrect`() {
+        backgroundModelTest {
+            startLesson(flashcardSet, emptyStats)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 0, remaining = 3)
+            answerCorrectly()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 1, incorrect = 0, remaining = 2)
+            updateCurrentCardAnswerToIncorrect()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 1, remaining = 2)
+        }
+    }
+
+    @Test
+    fun `sequentially update answer and question`() {
+        backgroundModelTest {
+            startLesson(flashcardSet, emptyStats)
+            nextQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 0, remaining = 3)
+            answerIncorrectly()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 1, remaining = 2)
+            updateCurrentCardAnswerToIncorrect()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 1, remaining = 2)
+            updateCurrentQuestion()
+            assertResult(round = 1, correctingMistakes = false, total = 3, correct = 0, incorrect = 1, remaining = 2)
+        }
+    }
+
+    @Test
+    fun `updating answer preserves stats`() {
+        backgroundModelTest {
+            val now = Instant.now()
+            val lastLearned = now.minus(100L, ChronoUnit.DAYS)
+            val stats = LibraryStats(
+                flashcardSet.cards.associate { card ->
+                    card.flashcard.answer to WordStats(
+                        lastLearned,
+                        Duration.ZERO,
+                        0,
+                    )
+                }
+            )
+            startLesson(flashcardSet, stats)
+            nextQuestion()
+            answerIncorrectly()
+            updateCurrentCardAnswerToIncorrect()
+            val newAnswer = checkNotNull(answerResult).correctAnswer
+            // Since we set "last learned" to now minus 100 days, "interval before last learned" should be approximately that,
+            // assuming that the word was successfully renamed (otherwise it falls back to 1 day).
+            assertThat(getCreatedLesson().stats.wordStats[newAnswer.word]?.intervalBeforeLastLearned)
+                .isGreaterThanOrEqualTo(Duration.ofDays(100L))
+        }
+    }
+
     private fun startBigLesson() {
         val bigFlashcardList = mutableListOf<Flashcard>()
         for (c in 'a'..'z') {
@@ -124,7 +220,7 @@ class LessonTest {
         startLesson(bigFlashcardSet, emptyStats)
     }
 
-    private fun runOneRound(mistakes: Int) {
+    private fun runOneRound(mistakes: Int, renameWords: Boolean = false) {
         val lesson = getCreatedLesson()
         val wordCount = lesson.result.remaining
         val positions = (0 until wordCount).toMutableSet()
@@ -140,6 +236,22 @@ class LessonTest {
             }
             else {
                 answerCorrectly()
+            }
+            if (renameWords) {
+                val currentAnswerResult = checkNotNull(answerResult)
+                val oldCard = Flashcard(currentAnswerResult.question, currentAnswerResult.correctAnswer.word)
+                val newCard = Flashcard(currentAnswerResult.question, Word("New answer $i"))
+                lesson.updateCurrentCard(newCard)
+                flashcardSet = flashcardSet.copy(
+                    cards = flashcardSet.cards.map {
+                        if (it.flashcard == oldCard) {
+                            it.copy(flashcard = newCard)
+                        }
+                        else {
+                            it
+                        }
+                    }
+                )
             }
             nextQuestion()
         }
@@ -181,6 +293,7 @@ class LessonTest {
         val lesson = getCreatedLesson()
         val question = lesson.nextQuestion()
         this.question = question
+        this.answerResult = null
         if (question != null) {
             val index = questions.size
             questions += question
@@ -190,23 +303,67 @@ class LessonTest {
 
     private fun answerCorrectly() {
         val lesson = getCreatedLesson()
-        val question = getAskedQuestion()
-        for (card in flashcardSet.cards) {
-            if (card.flashcard.question == question.word) {
-                lesson.answer(Answer(card.flashcard.answer))
-                return
-            }
-        }
-        throw AssertionError("No matching flashcard for $question")
+        answerResult = lesson.answer(getCorrectAnswer())
     }
 
     private fun answerIncorrectly() {
-        getCreatedLesson().answer(Answer(Word("Incorrect")))
+        answerResult = getCreatedLesson().answer(Answer(Word("Incorrect")))
+    }
+
+    private fun updateCurrentCardAnswerToIncorrect() {
+        val previousResult = checkNotNull(answerResult)
+        val oldAnswer = previousResult.correctAnswer.word
+        val newAnswer = Answer(Word("Another incorrect"))
+        val lesson = getCreatedLesson()
+        val result = lesson.updateCurrentCard(Flashcard(getAskedQuestion().word, newAnswer.word))
+        assertThat(result.isCorrect).isFalse()
+        assertThat(result.question).isEqualTo(previousResult.question)
+        assertThat(result.yourAnswer).isEqualTo(previousResult.yourAnswer)
+        assertThat(result.correctAnswer).isEqualTo(newAnswer)
+        assertThat(lesson.stats.wordStats.keys).contains(newAnswer.word)
+        assertThat(lesson.stats.wordStats.keys).doesNotContain(oldAnswer)
+        this.answerResult = result
+    }
+
+    private fun updateCurrentCardAnswerToCorrect() {
+        val previousResult = checkNotNull(answerResult)
+        val oldAnswer = previousResult.correctAnswer.word
+        val correctAnswer = checkNotNull(previousResult.yourAnswer)
+        val lesson = getCreatedLesson()
+        val result = lesson.updateCurrentCard(Flashcard(getAskedQuestion().word, correctAnswer.word))
+        assertThat(result.isCorrect).isTrue()
+        assertThat(result.question).isEqualTo(previousResult.question)
+        assertThat(result.yourAnswer).isEqualTo(previousResult.yourAnswer)
+        assertThat(result.correctAnswer).isEqualTo(correctAnswer)
+        assertThat(lesson.stats.wordStats.keys).contains(correctAnswer.word)
+        assertThat(lesson.stats.wordStats.keys).doesNotContain(oldAnswer)
+        this.answerResult = result
+    }
+
+    private fun updateCurrentQuestion() {
+        val previousResult = checkNotNull(answerResult)
+        val newQuestion = Word("New question")
+        val result = getCreatedLesson().updateCurrentCard(Flashcard(newQuestion, previousResult.correctAnswer.word))
+        assertThat(result.isCorrect).isFalse()
+        assertThat(result.question).isEqualTo(newQuestion)
+        assertThat(result.yourAnswer).isEqualTo(previousResult.yourAnswer)
+        assertThat(result.correctAnswer).isEqualTo(previousResult.correctAnswer)
+        this.answerResult = result
     }
 
     private fun getCreatedLesson(): Lesson = this.lesson ?: throw AssertionError("Lesson not started")
 
     private fun getAskedQuestion(): Question = this.question ?: throw AssertionError("No current question")
+
+    private fun getCorrectAnswer(): Answer {
+        val question = getAskedQuestion()
+        for (card in flashcardSet.cards) {
+            if (card.flashcard.question == question.word) {
+                return Answer(card.flashcard.answer)
+            }
+        }
+        throw AssertionError("No matching flashcard for $question")
+    }
 
     private fun startLesson(flashcardSet: FlashcardSet, stats: LibraryStats) {
         lesson = Lesson(LessonData("test", flashcardSet.cards, stats))
