@@ -37,22 +37,26 @@ class Lesson(
     lessonData: LessonData,
 ) {
 
-    private val allFlashcards: MutableSet<FlashcardData> = lessonData.flashcards.toHashSet()
+    private val mapping = CardIdMapping(lessonData)
 
     private val lessonTime: Instant = Instant.now()
-    private val previousLessonStats: MutableMap<Word, WordStats> = lessonData.stats.wordStats.toMutableMap()
-    private val mistakes = hashMapOf<Word, Int>()
+
+    private val lastLearned: Map<Id, Instant> = mapping.entries
+        .mapNotNull { lessonData.stats.wordStats[it.value.flashcard.answer]?.let { stats -> it.key to stats.lastLearned } }
+        .toMap()
+
+    private val mistakes = hashMapOf<Id, Int>()
 
     // For a word learned for the first time, we need some sensible fake stats to initialize them.
     private val previousIntervalFallback: Duration = Duration.ofDays(1L)
 
     private val total = lessonData.flashcards.size
     private var correctingMistakes = false
-    private val remaining = ArrayDeque<FlashcardData>()
-    private val incorrect: MutableSet<FlashcardData> = hashSetOf()
+    private val remaining = ArrayDeque<Id>()
+    private val incorrect: MutableSet<Id> = hashSetOf()
     private var round = 0
     private var step = 0
-    private val lastSeen = hashMapOf<FlashcardData, Int>()
+    private val lastSeen = hashMapOf<Id, Int>()
 
     private val correct: Int
         get() = total - remaining.size - incorrect.size
@@ -70,8 +74,8 @@ class Lesson(
             assertModelAccessAllowed()
             return LibraryStats(
                 mistakes.keys.asSequence()
-                    .associateWith { word ->
-                        val lastLearnedInPreviousLesson = previousLessonStats[word]?.lastLearned
+                    .associateWith { id ->
+                        val lastLearnedInPreviousLesson = lastLearned[id]
                         WordStats(
                             lessonTime,
                             if (lastLearnedInPreviousLesson == null) {
@@ -80,13 +84,15 @@ class Lesson(
                             else {
                                 Duration.between(lastLearnedInPreviousLesson, lessonTime)
                             },
-                            mistakes[word] ?: 0,
+                            mistakes[id] ?: 0,
                         )
+                    }.mapKeys {
+                        mapping.answer(it.key)
                     }
             )
         }
 
-    private var currentFlashcard: FlashcardData? = null
+    private var currentFlashcardId: Id? = null
     private var currentAnswerResult: AnswerResult? = null
 
     fun updateCurrentCard(newCard: Flashcard): AnswerResult {
@@ -105,16 +111,18 @@ class Lesson(
         assertModelAccessAllowed()
         goToNextFlashcard()
         ++step
-        return currentFlashcard?.let {
-            lastSeen[it] = step
-            Question(it.path, it.flashcard.question)
+        return currentFlashcardId?.let { id ->
+            lastSeen[id] = step
+            val data = mapping.data(id)
+            Question(data.path, data.flashcard.question)
         }
     }
 
     fun answer(answer: Answer?): AnswerResult {
         assertModelAccessAllowed()
-        val currentFlashcard = currentFlashcard
-        checkNotNull(currentFlashcard) { "Cannot answer when there is no question (active flashcard)" }
+        val currentFlashcardId = currentFlashcardId
+        checkNotNull(currentFlashcardId) { "Cannot answer when there is no question (active flashcard)" }
+        val currentFlashcard = mapping.data(currentFlashcardId)
         val answerResult = AnswerResult(
             flashcardSetPath = currentFlashcard.path,
             question = currentFlashcard.flashcard.question,
@@ -136,20 +144,20 @@ class Lesson(
             correctingMistakes || round == 0 -> {
                 ++round
                 correctingMistakes = false
-                remaining.addAll(shuffle(allFlashcards))
+                remaining.addAll(shuffle(mapping.ids))
             }
         }
         if (remaining.isNotEmpty()) {
-            currentFlashcard = remaining.first()
+            currentFlashcardId = remaining.first()
         }
         else {
-            currentFlashcard = null
+            currentFlashcardId = null
         }
         currentAnswerResult = null
     }
 
-    private fun shuffle(cards: Collection<FlashcardData>): List<FlashcardData> {
-        val shuffled = cards.shuffled().toMutableList()
+    private fun shuffle(ids: Collection<Id>): List<Id> {
+        val shuffled = ids.shuffled().toMutableList()
         // Now move too recent cards to the end.
         val threshold = shuffled.size / 3
         val tooRecentByIndex = hashMapOf<Int, Int>()
@@ -161,15 +169,15 @@ class Lesson(
         }
         // Now go over the indices in reverse order to preserve them as elements are removed.
         val indices = tooRecentByIndex.keys.toList().sortedDescending()
-        val tooRecent = hashSetOf<FlashcardData>()
+        val tooRecent = hashSetOf<Id>()
         for (index in indices) {
             tooRecent += shuffled.removeAt(index)
         }
         return shuffled + tooRecent
     }
 
-    private fun stepsSinceLastSeen(flashcard: FlashcardData): Int {
-        val lastSeen = lastSeen[flashcard]
+    private fun stepsSinceLastSeen(id: Id): Int {
+        val lastSeen = lastSeen[id]
         return lastSeen?.let { step - lastSeen } ?: total
     }
 
@@ -178,13 +186,13 @@ class Lesson(
         val current = remaining.removeFirst()
         val word = answerResult.correctAnswer.word
 
-        var mistakes = this.mistakes[word] ?: 0
+        var mistakes = this.mistakes[mapping.idByAnswer(word)] ?: 0
         if (!answerResult.isCorrect) {
             ++mistakes
         }
-        this.mistakes[word] = mistakes
+        this.mistakes[mapping.idByAnswer(word)] = mistakes
 
-        currentFlashcard = null
+        currentFlashcardId = null
         this.currentAnswerResult = answerResult
         if (!answerResult.isCorrect) {
             incorrect += current
@@ -195,31 +203,42 @@ class Lesson(
         val previousAnswerResult = checkNotNull(currentAnswerResult)
         val previousFlashcardData = previousAnswerResult.flashcardData
         val newFlashcardData = newAnswerResult.flashcardData
+        val id = mapping.idByAnswer(previousFlashcardData.flashcard.answer)
 
-        allFlashcards.remove(previousFlashcardData)
-        allFlashcards.add(newFlashcardData)
+        mapping.updateCard(previousFlashcardData, newFlashcardData)
 
-        val mistakes = this.mistakes.remove(previousAnswerResult.correctAnswer.word)
-        checkNotNull(mistakes) { "The old value ${previousAnswerResult.correctAnswer.word} not found in the stats" }
-        this.mistakes[newAnswerResult.correctAnswer.word] = mistakes
-
-        val lastSeen = this.lastSeen.remove(previousFlashcardData)
-        checkNotNull(lastSeen) { "The current card never seen - makes no sense" }
-        this.lastSeen[newFlashcardData] = lastSeen
-
-        val wordStats = this.previousLessonStats.remove(previousAnswerResult.correctAnswer.word)
-        if (wordStats != null) { // the word may not have existed in the previous lesson
-            this.previousLessonStats[newAnswerResult.correctAnswer.word] = wordStats
+        if (!previousAnswerResult.isCorrect && newAnswerResult.isCorrect) {
+            incorrect -= id
         }
-
-        if (!previousAnswerResult.isCorrect) {
-            incorrect -= previousFlashcardData
-        }
-        if (!newAnswerResult.isCorrect) {
-            incorrect += newFlashcardData
+        if (previousAnswerResult.isCorrect && !newAnswerResult.isCorrect) {
+            incorrect += id
         }
 
         this.currentAnswerResult = newAnswerResult
+    }
+
+    @JvmInline private value class Id(val value: Int)
+
+    private class CardIdMapping(lessonData: LessonData) {
+        private val flashcardsById = lessonData.flashcards.withIndex().associateTo(hashMapOf()) { Id(it.index) to it.value }
+        private val idByAnswer = flashcardsById.entries.associateTo(hashMapOf()) { it.value.flashcard.answer to it.key }
+
+        val entries: Set<Map.Entry<Id, FlashcardData>> get() = flashcardsById.entries
+
+        val ids: Set<Id> get() = flashcardsById.keys
+
+        fun idByAnswer(answer: Word): Id = idByAnswer.getValue(answer)
+
+        fun answer(id: Id): Word = flashcardsById.getValue(id).flashcard.answer
+
+        fun data(id: Id): FlashcardData  = flashcardsById.getValue(id)
+
+        fun updateCard(old: FlashcardData, new: FlashcardData) {
+            val id = idByAnswer(old.flashcard.answer)
+            flashcardsById[id] = new
+            idByAnswer.remove(old.flashcard.answer)
+            idByAnswer[new.flashcard.answer] = id
+        }
     }
 
 }
