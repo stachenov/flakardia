@@ -20,7 +20,7 @@ class CardSetFileEditorFrame(
     private val scrollPane = JScrollPane(editor)
     private val toolBar = JPanel()
     private val duplicateComboModel = DefaultComboBoxModel<DuplicateDetectionPath>()
-    private val duplicateCombo = JComboBox<DuplicateDetectionPath>(duplicateComboModel)
+    private val duplicateCombo = JComboBox(duplicateComboModel)
     private val statusPanel = JPanel().apply {
         border = BorderFactory.createEmptyBorder(INSET_TOP, INSET_LEFT, INSET_BOTTOM, INSET_RIGHT)
     }
@@ -174,12 +174,6 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         questionEditor.addKeyListener(KeyEvent.VK_END, condition = { e -> e.modifiersEx.isCtrlOrCmdDown }) {
             controlEnd()
         }
-        questionEditor.addKeyListener(KeyEvent.VK_DELETE,
-            condition = { questionEditor.text.isNullOrEmpty() && !answerEditor.text.isNullOrEmpty() }
-        ) {
-            answerEditor.caretPosition = 0
-            answerEditor.focusAndScroll()
-        }
         answerEditor.addKeyListener(KeyEvent.VK_UP, condition = { true }) {
             keepCaretPositionIfHomeOrEnd(answerEditor, questionEditor)
             questionEditor.focusAndScroll()
@@ -192,12 +186,6 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         }
         answerEditor.addKeyListener(KeyEvent.VK_END, condition = { e -> e.modifiersEx.isCtrlOrCmdDown }) {
             controlEnd()
-        }
-        answerEditor.addKeyListener(KeyEvent.VK_BACK_SPACE,
-            condition = { !questionEditor.text.isNullOrEmpty() && answerEditor.text.isNullOrEmpty() }
-        ) {
-            questionEditor.caretPosition = questionEditor.text.length
-            questionEditor.focusAndScroll()
         }
     }
 
