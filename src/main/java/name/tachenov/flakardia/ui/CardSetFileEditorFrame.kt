@@ -4,10 +4,7 @@ import name.tachenov.flakardia.getEditorBounds
 import name.tachenov.flakardia.presenter.*
 import name.tachenov.flakardia.setEditorBounds
 import java.awt.*
-import java.awt.event.HierarchyEvent
-import java.awt.event.HierarchyListener
-import java.awt.event.KeyAdapter
-import java.awt.event.KeyEvent
+import java.awt.event.*
 import javax.swing.*
 import javax.swing.text.JTextComponent
 import kotlin.math.max
@@ -347,10 +344,12 @@ private class CardEditor(
     val questionEditor = WordTextField(initialState.question.word).apply {
         duplicates = initialState.question.duplicates
         putClientProperty(CARD_EDITOR, this@CardEditor)
+        scrollOnFocus()
     }
     val answerEditor = WordTextField(initialState.answer.word).apply {
         duplicates = initialState.answer.duplicates
         putClientProperty(CARD_EDITOR, this@CardEditor)
+        scrollOnFocus()
     }
     var isRemovedUsingBackSpace = false
         private set
@@ -416,7 +415,39 @@ private fun WordTextField.focusAndScroll() {
     }
 }
 
+private fun WordTextField.scrollOnFocus() {
+    addFocusListener(object : FocusAdapter() {
+        override fun focusGained(e: FocusEvent) {
+            when (e.cause) {
+                FocusEvent.Cause.MOUSE_EVENT,
+                FocusEvent.Cause.TRAVERSAL,
+                FocusEvent.Cause.TRAVERSAL_UP,
+                FocusEvent.Cause.TRAVERSAL_DOWN,
+                FocusEvent.Cause.TRAVERSAL_FORWARD,
+                FocusEvent.Cause.TRAVERSAL_BACKWARD -> {
+                    doScroll()
+                }
+                FocusEvent.Cause.UNKNOWN,
+                FocusEvent.Cause.ROLLBACK,
+                FocusEvent.Cause.UNEXPECTED,
+                FocusEvent.Cause.ACTIVATION,
+                FocusEvent.Cause.CLEAR_GLOBAL_FOCUS_OWNER,
+                null -> { }
+            }
+        }
+    })
+}
+
 private fun WordTextField.doFocusAndScroll() {
+    doFocus()
+    doScroll()
+}
+
+private fun WordTextField.doFocus() {
+    requestFocusInWindow()
+}
+
+private fun WordTextField.doScroll() {
     val parent = parent ?: return
     val editor = getClientProperty(CARD_EDITOR) as? CardEditor ?: return
     val x1 = min(editor.questionEditor.x, editor.answerEditor.x)
@@ -432,7 +463,6 @@ private fun WordTextField.doFocusAndScroll() {
         val viewportRect = SwingUtilities.convertRectangle(parent, parentRect, viewport)
         viewport.scrollRectToVisible(viewportRect)
     }
-    requestFocusInWindow()
 }
 
 private fun JTextComponent.addKeyListener(vararg keyCodes: Int, condition: JTextComponent.(KeyEvent) -> Boolean, listener: (KeyEvent) -> Unit) {
