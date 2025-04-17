@@ -10,6 +10,8 @@ import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import javax.swing.*
 import javax.swing.text.JTextComponent
+import kotlin.math.max
+import kotlin.math.min
 
 class CardSetFileEditorFrame(
     private val parent: JFrame,
@@ -344,9 +346,11 @@ private class CardEditor(
     val id = initialState.id
     val questionEditor = WordTextField(initialState.question.word).apply {
         duplicates = initialState.question.duplicates
+        putClientProperty(CARD_EDITOR, this@CardEditor)
     }
     val answerEditor = WordTextField(initialState.answer.word).apply {
         duplicates = initialState.answer.duplicates
+        putClientProperty(CARD_EDITOR, this@CardEditor)
     }
     var isRemovedUsingBackSpace = false
         private set
@@ -385,7 +389,9 @@ private class CardEditor(
     override fun toString(): String = "($questionEditor, $answerEditor)"
 }
 
-private fun JComponent.focusAndScroll() {
+private const val CARD_EDITOR = "CARD_EDITOR"
+
+private fun WordTextField.focusAndScroll() {
     when {
         isShowing && isValid -> {
             doFocusAndScroll()
@@ -410,18 +416,21 @@ private fun JComponent.focusAndScroll() {
     }
 }
 
-private fun JComponent.doFocusAndScroll() {
+private fun WordTextField.doFocusAndScroll() {
+    val parent = parent ?: return
+    val editor = getClientProperty(CARD_EDITOR) as? CardEditor ?: return
+    val x1 = min(editor.questionEditor.x, editor.answerEditor.x)
+    val x2 = max(editor.questionEditor.x + editor.questionEditor.width, editor.answerEditor.x + editor.answerEditor.width)
+    val y1 = editor.questionEditor.y
+    val y2 = editor.answerEditor.y + editor.answerEditor.height
+    val parentRect = Rectangle(x1, y1, x2 - x1, y2 - y1)
     // Can't just use scrollRectToVisible() because JTextField would only scroll itself then,
     // as it has its own scrolling to scroll the text horizontally.
     // But that's not what we want here, we want to scroll the whole editor vertically.
-    val parent = parent ?: return
-    var viewport: Component? = parent
-    while (viewport != null && viewport !is JViewport) {
-        viewport = viewport.parent
-    }
-    if (viewport is JViewport) {
-        val rect = SwingUtilities.convertRectangle(parent, bounds, viewport)
-        viewport.scrollRectToVisible(rect)
+    val viewport = findParentOfType<JViewport>()
+    if (viewport != null) {
+        val viewportRect = SwingUtilities.convertRectangle(parent, parentRect, viewport)
+        viewport.scrollRectToVisible(viewportRect)
     }
     requestFocusInWindow()
 }

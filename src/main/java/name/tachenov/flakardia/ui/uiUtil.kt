@@ -1,5 +1,6 @@
 package name.tachenov.flakardia.ui
 
+import java.awt.Component
 import java.awt.Point
 import java.awt.Rectangle
 import java.awt.Window
@@ -79,4 +80,13 @@ private fun Window.findYAboveOrBelow(height: Int, screen: Rectangle): Int? {
         else -> null
     }
     return y
+}
+
+inline fun <reified T : Component> Component.findParentOfType(): T? {
+    var parent: Component? = this.parent
+    while (parent != null) {
+        if (parent is T) return parent
+        parent = parent.parent
+    }
+    return null
 }
