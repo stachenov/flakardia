@@ -6,6 +6,7 @@ import java.awt.event.HierarchyListener
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.swing.text.JTextComponent
+import kotlin.io.path.isDirectory
 import kotlin.io.path.isRegularFile
 
 fun enableSpellchecker(component: JTextComponent) {
@@ -39,19 +40,31 @@ fun initializeSpellchecker() {
     SpellChecker.registerDictionaries(null, null)
     SpellChecker.setCustomDictionaryProvider {
         try {
-            Files.newDirectoryStream(Path.of("spell")).use { files ->
-                files.filter { path -> path.isRegularFile() }
-                    .flatMap { file ->
-                        try {
-                            Files.readAllLines(file)
-                        }
-                        catch (e: Exception) {
-                            emptyList()
-                        }
-                    }.iterator()
-            }
+            loadDir(appDirPath()).iterator()
         } catch (e: Exception) {
             emptyList<String>().iterator()
         }
     }
 }
+
+private fun appDirPath(): Path = Path.of("spell")
+
+private fun loadDir(dir: Path): List<String> =
+    if (dir.isDirectory()) {
+        Files.newDirectoryStream(dir).use { files ->
+            files.filter { path -> path.isRegularFile() }
+                .flatMap { file ->
+                    loadFile(file)
+                }
+        }
+    }
+    else {
+        emptyList()
+    }
+
+private fun loadFile(file: Path): List<String> =
+    try {
+        Files.readAllLines(file)
+    } catch (e: Exception) {
+        emptyList()
+    }
