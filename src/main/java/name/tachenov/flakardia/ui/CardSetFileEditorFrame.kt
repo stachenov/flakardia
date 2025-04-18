@@ -245,14 +245,18 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         val removedFirstEditor = index == 0
         val removedLastEditor = index == editors.size
         val focusPreviousEditor = removedLastEditor || (removed.isRemovedUsingBackSpace && !removedFirstEditor)
-        if (focusPreviousEditor) {
-            editors[index - 1].answerEditor.caretPosition = editors[index - 1].answerEditor.text.length
-            editors[index - 1].answerEditor.focusAndScroll()
-        }
-        else {
-            editors[index].questionEditor.caretPosition = 0
-            editors[index].questionEditor.focusAndScroll()
-        }
+        // This part is a bit counter-intuitive: when removing an empty card using Backspace,
+        // we generally don't want the caret at the end of the previous field, unlike regular text editing,
+        // because then holding Backspace to remove several cards would mean that after the last one is removed,
+        // we'll start wiping the previous non-empty card, which is unlikely what we want.
+        // So using Backspace moves the caret to the start and using Delete moves it to the end,
+        // then the deletion will stop once we reach the first non-empty card.
+        // With this approach, wiping a lot of cards at once by holding some key isn't supported,
+        // but that's a good thing, because it's normally not needed.
+        val caretAtStart = removed.isRemovedUsingBackSpace
+        val fieldToFocus = if (focusPreviousEditor) editors[index - 1].answerEditor else editors[index].questionEditor
+        fieldToFocus.caretPosition = if (caretAtStart) 0 else fieldToFocus.text.length
+        fieldToFocus.focusAndScroll()
     }
 
     override fun getMinimumSize(): Dimension = computeSize { minimumSize }
