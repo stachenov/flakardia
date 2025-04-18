@@ -161,10 +161,17 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         val questionEditor = editor.questionEditor
         val answerEditor = editor.answerEditor
         questionEditor.addKeyListener(KeyEvent.VK_UP, condition = { true }) {
-            focusPreviousEditor(editor)
+            focusPreviousEditor(editor, CaretPositionBehavior.KEEP)
+        }
+        questionEditor.addKeyListener(KeyEvent.VK_LEFT, condition = { questionEditor.caretPosition == 0 }) {
+            focusPreviousEditor(editor, CaretPositionBehavior.END)
         }
         questionEditor.addKeyListener(KeyEvent.VK_DOWN, condition = { true }) {
             keepCaretPositionIfHomeOrEnd(questionEditor, answerEditor)
+            answerEditor.focusAndScroll()
+        }
+        questionEditor.addKeyListener(KeyEvent.VK_RIGHT, condition = { questionEditor.caretPosition == questionEditor.text.length }) {
+            answerEditor.caretPosition = 0
             answerEditor.focusAndScroll()
         }
         questionEditor.addKeyListener(KeyEvent.VK_HOME, condition = { e -> e.modifiersEx.isCtrlOrCmdDown }) {
@@ -177,8 +184,15 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
             keepCaretPositionIfHomeOrEnd(answerEditor, questionEditor)
             questionEditor.focusAndScroll()
         }
+        answerEditor.addKeyListener(KeyEvent.VK_LEFT, condition = { answerEditor.caretPosition == 0 }) {
+            questionEditor.caretPosition = questionEditor.text.length
+            questionEditor.focusAndScroll()
+        }
         answerEditor.addKeyListener(KeyEvent.VK_DOWN, condition = { true }) {
-            focusNextEditor(editor)
+            focusNextEditor(editor, CaretPositionBehavior.KEEP)
+        }
+        answerEditor.addKeyListener(KeyEvent.VK_RIGHT, condition = { answerEditor.caretPosition == answerEditor.text.length }) {
+            focusNextEditor(editor, CaretPositionBehavior.HOME)
         }
         answerEditor.addKeyListener(KeyEvent.VK_HOME, condition = { e -> e.modifiersEx.isCtrlOrCmdDown }) {
             controlHome()
@@ -198,7 +212,13 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         editors.last().answerEditor.focusAndScroll()
     }
 
-    private fun focusPreviousEditor(thisEditor: CardEditor) {
+    private enum class CaretPositionBehavior {
+        KEEP,
+        HOME,
+        END
+    }
+
+    private fun focusPreviousEditor(thisEditor: CardEditor, caretPositionBehavior: CaretPositionBehavior) {
         val index = editors.indexOf(thisEditor)
         if (index == -1) return
         val previousAnswerEditor = if (index > 0) {
@@ -207,11 +227,11 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         else {
             editors.last().answerEditor
         }
-        keepCaretPositionIfHomeOrEnd(thisEditor.questionEditor, previousAnswerEditor)
+        adjustCaretPosition(caretPositionBehavior, thisEditor.questionEditor, previousAnswerEditor)
         previousAnswerEditor.focusAndScroll()
     }
 
-    private fun focusNextEditor(thisEditor: CardEditor) {
+    private fun focusNextEditor(thisEditor: CardEditor, caretPositionBehavior: CaretPositionBehavior) {
         val index = editors.indexOf(thisEditor)
         if (index == -1) return
         val nextQuestionEditor = if (index + 1 < editors.size) {
@@ -220,8 +240,20 @@ class CardSetEditor(private val presenter: CardSetFileEditorPresenter) : JPanel(
         else {
             editors.first().questionEditor
         }
-        keepCaretPositionIfHomeOrEnd(thisEditor.answerEditor, nextQuestionEditor)
+        adjustCaretPosition(caretPositionBehavior, thisEditor.answerEditor, nextQuestionEditor)
         nextQuestionEditor.focusAndScroll()
+    }
+
+    private fun adjustCaretPosition(
+        caretPositionBehavior: CaretPositionBehavior,
+        fromEditor: WordTextField,
+        toEditor: WordTextField,
+    ) {
+        when (caretPositionBehavior) {
+            CaretPositionBehavior.KEEP -> keepCaretPositionIfHomeOrEnd(fromEditor, toEditor)
+            CaretPositionBehavior.HOME -> toEditor.caretPosition = 0
+            CaretPositionBehavior.END -> toEditor.caretPosition = toEditor.text.length
+        }
     }
 
     private fun keepCaretPositionIfHomeOrEnd(fromEditor: JTextComponent, toEditor: JTextComponent) {
