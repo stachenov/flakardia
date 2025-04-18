@@ -40,7 +40,7 @@ fun initializeSpellchecker() {
     SpellChecker.registerDictionaries(null, null)
     SpellChecker.setCustomDictionaryProvider {
         try {
-            loadDir(appDirPath()).iterator()
+            (loadDir(appDirPath()) + loadDir(userDirPath())).iterator()
         } catch (e: Exception) {
             emptyList<String>().iterator()
         }
@@ -48,6 +48,7 @@ fun initializeSpellchecker() {
 }
 
 private fun appDirPath(): Path = Path.of("spell")
+private fun userDirPath(): Path = Path.of(System.getProperty("user.home"), ".flakardia", "spell")
 
 private fun loadDir(dir: Path): List<String> =
     if (dir.isDirectory()) {
