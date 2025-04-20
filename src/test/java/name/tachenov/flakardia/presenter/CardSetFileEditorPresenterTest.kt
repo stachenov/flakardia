@@ -1,7 +1,9 @@
 package name.tachenov.flakardia.presenter
 
 import com.google.common.jimfs.Jimfs
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
 import name.tachenov.flakardia.NOT_PARSEABLE_FLASHCARDS
 import name.tachenov.flakardia.accessModel
 import name.tachenov.flakardia.app.DuplicateDetector
@@ -11,8 +13,8 @@ import name.tachenov.flakardia.app.Library
 import name.tachenov.flakardia.data.FlashcardDraftId
 import name.tachenov.flakardia.data.FlashcardSet
 import name.tachenov.flakardia.data.RelativePath
-import name.tachenov.flakardia.edtDispatcherForTesting
 import name.tachenov.flakardia.storage.FlashcardStorageImpl
+import name.tachenov.flakardia.uiTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.AfterEach
@@ -53,7 +55,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             editFile(path("dir", "file.txt"))
             assertCards(
                 listOf(
@@ -72,7 +74,7 @@ class CardSetFileEditorPresenterTest {
                 "root/dir/file.txt" to emptyList()
             )
         )
-        edt {
+        uiTest {
             editFile(path("dir", "file.txt"))
             assertCards(listOf("" to ""))
             assertFirstState()
@@ -89,7 +91,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.removeCard(state1.editorFullState.cards.first().id)
@@ -112,7 +114,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.removeCard(FlashcardDraftId(999999))
@@ -137,7 +139,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             for (card in state1.editorFullState.cards) {
@@ -162,7 +164,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.insertCardBefore(state1.editorFullState.cards.first().id)
@@ -187,7 +189,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.insertCardBefore(FlashcardDraftId(999999))
@@ -211,7 +213,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.insertCardAfter(state1.editorFullState.cards.first().id)
@@ -236,7 +238,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.insertCardAfter(FlashcardDraftId(999999))
@@ -260,7 +262,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.updateQuestion(state1.editorFullState.cards.first().id, "new question")
@@ -287,7 +289,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.updateQuestion(FlashcardDraftId(999999), "new question")
@@ -311,7 +313,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             val sut = editFile(path("dir", "file.txt"))
             val state1 = sut.awaitStateUpdates()
             sut.updateAnswer(state1.editorFullState.cards.first().id, "new answer")
@@ -337,7 +339,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
         )
-        edt {
+        uiTest {
             val sut = editFile(path("dir", "file.txt"))
             sut.awaitStateUpdates()
             sut.updateAnswer(FlashcardDraftId(999999), "new answer")
@@ -362,7 +364,7 @@ class CardSetFileEditorPresenterTest {
                 ),
             )
         )
-        edt {
+        uiTest {
             val path = path("dir", "file.txt")
             editFile(path)
             assertAnswerDuplicates(
@@ -389,7 +391,7 @@ class CardSetFileEditorPresenterTest {
                 ),
             )
         )
-        edt {
+        uiTest {
             val path = path("dir", "file.txt")
             val sut = editFile(path)
             val state1 = sut.awaitStateUpdates()
@@ -422,7 +424,7 @@ class CardSetFileEditorPresenterTest {
                 ),
             )
         )
-        edt {
+        uiTest {
             val path = path("dir", "file.txt")
             val sut = editFile(path)
             val state1 = sut.awaitStateUpdates()
@@ -453,7 +455,7 @@ class CardSetFileEditorPresenterTest {
                 "question b" to "answer b",
             ),
         ))
-        edt {
+        uiTest {
             val path = path("dir", "file.txt")
             val sut = editFile(path)
             val state1 = sut.awaitStateUpdates()
@@ -487,7 +489,7 @@ class CardSetFileEditorPresenterTest {
                 ),
             )
         )
-        edt {
+        uiTest {
             val path = path("dir", "file.txt")
             val sut = editFile(path)
             val state1 = sut.awaitStateUpdates()
@@ -610,7 +612,7 @@ class CardSetFileEditorPresenterTest {
                 ),
             )
         )
-        edt {
+        uiTest {
             val path = path("dir", "file.txt")
             editFile(path, detectDuplicatesIn = path("dir"))
             val path2 = path("dir", "file2.txt")
@@ -640,7 +642,7 @@ class CardSetFileEditorPresenterTest {
                 ),
             )
         )
-        edt {
+        uiTest {
             val path = path("dir", "file.txt")
             editFile(path, detectDuplicatesIn = path("dir"))
             val path2 = path("dir", "file2.txt")
@@ -671,7 +673,7 @@ class CardSetFileEditorPresenterTest {
             )
         )
         Files.writeString(fs.getPath("root/err.txt"), NOT_PARSEABLE_FLASHCARDS)
-        edt {
+        uiTest {
             val path = path("dir", "file.txt")
             editFile(path, detectDuplicatesIn = path())
             val path2 = path("dir", "file2.txt")
@@ -701,7 +703,7 @@ class CardSetFileEditorPresenterTest {
                 ),
             )
         )
-        edt {
+        uiTest {
             val path = path("dir", "file.txt")
             val sut = editFile(path)
             assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir/file.txt")
@@ -736,7 +738,7 @@ class CardSetFileEditorPresenterTest {
                 ),
             )
         )
-        edt {
+        uiTest {
             val path = path("dir", "file.txt")
             val dirPath = path("dir")
             val path2 = path("dir", "file2.txt")
@@ -790,7 +792,7 @@ class CardSetFileEditorPresenterTest {
                 ),
             )
         )
-        edt {
+        uiTest {
             val path = path("dir", "file.txt")
             editFile(path, detectDuplicatesIn = path("dir2"))
             assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir/file.txt")
@@ -808,7 +810,7 @@ class CardSetFileEditorPresenterTest {
                 ),
             )
         )
-        edt {
+        uiTest {
             val sut = DuplicateDetector(library, FlashcardSetFileEntry(path("dir", "file.txt")))
             accessModel {
                 assertThatCode {
@@ -911,21 +913,6 @@ class CardSetFileEditorPresenterTest {
         state.changeFromPrevious as CardsChanged
         val change = state.changeFromPrevious.changes.find { it.index == index }
         assertThat(change?.updatedAnswer?.duplicates?.map { it.path to (it.question to it.answer) }).isEqualTo(duplicates)
-    }
-
-    private fun edt(block: suspend CoroutineScope.() -> Unit) {
-        var done = false
-        try {
-            runBlocking {
-                withContext(edtDispatcherForTesting) {
-                    block()
-                    done = true
-                    cancel()
-                }
-            }
-        } catch (e: CancellationException) {
-            if (!done) throw e
-        }
     }
 
     private fun path(vararg elements: String): RelativePath = RelativePath(elements.toList())
