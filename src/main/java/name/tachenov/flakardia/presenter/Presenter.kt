@@ -13,6 +13,7 @@ interface View {
     fun adjustSize()
     fun showError(title: String, message: String)
     fun showWarnings(warnings: List<String>)
+    val isApplyingStateNow: Boolean
 }
 
 interface PresenterState
@@ -76,6 +77,23 @@ abstract class Presenter<S : PresenterState, V : View> {
     protected open suspend fun saveLastState(state: S) { }
 
     protected fun updateState(update: suspend (S) -> S?) {
+        // A common problem with bridging the reactive world of coroutines and flows
+        // with synchronous observable states like Swing: outdated state updates from the model
+        // may be propagated back to the model, causing an infinite update loop.
+        // The simplest possible example: imagine a boolean flag represented by a checkbox.
+        // Suppose the user checked and immediately unchecked the box.
+        // If the unchecking happened before the update caused by checking arrived,
+        // then, when it finally arrives, it'll cause the checkbox to be checked again,
+        // which will be sent back to the model, but then the unchecking update arrives,
+        // causing the checkbox to be unchecked and so on forever.
+        // Because we can never rely on the update from the model to be up-to-date,
+        // but only on the eventual consistency (that some update will finally make things right),
+        // we should never ever send any state updates from the view caused by model state events.
+        // If that update is the latest, then there's no reason to send that state back to the model,
+        // as it's exactly the same state we've just applied.
+        // If it's not the latest, then we shouldn't send it to the model for the reasons described above.
+        // Simply put, only state updates caused by the user's actions should ever be applied to the model.
+        if (view.isApplyingStateNow) return
         check(stateUpdateChannel.trySend(StateUpdate(
             epoch = updateEpoch.incrementAndGet(),
             update = update,

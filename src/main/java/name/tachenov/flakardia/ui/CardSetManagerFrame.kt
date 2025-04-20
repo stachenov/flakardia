@@ -57,8 +57,6 @@ class CardSetManagerFrame(
         mnemonic = KeyEvent.VK_H
     }
 
-    private var nowApplyingPresenterState = false
-
     init {
         val contentPane = JPanel()
         val layout = GroupLayout(contentPane)
@@ -183,13 +181,7 @@ class CardSetManagerFrame(
         })
         list.selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
         list.addListSelectionListener {
-            // If the new selection comes from the presenter, do not apply it,
-            // as it might be outdated (another state update incoming),
-            // and re-applying it to the presenter may cause infinite indirect asynchronous recursion
-            // (state update loop).
-            if (!nowApplyingPresenterState) {
-                presenter.selectItem(list.selectedValue)
-            }
+            presenter.selectItem(list.selectedValue)
         }
 
         val focusableComponents = listOf(list) + buttons
@@ -225,31 +217,26 @@ class CardSetManagerFrame(
 
     override fun applyPresenterState(state: CardSetManagerPresenterState) {
         assertUiAccessAllowed()
-        try {
-            nowApplyingPresenterState = true
-            title = "Flakardia ${version()}"
-            var updateWidth = false
-            if (dir.text != state.currentPresentablePath) {
-                updateWidth = true
-                dir.text = state.currentPresentablePath
-            }
-            if (model.elements().toList() != state.entries) {
-                model.clear()
-                model.addAll(state.entries)
-                updateWidth = true
-            }
-            val shouldScroll = state.isScrollToSelectionRequested
-            list.setSelectedValue(state.selectedEntry, shouldScroll)
-            if (shouldScroll) {
-                presenter.scrollRequestCompleted()
-            }
-            viewButton.isEnabled = state.isViewButtonEnabled
-            lessonButton.isEnabled = state.isLessonButtonEnabled
-            if (updateWidth) {
-                updateWidth()
-            }
-        } finally {
-            nowApplyingPresenterState = false
+        title = "Flakardia ${version()}"
+        var updateWidth = false
+        if (dir.text != state.currentPresentablePath) {
+            updateWidth = true
+            dir.text = state.currentPresentablePath
+        }
+        if (model.elements().toList() != state.entries) {
+            model.clear()
+            model.addAll(state.entries)
+            updateWidth = true
+        }
+        val shouldScroll = state.isScrollToSelectionRequested
+        list.setSelectedValue(state.selectedEntry, shouldScroll)
+        if (shouldScroll) {
+            presenter.scrollRequestCompleted()
+        }
+        viewButton.isEnabled = state.isViewButtonEnabled
+        lessonButton.isEnabled = state.isLessonButtonEnabled
+        if (updateWidth) {
+            updateWidth()
         }
     }
 

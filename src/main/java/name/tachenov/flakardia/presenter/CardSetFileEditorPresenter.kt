@@ -243,8 +243,8 @@ class CardSetFileEditorPresenter(
     private fun allocateId(): FlashcardDraftId = FlashcardDraftId(cardId.incrementAndGet())
 
     fun detectDuplicatesIn(path: FlashcardSetDirEntry?) {
-        config.duplicateDetectionPath = path
         updateState { state ->
+            config.duplicateDetectionPath = path
             val oldCardList = state.editorFullState.cards
             val updateBuilder = UpdateBuilder()
             val newPath = DuplicateDetectionPathImpl(

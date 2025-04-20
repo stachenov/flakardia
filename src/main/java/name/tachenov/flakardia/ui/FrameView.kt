@@ -17,6 +17,7 @@ import java.awt.event.ComponentAdapter
 import java.awt.event.ComponentEvent
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.swing.JOptionPane
 
 enum class PackFrame {
@@ -30,6 +31,9 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
 ) : FlakardiaFrame(), View {
 
     private val saveViewStateRequests = MutableSharedFlow<Unit>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val applyingState = AtomicBoolean(false)
+
+    override val isApplyingStateNow: Boolean get() = applyingState.get()
 
     @OptIn(FlowPreview::class)
     override suspend fun run() = coroutineScope {
@@ -59,7 +63,12 @@ abstract class FrameView<S : PresenterState, V : View, P : Presenter<S, V>>(
             if (isFirstState) {
                 beforeFirstStateInit()
             }
-            applyPresenterState(state)
+            applyingState.set(true)
+            try {
+                applyPresenterState(state)
+            } finally {
+                applyingState.set(false)
+            }
             if (isFirstState) {
                 afterFirstStateInit()
                 isFirstState = false

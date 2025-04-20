@@ -24,7 +24,6 @@ class CardSetFileEditorFrame(
         border = BorderFactory.createEmptyBorder(INSET_TOP, INSET_LEFT, INSET_BOTTOM, INSET_RIGHT)
     }
     private val statusLabel = JLabel()
-    private var applyingStateUpdate = false
 
     init {
         title = presenter.name
@@ -39,8 +38,6 @@ class CardSetFileEditorFrame(
         add(statusPanel, BorderLayout.SOUTH)
 
         duplicateCombo.addActionListener {
-            // Don't send the state back to the model, could cause glitches and recursion.
-            if (applyingStateUpdate) return@addActionListener
             presenter.detectDuplicatesIn((duplicateCombo.selectedItem as? DuplicateDetectionPath?)?.dirEntry)
         }
     }
@@ -60,20 +57,14 @@ class CardSetFileEditorFrame(
     }
 
     override fun applyPresenterState(state: CardSetFileEditorState) {
-        assert(!applyingStateUpdate)
-        try {
-            applyingStateUpdate = true
-            editor.updateState(state)
-            duplicateComboModel.removeAllElements()
-            duplicateComboModel.addAll(state.duplicateDetectionState.availablePaths)
-            duplicateComboModel.selectedItem = state.duplicateDetectionState.selectedPath
-            statusLabel.text = when (val persistenceState = state.persistenceState) {
-                is CardSetFileEditorEditedState -> "Saving..."
-                is CardSetFileEditorSavedState -> persistenceState.warnings.firstOrNull() ?: "Saved"
-                is CardSetFileEditorSaveErrorState -> "Save error: ${persistenceState.message}"
-            }
-        } finally {
-            applyingStateUpdate = false
+        editor.updateState(state)
+        duplicateComboModel.removeAllElements()
+        duplicateComboModel.addAll(state.duplicateDetectionState.availablePaths)
+        duplicateComboModel.selectedItem = state.duplicateDetectionState.selectedPath
+        statusLabel.text = when (val persistenceState = state.persistenceState) {
+            is CardSetFileEditorEditedState -> "Saving..."
+            is CardSetFileEditorSavedState -> persistenceState.warnings.firstOrNull() ?: "Saved"
+            is CardSetFileEditorSaveErrorState -> "Save error: ${persistenceState.message}"
         }
     }
 }
