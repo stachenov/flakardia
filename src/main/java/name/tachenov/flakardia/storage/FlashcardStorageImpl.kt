@@ -96,6 +96,7 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
         var tempFile: Path? = null
         try {
             ensureFlakardiaDirExists()
+            Files.createDirectories(path.parent)
             tempFile = Files.createTempFile(path.parent, tempPrefix, tempSuffix)
             checkNotNull(tempFile)
             Files.writeString(tempFile, content())
