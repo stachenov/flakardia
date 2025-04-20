@@ -749,6 +749,7 @@ class CardSetFileEditorPresenterTest {
             assertSavedState()
             assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir/file.txt")
             sut.detectDuplicatesIn(FlashcardSetDirEntry(rootPath))
+            sut.awaitStateUpdates()
             assertConfig(rootPath)
             assertSavedState()
             assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root")
@@ -763,6 +764,7 @@ class CardSetFileEditorPresenterTest {
                 )
             )
             sut.detectDuplicatesIn(FlashcardSetDirEntry(dirPath))
+            sut.awaitStateUpdates()
             assertConfig(dirPath)
             assertSavedState()
             assertDuplicateDetectionState(availablePaths = listOf("root", "root/dir", "root/dir/file.txt"), selectedPath = "root/dir")
@@ -951,6 +953,8 @@ class CardSetFileEditorPresenterTest {
     }
 
     private class MockView : CardSetFileEditorView {
+        override val isApplyingStateNow: Boolean = false
+
         override suspend fun run() {
             awaitCancellation()
         }
