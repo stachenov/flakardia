@@ -61,6 +61,7 @@ class QuestionAnswerPanel(private val presenter: LessonPresenter) : JPanel() {
         answerInput.caret.isVisible = true
         answerInput.repaint()
         question.isVisible = true
+        question.text = answerResult.question
         if (answerResult.isCorrect) {
             answerInput.foreground = CORRECT_COLOR
             correctAnswer.isVisible = false
