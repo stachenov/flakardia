@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test
 import java.nio.file.FileSystem
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.*
 import kotlin.io.path.name
 
 class FlashcardSetViewPresenterTest {
@@ -53,10 +54,66 @@ class FlashcardSetViewPresenterTest {
         }
     }
 
+    @Test
+    fun `initial state - some stats`() {
+        uiTest {
+            generateWords()
+            val stats = generateSomeStats()
+            viewFlashcards()
+            assertCardsShown()
+            assertStats(stats)
+        }
+    }
+
+    private suspend fun generateSomeStats(): Map<TestCard, TestStats> =
+        accessModel {
+            val cardList = testCards.toList()
+            val card1 = cardList[0]
+            val card2 = cardList[1]
+            val date1 = LocalDate.of(2025, Month.APRIL, 20)
+            val date2 = LocalDate.of(2025, Month.MARCH, 21)
+            val time1 = LocalTime.of(22, 5, 15)
+            val time2 = LocalTime.of(8, 55, 45)
+            val duration1 = Duration.ofDays(3)
+            val duration2 = Duration.ofHours(5)
+            val wordStats1 = WordStats(
+                lastLearned = date1.atTime(time1).atZone(TIME_ZONE).toInstant(),
+                intervalBeforeLastLearned = duration1,
+                mistakes = 1,
+            )
+            val wordStats2 = WordStats(
+                lastLearned = date2.atTime(time2).atZone(TIME_ZONE).toInstant(),
+                intervalBeforeLastLearned = duration2,
+                mistakes = 0,
+            )
+            library.saveUpdatedStats(LibraryStats(mapOf(card1.card.answer to wordStats1, card2.card.answer to wordStats2)))
+            mapOf(
+                card1 to TestStats(
+                    lastLearnedString = "2025-04-20 22:05:15",
+                    mistakes = 1,
+                    intervalString = "3.00",
+                ),
+                card2 to TestStats(
+                    lastLearnedString = "2025-03-21 08:55:45",
+                    mistakes = 0,
+                    intervalString = "0.21",
+                ),
+            )
+        }
+
     private suspend fun assertCardsShown() {
         val state = sut.awaitStateUpdates()
-        val cards = state.cards.map { TestCard(it.path, Flashcard(Word(it.question), Word(it.answer))) }.toSet()
+        val cards = state.cards.map { it.toTestCard() }.toSet()
         assertThat(cards).isEqualTo(testCards)
+    }
+
+    private suspend fun assertStats(expectedStats: Map<TestCard, TestStats>) {
+        val state = sut.awaitStateUpdates()
+        val actualStats = state.cards.associate {
+            it.toTestCard() to it.toTestStats()
+        }
+        val emptyStats = (actualStats.keys - expectedStats.keys).associateWith { emptyStats() }
+        assertThat(actualStats).isEqualTo(expectedStats + emptyStats)
     }
 
     private suspend fun CoroutineScope.viewFlashcards() {
@@ -86,9 +143,28 @@ class FlashcardSetViewPresenterTest {
     private fun path(i: Int): RelativePath = RelativePath(listOf(dir.name, "subdir$i"))
 }
 
+private fun FlashcardViewModel.toTestCard() = TestCard(
+    path = path,
+    card = Flashcard(Word(question), Word(answer))
+)
+
+private fun FlashcardViewModel.toTestStats() = TestStats(
+    lastLearnedString = lastLearned.toString(),
+    mistakes = mistakes,
+    intervalString = intervalBeforeLastLearned.toString(),
+)
+
 private data class TestCard(
     val path: RelativePath,
     val card: Flashcard,
+)
+
+private fun emptyStats() = TestStats("", null, "")
+
+private data class TestStats(
+    val lastLearnedString: String,
+    val mistakes: Int?,
+    val intervalString: String,
 )
 
 private class MockView : FlashcardSetView {
@@ -104,3 +180,5 @@ private class MockView : FlashcardSetView {
 
     override val isApplyingStateNow: Boolean = false
 }
+
+private val TIME_ZONE: ZoneId = ZoneId.systemDefault()

@@ -23,7 +23,7 @@ data class FlashcardViewModel(
 )
 
 data class LastLearnedViewModel(val lastLearned: Instant?) {
-    override fun toString(): String = lastLearned?.let { String.format("%tF  %<tT", it.atZone(ZoneId.systemDefault())) } ?: ""
+    override fun toString(): String = lastLearned?.let { String.format("%tF %<tT", it.atZone(ZoneId.systemDefault())) } ?: ""
 }
 
 data class IntervalViewModel(val interval: Duration?) : Comparable<IntervalViewModel> {
