@@ -63,7 +63,7 @@ You can also optionally select the font to use and adjust its size and style. Th
 
 Once you've selected an existing folder or created a new one and selected it, you can close the settings dialog by clicking OK or pressing Enter.
 
-There's also the Lesson tab which you can use to fine-tune the algorithm that selects words for a lesson. You can leave that tab alone for now.
+There is also some stuff in the settings that you can leave alone for now. That stuff includes lesson window positioning (try both options later to decide) and the Lesson tab which you can use to fine-tune the algorithm that selects words for a lesson.
 
 You'll be able to open the settings dialog again at any time if you wish.
 
@@ -71,19 +71,16 @@ You'll be able to open the settings dialog again at any time if you wish.
 
 The library is just a folder that should contain text files with flashcard sets. If you have a lot of those, you can put them into subfolders. You'll be able to navigate those freely from the main window. It's a good idea to have a few top-level subfolders, as you can then run lessons on the entire subfolder. To get started, try creating a single subfolder for the language you're going to learn.
 
-A flashcard, as far as Flakardia is concerned, is simply a pair of phrases. You can use any languages you want, and there are no restrictions on phrases, except common sense. In every pair, one phrase is the front of the card, or the question, and the other one is the back of the card, or the answer. During lessons, you'll have to answer these question by typing the answers. 
+A flashcard, as far as Flakardia is concerned, is simply a pair of phrases. You can use any languages you want, and there are no restrictions on phrases, except common sense. In every pair, one phrase is the front of the card, or the question, and the other one is the back of the card, or the answer. During lessons, you'll have to answer these question by typing the answers.
 
-A flashcard set file is simply a text file in UTF-8 encoding in any of the two formats:
+Starting with Flakardia 0.7, there are some built-in tools for adding and editing flashcard files, but for the sake of transparency the file format is described here.
 
-- delimiter-separated;
-- blank-line-separated.
+A flashcard set file is simply a text file in UTF-8 encoding in any of the following two formats:
 
-With a delimiter-separated file, every non-blank line is a flashcard, and it consists of the question and the answer separated by any delimiter. The delimiter will be detected automatically, and it must be some character that appears once and only once in every single non-blank line, or else detection will fail. Example:
+- blank-line-separated;
+- delimiter-separated.
 
-hello | bonjour
-goodbye | au revoir
-
-With a blank-line-separated file, every pair of non-blank lines is a flashcard, the first line is the question, the second line is the answer. Flashcards must be separated by one or more blank lines. Every flashcard must contain exactly two lines, or else detection will fail. Example:
+The blank-line-separated format is the main one used by the application. In this format, every pair of non-blank lines is a flashcard, the first line is the question, the second line is the answer. Flashcards must be separated by one or more blank lines. Every flashcard must contain exactly two lines, or else the file won't load. Examples:
 
 hello
 bonjour
@@ -91,9 +88,14 @@ bonjour
 goodbye
 au revoir
 
+The delimiter-separated format is mostly intended for importing data from other applications and files. In this format, every non-blank line is a flashcard, and it consists of the question and the answer separated by any delimiter. The delimiter will be detected automatically, and it must be some character that appears once and only once in every single non-blank line, or else detection will fail. Example:
+
+hello | bonjour
+goodbye | au revoir
+
 Any whitespace around questions and answers will be ignored, and so will be double quotes, for compatibility with flashcards exported from software that adds those.
 
-For detection to succeed, the flashcard set file must contain at least a couple of flashcards. Of course, it makes sense to have much more, but when you're just starting, you may be confused when you save your first flashcard and then nothing works. Don't worry, just add a few more and it should be detected all right.
+For delimiter detection to succeed, the flashcard set file must contain at least a couple of flashcards. By default, the file will be attempted to read as blank-line-separated. Specifically, if you want to have a file with just one flashcard in it, you should use that format.
 
 3. Navigating the library
 
@@ -101,21 +103,33 @@ In the main window, the list of files and folders in the library will be display
 
 If you select any file and press Enter or double-click it, then the list of flashcards in that file will be displayed in a new window. The same will happen if you press the View flashcards button. The button will actually work even if you select a folder, then you'll see the list of flashcards in the entire folder. The information about flashcards include both words (front and back), the path to the flashcard set, and some statistics used for the word selection algorithm. This statistics includes the time of the last lesson when the word was learned, the time interval between this lesson and the previous one, and the number of mistakes made in the last lesson.
 
+4. Creating and editing files
+
+You can create and edit files using any file manager and text editor, but there are some built-in tools for this as well. There are the new dir, new file and edit file buttons. No rename and delete functionality in the current version yet.
+
+Once you create or edit an existing file, the editor will open. It should be intuitive to use, and it mimics the blank-line-separated format, showing pairs of text fields for question/answer pairs. You can add more cards by simply pressing Enter when the caret it at the end of an existing card, pretty much like you would add a new line to a text file. The file is saved automatically when you close the editor or after some small timeout when you stop editing. If you're editing an existing file, all accumulated lesson statistics will be kept as-is even if you edit some words. This can be useful if you make some small changes, for example, add an article to the word. If you're replacing some card with a completely new one and want to start leaning it from scratch, then remove the old one first and then add a new one instead of editing the existing one. This will erase the statistics.
+
+Some spellchecking is supported when editing, but the built-in dictionary set is very limited. You can add more dictionaries by putting them to the .flakardia/spell (that's dot-flakardia) directory. On Windows, it would be %USERPROFILE%\.flakardia\spell\, on Unix systems it's the usual dot-dir in your home dir. A dictionary can be named anything and it must be a plain text UTF-8 file that simply lists all words that are considered correct. The dictionaries are loaded on app startup.
+
+5. Staring a lesson
+
 To start a lesson, press the Start lesson button. The lesson will be started in a new window. You can start a lesson on a file or a whole folder. Either way, the lesson will be limited to a fixed number of flashcards (configurable). These flashcards are chosen depending on how much time has passed since you saw a flashcard the last time, and how much mistakes you made the last time. The flashcards that you haven't seen for a while, and hard words you didn't get on the first try will be prioritized. For the first lesson, the choice of the flashcards is random.
 
 You can fine-tune the algorithm for choosing flashcards in the settings dialog, the Lesson tab. You can configure how many flashcards can appear in a lesson (30 by default), and a couple of parameters for three cases: when you have made no mistakes in a given word, when you have made just one mistake or when you have made more than one. For each of these three cases you can set up an interval multiplier that determines how sooner (lower multiplier) or later (higher multiplier) a word will appear next time. These multipliers don't determine exact timing, instead they're used to prioritize some words over others. You can also set the minimum interval (in days) that determines a cooldown period when a word will never appear even if the algorithm would otherwise have chosen it. For example, if you set this interval to 2.0 for the case when no mistakes were made, then if you get a word correctly in a lesson, it won't appear in another lesson until two days have passed. The only exception is when there are no other valid words to choose from, which can happen if your library is small, then the algorithm will still pick recent words.
 
-4. Going through a lesson
+5. Going through a lesson
 
 You'll see a question and an input field just below it. That's where you type your answer into and press Enter. If you don't remember the answer, press Esc to give up. If you typed the correct answer, it'll be highlighted green. Otherwise, it'll be highlighted red and the correct answer will be displayed just below the input field. After that, press Space to continue the lesson.
 
-If you point the mouse at the question, you'll see the path to the flashcard set file that contains the displayed word. While this can be used as a hint (you may remember the word once you've figured out which flashcard set it belongs to), it's best to avoid this and use this to correct mistakes in flashcard sets (naturally, you need to identify which set to correct first, which is where these tooltips come in handy).
+If you point the mouse at the question, you'll see the path to the flashcard set file that contains the displayed word. This can be used as a hint (you may remember the word once you've figured out which flashcard set it belongs to), but it's best to avoid this and try to learn honestly.
 
 Note that your answer is compared letter-by-letter to the correct one. Whitespace, punctuation and whatever other crazy characters you can type, are ignored completely.
 
+Sometimes you make a mistake, but realize that the card has a mistake or could be written better. For example, you may list most words with articles, but forgot to specify the article for a specific word, or you may want to add something that would indicate which of the numerous synonyms are expected as the answer here. In this case, the app provides you with an editor right in the lesson window. Simply press F2 after answering the question, and you can edit both the question and the answer there. Press Enter when you've finished editing.
+
 Once you've gone through all the words, you'll start going through words you didn't get right on the first try, if any. if there are none, the lesson is over. Otherwise, once you've finished working on your mistakes, the second round starts. You'll have to go through all the words again. The lesson will be over once you get all the words right in a single round. The number of the round is displayed above the input field. If it's red, it means you're currently working on the mistakes made in that round.
 
-5. Copyright and license information
+6. Copyright and license information
 
 MIT License
 

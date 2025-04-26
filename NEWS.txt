@@ -1,3 +1,7 @@
+0.7 / 2025-04-26
+    The first version of the in-app flashcard set editor
+    It's now possible to edit flashcards right in the lesson
+
 0.6.1 / 2025-03-25
     The main window position is now saved
     The current directory and selection are now saved as well
