@@ -229,8 +229,17 @@ class CardSetManagerFrame(
             updateWidth = true
         }
         val shouldScroll = state.isScrollToSelectionRequested
-        list.setSelectedValue(state.selectedEntry, shouldScroll)
+        // Can't just use shouldScroll = true, because the model might have just changed,
+        // and the list may not have been revalidated yet.
+        // Therefore, use invokeLater to ensure the selection happens after validation.
+        list.setSelectedValue(state.selectedEntry, false)
         if (shouldScroll) {
+            SwingUtilities.invokeLater {
+                val selectedIndex = list.selectedIndex
+                if (selectedIndex >= 0) {
+                    list.ensureIndexIsVisible(selectedIndex)
+                }
+            }
             presenter.scrollRequestCompleted()
         }
         viewButton.isEnabled = state.isViewButtonEnabled
