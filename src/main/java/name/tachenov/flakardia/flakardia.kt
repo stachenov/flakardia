@@ -20,14 +20,29 @@ fun main(args: Array<String>) {
     debugMode = args.firstOrNull()?.let { DebugMode.valueOf(args[0].uppercase()) } ?: DebugMode.NO_DEBUG
     runBlocking(edtDispatcher) {
         initializeSpellchecker()
-        LafManager.setThemeProvider(DefaultThemeProvider(IntelliJTheme(), OneDarkTheme()))
-        LafManager.install(LafManager.themeForPreferredStyle(LafManager.getPreferredThemeStyle()))
+        initializeTheme()
         configureUiDefaults()
         if (getLibraryPath() == null) {
             showHelp()
         }
         runApp()
         exitProcess(0)
+    }
+}
+
+private fun CoroutineScope.initializeTheme() {
+    LafManager.setThemeProvider(DefaultThemeProvider(IntelliJTheme(), OneDarkTheme()))
+    var currentTheme = LafManager.getPreferredThemeStyle()
+    LafManager.install(LafManager.themeForPreferredStyle(currentTheme))
+    launch {
+        while (true) {
+            delay(1000L)
+            val preferredThemeStyle = LafManager.getPreferredThemeStyle()
+            if (preferredThemeStyle != currentTheme) {
+                LafManager.install(LafManager.themeForPreferredStyle(preferredThemeStyle))
+                currentTheme = preferredThemeStyle
+            }
+        }
     }
 }
 
