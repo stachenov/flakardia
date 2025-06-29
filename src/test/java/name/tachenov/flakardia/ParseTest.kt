@@ -22,7 +22,7 @@ class ParseTest {
     @BeforeEach
     fun setUp() {
         fs = Jimfs.newFileSystem()
-        storage = FlashcardStorageImpl(fs.getPath("."))
+        storage = FlashcardStorageImpl(fs.getPath("."), StatsFileRecoveryOptionsStub)
     }
 
     @AfterEach

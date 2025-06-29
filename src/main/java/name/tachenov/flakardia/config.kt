@@ -6,10 +6,7 @@ import name.tachenov.flakardia.data.parseRelativePath
 import name.tachenov.flakardia.presenter.CardSetFileEditorConfig
 import name.tachenov.flakardia.presenter.CardSetManagerPresenterSavedState
 import name.tachenov.flakardia.storage.FlashcardStorageImpl
-import name.tachenov.flakardia.ui.FlashcardSetViewColumn
-import name.tachenov.flakardia.ui.InitFrame
-import name.tachenov.flakardia.ui.LessonFramePosition
-import name.tachenov.flakardia.ui.SettingsDialog
+import name.tachenov.flakardia.ui.*
 import java.awt.*
 import java.nio.file.Path
 import java.time.Duration
@@ -126,7 +123,7 @@ suspend fun configureAndEnterLibrary(manager: CardManager): Library {
             }
         }
         else {
-            val library = Library(FlashcardStorageImpl(libraryPath))
+            val library = Library(FlashcardStorageImpl(libraryPath, StatsFileRecoveryOptionsDialog()))
             when (val result = accessModel { manager.enterLibrary(library) }) {
                 is DirEnterError -> {
                     JOptionPane.showMessageDialog(

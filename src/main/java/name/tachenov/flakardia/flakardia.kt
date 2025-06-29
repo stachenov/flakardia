@@ -4,21 +4,21 @@ import com.github.weisj.darklaf.LafManager
 import com.github.weisj.darklaf.theme.IntelliJTheme
 import com.github.weisj.darklaf.theme.OneDarkTheme
 import com.github.weisj.darklaf.theme.info.DefaultThemeProvider
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import name.tachenov.flakardia.app.CardManager
 import name.tachenov.flakardia.presenter.CardSetManagerPresenter
 import name.tachenov.flakardia.presenter.showPresenterFrame
 import name.tachenov.flakardia.ui.CardSetManagerFrame
 import name.tachenov.flakardia.ui.initializeSpellchecker
-import org.jetbrains.annotations.TestOnly
 import java.awt.Window
-import javax.swing.SwingUtilities
-import kotlin.coroutines.CoroutineContext
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
     debugMode = args.firstOrNull()?.let { DebugMode.valueOf(args[0].uppercase()) } ?: DebugMode.NO_DEBUG
-    runBlocking(edtDispatcher) {
+    mainCoroutine {
         initializeSpellchecker()
         initializeTheme()
         configureUiDefaults()
@@ -63,12 +63,3 @@ private suspend fun showManagerFrame(manager: CardManager) = coroutineScope {
 }
 
 fun getManagerFrame() = Window.getWindows().firstOrNull { it is CardSetManagerFrame }
-
-private val edtDispatcher = object : CoroutineDispatcher() {
-    override fun dispatch(context: CoroutineContext, block: Runnable) {
-        SwingUtilities.invokeLater(block)
-    }
-}
-
-@get:TestOnly
-val edtDispatcherForTesting: CoroutineDispatcher get() = edtDispatcher

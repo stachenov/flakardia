@@ -28,7 +28,7 @@ class ManagerTest {
         fs = Jimfs.newFileSystem()
         root = RelativePath()
         storagePath = fs.getPath("cards")
-        storage = FlashcardStorageImpl(storagePath)
+        storage = FlashcardStorageImpl(storagePath, StatsFileRecoveryOptionsStub)
         library = Library(storage)
     }
 

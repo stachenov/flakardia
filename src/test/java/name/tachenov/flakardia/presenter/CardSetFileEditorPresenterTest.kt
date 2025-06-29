@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import name.tachenov.flakardia.NOT_PARSEABLE_FLASHCARDS
+import name.tachenov.flakardia.StatsFileRecoveryOptionsStub
 import name.tachenov.flakardia.accessModel
 import name.tachenov.flakardia.app.DuplicateDetector
 import name.tachenov.flakardia.app.FlashcardSetDirEntry
@@ -33,7 +34,7 @@ class CardSetFileEditorPresenterTest {
     @BeforeEach
     fun setUp() {
         fs = Jimfs.newFileSystem()
-        storage = FlashcardStorageImpl(fs.getPath("root"))
+        storage = FlashcardStorageImpl(fs.getPath("root"), StatsFileRecoveryOptionsStub)
         library = Library(storage)
         config = MockConfig()
         sut = null

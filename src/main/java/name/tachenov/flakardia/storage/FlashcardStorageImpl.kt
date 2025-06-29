@@ -11,7 +11,15 @@ import java.nio.file.StandardCopyOption
 import kotlin.io.path.name
 import kotlin.io.path.relativeTo
 
-data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
+interface StatsFileRecoveryOptions {
+    fun requestRecovery(message: String): Boolean
+    fun notifyRecoveryImpossible(message: String)
+}
+
+data class FlashcardStorageImpl(
+    private val fsPath: Path,
+    private val statsFileRecoveryOptions: StatsFileRecoveryOptions,
+) : FlashcardStorage {
 
     private val flakardiaDir: Path = fsPath.resolve(".flakardia")
     private val statsFile: Path = flakardiaDir.resolve("stats.json")
@@ -69,7 +77,7 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
         assertModelAccessAllowed()
         try {
             ensureFlakardiaDirExists()
-            val json = if (Files.exists(statsFile)) {
+            val json = if (Files.exists(statsFile) || recoverStatsFile()) {
                 Files.readString(statsFile)
             }
             else {
@@ -78,6 +86,42 @@ data class FlashcardStorageImpl(private val fsPath: Path) : FlashcardStorage {
             return SERIALIZER.decodeFromString<LibraryStats>(json)
         } catch (e: Exception) {
             return LibraryStatsError(e.toString())
+        }
+    }
+
+    private fun recoverStatsFile(): Boolean {
+        val possiblyRenamedStatsFiles = Files.find(
+            flakardiaDir,
+            1,
+            { file, _ -> Files.isRegularFile(file) && file.fileName.toString().let { it.startsWith("stats") && it.endsWith(".json") } },
+        ).toList()
+        return when (possiblyRenamedStatsFiles.size) {
+            0 -> false
+            1 -> {
+                val fileToRecover = possiblyRenamedStatsFiles.single()
+                if (statsFileRecoveryOptions.requestRecovery(
+                        "Found a file named " + fileToRecover.fileName.toString() +
+                            ", which is likely the stats file backed up by some external service, such as Google Drive.\n" +
+                            "Would you like to recover the lesson stats from this file?\n" +
+                            "If you choose No, all learning statistics will be reset to the initial state."
+                    )
+                ) {
+                    Files.move(fileToRecover, statsFile)
+                    true
+                }
+                else {
+                    false
+                }
+            }
+            else -> {
+                statsFileRecoveryOptions.notifyRecoveryImpossible(
+                    "Found files named " + (possiblyRenamedStatsFiles.joinToString(", ") { it.fileName.toString() }) +
+                        ", which are likely the stats file backed up by some external service, such as Google Drive.\n" +
+                        "However, since there are several files, automatic recovery is impossible.\n" +
+                        "Please find the correct file and rename it manually."
+                )
+                false
+            }
         }
     }
 

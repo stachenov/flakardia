@@ -6,7 +6,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import name.tachenov.flakardia.presenter.Presenter
 import name.tachenov.flakardia.ui.dialogIndicator
+import org.jetbrains.annotations.TestOnly
 import javax.swing.SwingUtilities
+import kotlin.coroutines.CoroutineContext
 
 abstract class ProgressIndicator {
     abstract val job: Job?
@@ -85,6 +87,15 @@ fun assertUiAccessAllowed() {
 }
 
 /**
+ * Starts the main coroutine on the EDT.
+ */
+internal inline fun mainCoroutine(crossinline block: suspend CoroutineScope.() -> Unit) {
+    runBlocking(edtDispatcher) {
+        block()
+    }
+}
+
+/**
  * Executes a block of code with model access allowed.
  *
  * Reentrant, does not lock the lock if it's already locked.
@@ -110,6 +121,16 @@ suspend fun <T> accessModelWithProgress(owner: Presenter<*, *>, code: suspend ()
             code()
         }
     }
+
+/**
+ * Executes a block of UI code within model code and returns its result.
+ */
+fun <T> askUi(block: () -> T): T {
+    assertModelAccessAllowed()
+    return runBlocking(edtDispatcher) {
+        block()
+    }
+}
 
 private suspend fun <T> background(code: suspend () -> T): T {
     assertModelAccessAllowed()
@@ -155,3 +176,12 @@ private suspend fun <T> underModelLock(code: suspend () -> T): T {
 }
 
 private val modelLock = Mutex()
+
+private val edtDispatcher = object : CoroutineDispatcher() {
+    override fun dispatch(context: CoroutineContext, block: Runnable) {
+        SwingUtilities.invokeLater(block)
+    }
+}
+
+@get:TestOnly
+val edtDispatcherForTesting: CoroutineDispatcher get() = edtDispatcher

@@ -4,6 +4,7 @@ import com.google.common.jimfs.Jimfs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
+import name.tachenov.flakardia.StatsFileRecoveryOptionsStub
 import name.tachenov.flakardia.accessModel
 import name.tachenov.flakardia.app.FlashcardSetDirEntry
 import name.tachenov.flakardia.app.FlashcardSetFileEntry
@@ -36,7 +37,7 @@ class FlashcardSetViewPresenterTest {
         root = fs.getPath("root")
         dir = root.resolve("dir")
         Files.createDirectories(root)
-        storage = FlashcardStorageImpl(root)
+        storage = FlashcardStorageImpl(root, StatsFileRecoveryOptionsStub)
         library = Library(storage)
     }
 

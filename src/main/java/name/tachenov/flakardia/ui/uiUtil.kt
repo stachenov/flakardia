@@ -1,15 +1,13 @@
 package name.tachenov.flakardia.ui
 
-import java.awt.Component
-import java.awt.Point
-import java.awt.Rectangle
-import java.awt.Window
+import name.tachenov.flakardia.askUi
+import name.tachenov.flakardia.storage.StatsFileRecoveryOptions
+import java.awt.*
 import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
-import javax.swing.AbstractAction
-import javax.swing.JComponent
-import javax.swing.JRootPane
-import javax.swing.KeyStroke
+import javax.swing.*
+import javax.swing.JOptionPane.QUESTION_MESSAGE
+import javax.swing.JOptionPane.YES_NO_OPTION
 import kotlin.math.abs
 
 fun JRootPane.setupShortcuts(window: Window) {
@@ -89,4 +87,26 @@ inline fun <reified T : Component> Component.findParentOfType(): T? {
         parent = parent.parent
     }
     return null
+}
+
+class StatsFileRecoveryOptionsDialog : StatsFileRecoveryOptions {
+    private val owner: Window?
+        get() = KeyboardFocusManager.getCurrentKeyboardFocusManager().activeWindow
+
+    override fun requestRecovery(message: String): Boolean =
+        askUi {
+            JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(
+                owner,
+                message,
+                "Recover the stats file?",
+                YES_NO_OPTION,
+                QUESTION_MESSAGE
+            )
+        }
+
+    override fun notifyRecoveryImpossible(message: String) {
+        askUi {
+            JOptionPane.showMessageDialog(owner, message, "The stats file recovery is impossible", JOptionPane.WARNING_MESSAGE)
+        }
+    }
 }
