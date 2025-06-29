@@ -1,3 +1,8 @@
+0.7.1
+    The UI theme is now automatically switched when the OS theme changes.
+    Automatic recovery of the learning statistics file name in case it's renamed (Google Drive does that sometimes).
+    Fixed a bug with scrolling the list of files and directories when entering/exiting a directory.
+
 0.7 / 2025-04-26
     The first version of the in-app flashcard set editor
     It's now possible to edit flashcards right in the lesson

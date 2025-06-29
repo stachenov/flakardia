@@ -14,7 +14,7 @@ What it can do:
 - Create and edit flashcard files with some simple GUI editor.
 - Run a lesson on up to 1000 (30 by default) flashcards in one go, repeating them again and again until you get them all right.
 - Keep track of when you learned a word the last time and how mistakes you made, to use this information to select flashcards for next lessons.
-- Detect the system theme on startup and try to follow it (four themes are supported: dark, light, dark high contrast and light high contrast).
+- Detect the system theme and try to follow it (four themes are supported: dark, light, dark high contrast and light high contrast).
 - Change the app font.
 
 What it can't do:
